@@ -9,6 +9,21 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Command line, simpler install, accurate CPU figures
+
+- **`gamedash` command** (`bin/gamedash`, installed to `~/.local/bin` by setup): status, address,
+  reset-password (`-resetpassword` also works), setup-code, start/stop/restart of the dashboard,
+  logs, servers, `server start|stop|restart|logs <server>` (asks first when players are online),
+  backup, check, version, help. Reset-password tested end to end on a copy of the settings.
+- **Installer:** no questions by default (it installs the optional extras too; `--ask` and
+  `--minimal` change that); `get.sh` downloads GameDash and runs the installer in one line.
+- **CPU figures:** the top bar says *Total CPU usage* (the whole computer). Each server's CPU is now
+  its share of the whole computer, and its RAM is the total of all its processes, measured from the
+  server's systemd control group (game servers are often several processes, e.g. under Wine). On the
+  live machine the six servers' figures added up to about 6% against 8% total CPU usage.
+- Roadmap expanded (principles, milestones, install, command line, testing, dashboard, security);
+  a C++ rewrite was considered and judged not worthwhile (see the roadmap).
+
 ## 2026-10-15 — Licence
 
 - Licensed under the **PolyForm Noncommercial License 1.0.0** (`LICENSE.md`): free for any

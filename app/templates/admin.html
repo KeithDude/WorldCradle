@@ -4,7 +4,7 @@
   <meta name="csrf" content="{{ csrf }}">
   <div id="toast" class="toast" hidden></div>
   <div class="boxbar" id="boxbar">
-    <div class="stat"><b id="b-cpu">{{ snap.box.get('cpu_percent', 0) }}%</b><span title="How busy this computer's processor is right now, across all servers">CPU in use</span></div>
+    <div class="stat"><b id="b-cpu">{{ snap.box.get('cpu_percent', 0) }}%</b><span title="How busy this computer's processor is right now, all cores and all programs together (100% = every core fully busy)">Total CPU usage</span></div>
     <div class="stat"><b id="b-load">{{ snap.box.get('load', [0])[0] }}</b><span title="How many tasks were waiting for the processor, averaged over the last minute. Below the number of cores is comfortable.">System load · {{ snap.box.get('cpu_count', '?') }} cores</span></div>
     <div class="stat"><b id="b-mem">{{ snap.box.get('mem_used_gb', 0) }} / {{ snap.box.get('mem_total_gb', 0) }} GB</b><span title="Memory (RAM) in use by everything on this computer, out of the total installed">RAM in use</span></div>
     <div class="stat"><b id="b-disk">{{ snap.box.get('disk_used_gb', 0) }} / {{ snap.box.get('disk_total_gb', 0) }} GB</b><span title="Space used on the disk where the game servers are installed, out of its total size">Storage used</span></div>
@@ -82,7 +82,7 @@
               {% if v.reachable is none %}<span class="muted">n/a</span>
               {% elif v.reachable %}<span class="pill on">yes</span>
               {% else %}<span class="pill bad">no</span>{% endif %}</dd>
-            <dt>CPU / RAM</dt><dd>{{ v.cpu_percent }}% · {% if v.mem_mb and v.mem_mb >= 1024 %}{{ '%.1f' % (v.mem_mb / 1024) }} GB{% else %}{{ v.mem_mb }} MB{% endif %}</dd>
+            <dt>CPU / RAM</dt><dd>{% if v.cpu_percent is none %}…{% else %}{{ v.cpu_percent }}%{% endif %} · {% if v.mem_mb is none %}…{% elif v.mem_mb >= 1024 %}{{ '%.1f' % (v.mem_mb / 1024) }} GB{% else %}{{ v.mem_mb }} MB{% endif %}</dd>
           {% endif %}
           <dt>boot</dt><dd><span class="pill {{ 'on' if v.enabled else 'off' }}">{{ 'enabled' if v.enabled else 'disabled' }}</span></dd>
           <dt>ports</dt><dd>game {{ v.game_port }}{% if v.query_port %} · q {{ v.query_port }}{% endif %}{% if v.rcon_port %} · rcon {{ v.rcon_port }}{% endif %}</dd>

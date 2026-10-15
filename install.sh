@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # GameDash — one-step installer.
 #
-#   bash install.sh            install everything, asking a few yes/no questions
-#   bash install.sh --yes      no questions: install with every optional extra
+#   bash install.sh            install everything — no questions (it only asks for your password)
+#   bash install.sh --ask      ask before each optional extra (Java, Wine, fail2ban)
+#   bash install.sh --minimal  skip the optional extras (add them later by running it again)
 #   bash install.sh --check    show what would be done, change nothing
 #
 # What it does, in order:
@@ -16,12 +17,14 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-YES=0; CHECK=0
+YES=1; CHECK=0; MINIMAL=0
 for arg in "$@"; do
     case "$arg" in
         --yes|-y) YES=1 ;;
+        --ask)    YES=0 ;;
+        --minimal) MINIMAL=1 ;;
         --check)  CHECK=1 ;;
-        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
@@ -29,7 +32,8 @@ done
 say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 run()  { if [ "$CHECK" = 1 ]; then printf '   would run: %s\n' "$*"; else "$@"; fi; }
-ask()  {  # ask "Question?"  → 0 for yes. Default yes; --yes and --check answer yes.
+ask()  {  # ask "Question?"  → 0 for yes. Default: yes without asking; --ask asks; --minimal says no.
+    [ "$MINIMAL" = 1 ] && return 1
     [ "$YES" = 1 ] || [ "$CHECK" = 1 ] && return 0
     local reply
     read -r -p "   $1 [Y/n] " reply </dev/tty || reply=""
@@ -56,7 +60,8 @@ PKGS=(python3 python3-venv python3-pip openssl curl ca-certificates
       xvfb libxi6             # an invisible display some servers need (Core Keeper, V Rising, Sons of the Forest)
       libgdiplus)             # Eco's server
 EXTRAS=()
-note "Some games need an extra program. Say yes only for the games you might host."
+if [ "$YES" = 0 ]; then note "Some games need an extra program. Say yes only for the games you might host."
+elif [ "$MINIMAL" = 0 ]; then note "Also installing the extras some games need: Java (Minecraft), Wine (Windows-only servers) and fail2ban (blocks password guessing). Skip them with --minimal."; fi
 if ask "Minecraft (needs Java, about 200 MB)?"; then
     # Recent Minecraft versions need a recent Java; take the newest the system offers.
     JAVA_PKG="default-jre-headless"

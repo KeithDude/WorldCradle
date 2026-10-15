@@ -59,7 +59,7 @@ fi
 # --- 4. Dashboard admin password ---------------------------------------------
 # The password is chosen in the browser on first visit (/setup), unlocked by a
 # one-time code that install.sh prints at the end. Nothing to do here; to set it
-# from the terminal instead:  GAMEDASH_HOME=$DATA $VENV/bin/python $APP/manage.py set-password
+# from the terminal instead:  gamedash reset-password
 say "Dashboard admin password"
 echo "Chosen in the browser on first visit, using the one-time setup code shown at the end."
 
@@ -73,6 +73,15 @@ cp    "$REPO/deploy/systemd/gamedash-backup.timer"        "$UNITS/gamedash-backu
 systemctl --user daemon-reload
 systemctl --user enable --now gamedash.service
 systemctl --user enable --now gamedash-backup.timer
+
+# --- the "gamedash" command (gamedash help) ---------------------------------------
+say "gamedash command"
+mkdir -p "$HOME/.local/bin"
+ln -sfn "$REPO/bin/gamedash" "$HOME/.local/bin/gamedash"
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) echo "installed: type  gamedash help" ;;
+    *) echo "installed in ~/.local/bin — open a new terminal (or log in again), then type: gamedash help" ;;
+esac
 
 # --- 6. Linger (auto-start on boot without an active login) -------------------
 say "Linger"

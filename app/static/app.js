@@ -775,7 +775,7 @@ const gamedash = (() => {
       const ports = esc(`game ${v.game_port}${v.query_port ? " · query " + v.query_port : ""}${v.rcon_port ? " · admin console " + v.rcon_port : ""}`);
       const live = v.online ? `
         <dt title="Is the server answering on its port? “n/a” means this game can't be asked that way — it doesn't mean anything is wrong">answering</dt><dd>${reachPill(v)}</dd>
-        <dt title="How much processor and how much memory (RAM) this server is using. CPU can go above 100% when a server uses more than one core.">CPU / RAM</dt><dd>${esc(v.cpu_percent)}% · ${esc(v.mem_mb >= 1024 ? (v.mem_mb / 1024).toFixed(1) + " GB" : v.mem_mb + " MB")}</dd>` : "";
+        <dt title="This server's share of the whole computer's processor (the same scale as Total CPU usage at the top), and the memory (RAM) used by all of its processes">CPU / RAM</dt><dd>${v.cpu_percent == null ? "…" : esc(v.cpu_percent) + "%"} · ${v.mem_mb == null ? "…" : esc(v.mem_mb >= 1024 ? (v.mem_mb / 1024).toFixed(1) + " GB" : v.mem_mb + " MB")}</dd>` : "";
       const sf = v.sf ? `
         <dt title="Server simulation rate — 30 is healthy; consistently lower means it's struggling">tick rate</dt><dd>${esc(v.sf.tick)}/30 ${v.sf.paused ? pill("warn", "paused") : ""}</dd>
         <dt title="Game progression (tech tier / project assembly phase)">progress</dt><dd>${v.sf.tier != null ? "Tier " + esc(v.sf.tier) : ""}${v.sf.phase != null ? " · Phase " + esc(v.sf.phase) : ""}</dd>

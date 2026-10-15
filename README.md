@@ -36,9 +36,14 @@ full list and which games have been tested with real players.
   fail2ban; the launch-script editor is content-validated.
 
 ## Quick start
+One line (once the repository is public):
+```
+curl -fsSL https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+```
+or, from a downloaded copy:
 ```
 cd gamedash
-bash install.sh       # system packages, GameDash itself, start at boot
+bash install.sh       # no questions; it only asks for your computer's password
 ```
 It prints the address to open and a one-time setup code. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
@@ -51,7 +56,9 @@ gamedash/
 ├── app/          all application code (Flask app, games/, templates/, static/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
 ├── docs/         SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
+├── get.sh        one-line download + install
 ├── install.sh    one-step installer (calls setup.sh)
+├── bin/gamedash  the `gamedash` command
 ├── setup.sh      GameDash-only setup
 └── requirements.txt
 ```
@@ -64,11 +71,18 @@ $GAMEDASH_HOME            (default ~/.config/gamedash)
 ```
 
 ## Running it
-- Service: `systemctl --user {status|restart|stop} gamedash`
-- Logs: `journalctl --user -u gamedash` (and `logs/` in the data root:
-  `access.log`, `audit.log`, `gamedash.log`).
-- Reset the dashboard admin password:
-  `GAMEDASH_HOME=<data root> venv/bin/python app/manage.py set-password`
+The `gamedash` command covers the everyday jobs (`gamedash help` lists them all):
+```
+gamedash status             is it running, where to open it, and each server's state
+gamedash reset-password     choose a new dashboard password (also: gamedash -resetpassword)
+gamedash restart            restart the dashboard
+gamedash logs               the dashboard's recent log
+gamedash servers            list the game servers
+gamedash server restart <server>
+gamedash backup all
+gamedash check              quick health check
+```
+- Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `gamedash.log`.
 - Daily backups: `gamedash-backup.timer` (05:00). Run on demand from
   Settings/Backups → "Back up all servers now".
 

@@ -21,6 +21,69 @@ import monitor
 from applog import app_log
 from registry import Server, load_servers
 
+# ---- per-server resource use, measured for the whole service ----------------------
+# A server is often several processes (Wine helpers, a launcher script, a second level),
+# so its CPU and RAM are read from its systemd control group, which holds all of them.
+_cg_path: dict[str, str] = {}                     # unit -> /sys/fs/cgroup/... directory
+_cg_last: dict[str, tuple[int, float]] = {}      # unit -> (cpu usage µs, time) at the last poll
+_cg_lock = threading.Lock()
+
+
+def _cgroup_dir(unit: str, pid: int | None) -> str | None:
+    path = _cg_path.get(unit)
+    if path and os.path.isdir(path):
+        return path
+    rel = ""
+    try:
+        if pid:
+            with open(f"/proc/{pid}/cgroup", encoding="utf-8") as f:
+                rel = f.read().strip().split("::", 1)[-1]
+        if not rel.endswith(f"/{unit}"):
+            import subprocess
+            rel = subprocess.run(["systemctl", "--user", "show", "-p", "ControlGroup", "--value", unit],
+                                 capture_output=True, text=True, timeout=5).stdout.strip()
+    except (OSError, ValueError, __import__("subprocess").SubprocessError):
+        return None
+    path = "/sys/fs/cgroup" + rel
+    if rel and os.path.isdir(path):
+        _cg_path[unit] = path
+        return path
+    return None
+
+
+def service_usage(unit: str, pid: int | None) -> tuple[float | None, int | None]:
+    """(CPU as a percentage of the WHOLE computer, RAM in binary MB) used by every process
+    of this server's service. CPU needs two polls to measure, so the first one gives None."""
+    path = _cgroup_dir(unit, pid)
+    if not path:
+        return None, None
+    cpu = mem = None
+    try:
+        with open(os.path.join(path, "cpu.stat"), encoding="utf-8") as f:
+            usage = int(next(l for l in f if l.startswith("usage_usec")).split()[1])
+        now = time.monotonic()
+        with _cg_lock:
+            last = _cg_last.get(unit)
+            _cg_last[unit] = (usage, now)
+        if last and now > last[1] and usage >= last[0]:
+            cpus = psutil.cpu_count() or 1
+            cpu = round(100.0 * (usage - last[0]) / ((now - last[1]) * 1e6 * cpus), 1)
+    except (OSError, StopIteration, ValueError):
+        pass
+    try:
+        with open(os.path.join(path, "cgroup.procs"), encoding="utf-8") as f:
+            pids = [int(x) for x in f.read().split()]
+        rss = 0
+        for p in pids:
+            try:
+                rss += psutil.Process(p).memory_info().rss
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        mem = round(rss / 2**20) if pids else None
+    except (OSError, ValueError):
+        pass
+    return cpu, mem
+
 POLL_INTERVAL = 5.0  # seconds between fleet refreshes
 
 
@@ -174,12 +237,11 @@ class Poller:
 
         proc = self._find_proc(s.key, s.proc_match, procs)
         if proc is not None:
-            try:
-                st["pid"] = proc.pid
-                st["cpu_percent"] = round(proc.cpu_percent(interval=None), 1)
-                st["mem_mb"] = round(proc.memory_info().rss / 2**20)   # binary MB (1024 × 1024 bytes)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+            st["pid"] = proc.pid
+        if online:
+            # share of the whole computer's processor, and RAM in binary MB, for all of
+            # this server's processes together
+            st["cpu_percent"], st["mem_mb"] = service_usage(s.unit, proc.pid if proc else None)
 
         # A server sharing a slot but not active: its sibling owns the port, so
         # don't probe it (we'd attribute the sibling's data to the wrong map).

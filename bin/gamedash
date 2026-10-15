@@ -1,0 +1,12 @@
+#!/bin/sh
+# gamedash — command-line tools for GameDash. "gamedash help" lists them.
+# Installed as ~/.local/bin/gamedash (a link to this file) by setup.sh.
+REAL="$(readlink -f "$0")"
+REPO="$(dirname "$(dirname "$REAL")")"
+# use the same data folder as the running dashboard
+if [ -z "${GAMEDASH_HOME:-}" ]; then
+    GAMEDASH_HOME="$(systemctl --user show gamedash.service -p Environment --value 2>/dev/null \
+                     | tr ' ' '\n' | sed -n 's/^GAMEDASH_HOME=//p')"
+    [ -n "$GAMEDASH_HOME" ] && export GAMEDASH_HOME
+fi
+exec "$REPO/venv/bin/python" "$REPO/app/cli.py" "$@"
