@@ -40,12 +40,11 @@ Last updated: 2026-10-15
       installer. *(2026-10-15 — works once the repository is public)*
 - [ ] **Fresh-machine test** on a clean Ubuntu 24.04 and 26.04 (not the maintainer's machine),
       following only the README, timed, with every confusing moment written down and fixed.
+      *Needs a clean machine or VM — the maintainer's machine already has everything installed.*
 - [x] Installer checks before it starts: operating system, 64-bit Intel/AMD processor (and AVX),
       memory, disk space, background services (systemd), the dashboard's port, internet — each
       explained in plain words; serious problems stop the install (`--force` to go ahead anyway).
       *(2026-10-15)*
-- [ ] **Fresh-machine test** needs a clean Ubuntu machine or VM to run on (the maintainer's
-      machine can't be used — everything is already installed there).
 - [ ] The installer's last screen: the address to open, the setup code, and a QR code for opening it
       on a phone.
 - [ ] A short **Getting started** guide with screenshots (install → first server → friends join).
