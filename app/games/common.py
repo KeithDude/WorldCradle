@@ -61,7 +61,7 @@ def wine_env_lines(prefix: str) -> str:
 def rcon_stop_script(path: str, secrets_path: str, port: int, command: str, proc_match: str,
                      wait: int = 60) -> None:
     """Write an ExecStop script: send the game's quit command over RCON (using
-    the dashboard's own Python, which has the rcon library), then wait for the
+    the dashboard's own Python and RCON client), then wait for the
     server process to finish saving and exit."""
     import sys
     with open(path, "w", encoding="utf-8") as f:
@@ -70,12 +70,9 @@ def rcon_stop_script(path: str, secrets_path: str, port: int, command: str, proc
                 f". {secrets_path}\n"
                 f'"{sys.executable}" - {port} "$GAME_ADMIN_PASSWORD" <<\'STOP\'\n'
                 "import sys\n"
-                "try:\n"
-                "    from rcon.source import Client\n"
-                "    with Client('127.0.0.1', int(sys.argv[1]), passwd=sys.argv[2], timeout=8) as c:\n"
-                f"        c.run({command!r})\n"
-                "except Exception:\n"
-                "    pass\n"
+                f"sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))!r})\n"
+                "import monitor\n"
+                f"monitor.source_rcon(int(sys.argv[1]), sys.argv[2], {command!r}, timeout=8)\n"
                 "STOP\n"
                 f"i=0\nwhile [ $i -lt {wait} ] && pgrep -f -- '{proc_match}' >/dev/null; do sleep 1; i=$((i+1)); done\n"
                 "exit 0\n")

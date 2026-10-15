@@ -101,14 +101,67 @@ def a2s_player_names(port: int, host: str | None = None) -> list[str]:
 
 # ---- RCON (names + control) ------------------------------------------------
 
-def rcon_run(port: int, password: str, command: str) -> str | None:
-    """Run one RCON command (strict Source protocol — ARK). None on failure."""
+def source_rcon(port: int, password: str, command: str, timeout: float = RCON_TIMEOUT,
+                host: str = HOST) -> str | None:
+    """Run one command over Valve's Source RCON protocol and return the reply text
+    ("" if the server sent none). None if the console can't be reached or the
+    password is refused. Written here rather than taken from a library so GameDash
+    carries no GPL dependency."""
+    def send(s, pid: int, ptype: int, body: str) -> None:
+        payload = struct.pack("<ii", pid, ptype) + body.encode("utf-8") + b"\x00\x00"
+        s.sendall(struct.pack("<i", len(payload)) + payload)
+
+    def read_exact(s, n: int) -> bytes:
+        buf = b""
+        while len(buf) < n:
+            chunk = s.recv(n - len(buf))
+            if not chunk:
+                raise ConnectionError("closed")
+            buf += chunk
+        return buf
+
+    def read_packet(s) -> tuple[int, int, str]:
+        (length,) = struct.unpack("<i", read_exact(s, 4))
+        if not 10 <= length <= 1_000_000:
+            raise ValueError("bad packet length")
+        data = read_exact(s, length)
+        pid, ptype = struct.unpack("<ii", data[:8])
+        return pid, ptype, data[8:-2].decode("utf-8", "replace")
+
     try:
-        from rcon.source import Client
-        with Client(HOST, port, passwd=password, timeout=RCON_TIMEOUT) as c:
-            return c.run(command) or ""
-    except Exception:
+        s = socket.create_connection((host, port), timeout=timeout)
+    except OSError:
         return None
+    try:
+        s.settimeout(timeout)
+        send(s, 1, 3, password)                    # SERVERDATA_AUTH
+        while True:                                # some servers send an empty reply first
+            pid, ptype, _ = read_packet(s)
+            if ptype == 2:                         # SERVERDATA_AUTH_RESPONSE
+                if pid == -1:
+                    return None                    # wrong password
+                break
+        send(s, 2, 2, command)                     # SERVERDATA_EXECCOMMAND
+        pid, ptype, body = read_packet(s)
+        parts = [body] if pid == 2 else []
+        s.settimeout(0.3)                          # long replies arrive as several packets
+        try:
+            while True:
+                pid, ptype, body = read_packet(s)
+                if pid == 2:
+                    parts.append(body)
+        except (OSError, ValueError, ConnectionError):
+            pass
+        return "".join(parts)
+    except (OSError, ValueError, ConnectionError, struct.error):
+        return None
+    finally:
+        s.close()
+
+
+def rcon_run(port: int, password: str, command: str) -> str | None:
+    """Run one RCON command (strict Source protocol — ARK and others). None on failure."""
+    return source_rcon(port, password, command)
 
 
 def palworld_rcon(port: int, password: str, command: str,

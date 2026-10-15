@@ -9,6 +9,17 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Licence
+
+- Licensed under the **PolyForm Noncommercial License 1.0.0** (`LICENSE.md`): free for any
+  noncommercial use; commercial use needs the author's permission.
+- Removed the only GPL-licensed dependency (the `rcon` package), whose licence could not be combined
+  with a noncommercial licence. GameDash now has its own Source RCON client (`monitor.source_rcon`),
+  used by the player lists, controls, the ARK stop helper and generated stop scripts. Checked on live
+  ARK servers (player list, world save) and on Minecraft (player list, save, messages, long
+  multi-part replies, graceful stop) with identical results to the old library.
+- Remaining dependencies are BSD, MIT or Apache licensed.
+
 ## 2026-10-14 — Documentation, port safety, clearer figures
 
 - **Supported-games list moved into the documentation.** Each game is marked *Tested* (real players

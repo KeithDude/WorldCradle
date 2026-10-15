@@ -90,3 +90,12 @@ the dashboard then shows the server as running without a player count.
 - **Never forward an admin console (RCON) or other control port** on your router —
   see [deploy/SETUP.md](deploy/SETUP.md), section 6.
 - Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
+
+## License
+
+GameDash is released under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
+You may use, change and share it for any noncommercial purpose — running servers for
+yourself, your friends or your community, testing, learning. Commercial use (for
+example a hosting company offering it to paying customers) needs the author's
+permission. The game servers themselves belong to their publishers and are
+downloaded by each user under the publishers' own terms.

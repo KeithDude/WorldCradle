@@ -3,19 +3,14 @@
 (SaveWorld then DoExit). Used as the ExecStop of gamedash-managed ARK units so
 they save before stopping, without depending on any external script.
 """
+import os
 import sys
 
-try:
-    from rcon.source import Client
-except ImportError:
-    sys.exit(0)  # no rcon module → let systemd just stop the process
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import monitor  # noqa: E402  (GameDash's own RCON client)
 
 if len(sys.argv) < 3:
     sys.exit(0)
 port, passwd = int(sys.argv[1]), sys.argv[2]
 for cmd in ("SaveWorld", "DoExit"):
-    try:
-        with Client("127.0.0.1", port, passwd=passwd, timeout=12) as c:
-            c.run(cmd)
-    except Exception:
-        pass
+    monitor.source_rcon(port, passwd, cmd, timeout=12)
