@@ -18,6 +18,7 @@ Usage: gamedash <command> [options]
   server logs    <server> [N]  A game server's last N log lines (default 50)
   backup <server|all>        Back up a server's saves now ("all" = every server)
 
+  update                     Update GameDash itself (puts the old version back if the new one fails)
   check                      Quick health check: service, disk space, certificate, admin password
   version                    Which version of GameDash this is
   help                       This list
@@ -36,7 +37,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UNIT = "gamedash.service"
+UNIT = os.environ.get("GAMEDASH_UNIT", "gamedash.service")   # overridable for testing
 
 
 def _say(text: str = "") -> None:
@@ -270,6 +271,114 @@ def cmd_check(_args) -> int:
     return 0 if problems == 0 else 1
 
 
+def _git(*args: str, check: bool = True) -> str:
+    r = subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True, timeout=300)
+    if check and r.returncode != 0:
+        raise RuntimeError((r.stderr or r.stdout).strip() or f"git {' '.join(args)} failed")
+    return r.stdout.strip()
+
+
+def _answers(timeout: int = 60) -> bool:
+    """Does the dashboard answer over HTTPS within `timeout` seconds?"""
+    import ssl
+    import time
+    import urllib.request
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE                 # self-signed certificate is normal here
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            with urllib.request.urlopen(f"https://127.0.0.1:{_port()}/api/public.json", context=ctx, timeout=5) as r:
+                if r.status == 200:
+                    return True
+        except Exception:
+            pass
+        time.sleep(2)
+    return False
+
+
+def _install_requirements() -> None:
+    pip = os.path.join(REPO, "venv", "bin", "pip")
+    r = subprocess.run([pip, "install", "-q", "-r", os.path.join(REPO, "requirements.txt")],
+                       capture_output=True, text=True, timeout=1200)
+    if r.returncode != 0:
+        raise RuntimeError("installing the Python libraries failed:\n" + (r.stderr or r.stdout).strip()[-1500:])
+
+
+def _self_test() -> None:
+    """The new code must at least load: the web app, every game type and every page."""
+    py = os.path.join(REPO, "venv", "bin", "python")
+    code = ("import sys; sys.path.insert(0, '.'); import app, games\n"
+            "[ (g.port_fields(), g.extra_fields) for g in games.all_types() if g.kind != 'custom' ]\n"
+            "[ app.app.jinja_env.get_template(t) for t in ('admin.html', 'public.html', 'base.html', 'login.html') ]")
+    r = subprocess.run([py, "-c", code], cwd=os.path.join(REPO, "app"), capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        raise RuntimeError("the new version doesn't load:\n" + (r.stderr or r.stdout).strip()[-1500:])
+
+
+def cmd_update(args) -> int:
+    """Update GameDash itself from its home repository; roll back if the new version fails."""
+    if not os.path.isdir(os.path.join(REPO, ".git")):
+        return _err("this copy of GameDash wasn't installed with git, so it can't update itself. "
+                    "Download the new version and run install.sh again.")
+    if _git("status", "--porcelain"):
+        return _err("GameDash's files have been changed on this computer, so updating could lose those "
+                    "changes. Nothing was done.")
+    branch = _git("rev-parse", "--abbrev-ref", "HEAD")
+    _say("Checking for a new version…")
+    try:
+        _git("fetch", "--quiet", "origin", branch)
+    except RuntimeError as e:
+        return _err(f"couldn't reach GameDash's home on the internet: {e}")
+    old = _git("rev-parse", "HEAD")
+    new = _git("rev-parse", f"origin/{branch}")
+    if old == new:
+        _say("GameDash is up to date.")
+        return 0
+    if subprocess.run(["git", "-C", REPO, "merge-base", "--is-ancestor", old, new]).returncode != 0:
+        return _err("this copy has commits that aren't in the published version — not updating automatically.")
+    _say("What's new:")
+    for line in _git("log", "--oneline", "--no-decorate", f"{old}..{new}").splitlines()[:30]:
+        _say(f"  • {line.split(' ', 1)[1] if ' ' in line else line}")
+    if "--yes" not in args and "-y" not in args:
+        try:
+            if input("Update now? The dashboard restarts (game servers keep running). [Y/n] ").strip().lower() in ("n", "no"):
+                return _err("cancelled — nothing changed")
+        except EOFError:
+            pass
+
+    def rollback(reason: str) -> int:
+        _say(f"Problem: {reason}")
+        _say("Putting the previous version back…")
+        try:
+            _git("reset", "--hard", "--quiet", old)
+            _install_requirements()
+            _systemctl("restart", UNIT)
+        except Exception as e:
+            return _err(f"rolling back also failed ({e}). Run: git -C {REPO} reset --hard {old[:12]} "
+                        "and then: gamedash restart")
+        _say("The previous version is running again." if _answers() else
+             "The previous version is back, but the dashboard isn't answering yet — check: gamedash logs")
+        return 1
+
+    try:
+        _say("Downloading…")
+        _git("merge", "--ff-only", "--quiet", new)
+        _say("Installing libraries…")
+        _install_requirements()
+        _say("Checking the new version…")
+        _self_test()
+    except Exception as e:
+        return rollback(str(e))
+    _say("Restarting the dashboard…")
+    _systemctl("restart", UNIT)
+    if not _answers():
+        return rollback("the new version started but isn't answering")
+    _say(f"Updated to {new[:7]}. The dashboard is running.")
+    return 0
+
+
 def cmd_version(_args) -> int:
     r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
                        capture_output=True, text=True)
@@ -291,7 +400,7 @@ COMMANDS = {
     "logs": cmd_logs, "log": cmd_logs,
     "servers": cmd_servers, "list": cmd_servers, "server": cmd_server,
     "backup": cmd_backup,
-    "check": cmd_check, "doctor": cmd_check,
+    "check": cmd_check, "doctor": cmd_check, "update": cmd_update, "upgrade": cmd_update,
     "version": cmd_version, "help": cmd_help,
 }
 
