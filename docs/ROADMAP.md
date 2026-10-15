@@ -123,6 +123,10 @@ loading its save after a restart.
 - [ ] Mod support beyond Valheim and ARK where games have an official mod system.
 
 ### Security
+- [x] Idle or slow connections can no longer lock everyone out of the dashboard (event-based web
+      worker). *(2026-10-15)*
+- [ ] Limit how many connections a single address may hold open, and show repeated offenders in
+      the dashboard (the event worker absorbs them, but a cap is a second line of defence).
 - [ ] Optional two-factor sign-in (authenticator app) for the dashboard.
 - [ ] Automatic HTTPS certificate renewal check in `gamedash check` and on the dashboard.
 - [ ] Periodic review against the "safe on the open internet" principle, with the findings logged.

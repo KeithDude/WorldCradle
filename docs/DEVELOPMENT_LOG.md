@@ -9,6 +9,20 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Dashboard outage: connection exhaustion fixed
+
+- **What happened:** the live dashboard stopped answering while its service still showed "running".
+  A single internet address (most likely a scanner) held 8 connections open without sending a
+  request. The web server ran 8 threads, one connection each, with no time limit for a silent
+  client, so nobody else could get in. Reproduced locally: 8 connections that complete the TLS
+  handshake and then go quiet, or send a request very slowly, lock everyone out.
+- **Fix:** gunicorn now uses the event-based **gevent** worker (`--worker-class gevent
+  --worker-connections 1000 --keep-alive 5`), so idle and slow clients cost almost nothing.
+  Verified with 300 silent and 300 slow connections held open: normal requests still answered in
+  about 0.01 s. The whole app (sign-in, every admin page, background polling of the real servers,
+  CPU/RAM figures) was exercised on a test copy before switching the live service.
+- New dependencies: `gevent` (MIT) and `packaging` (Apache-2.0 / BSD).
+
 ## 2026-10-15 — Command line, simpler install, accurate CPU figures
 
 - **`gamedash` command** (`bin/gamedash`, installed to `~/.local/bin` by setup): status, address,

@@ -9,10 +9,12 @@ Type=simple
 Environment=GAMEDASH_HOME=__DATA__
 WorkingDirectory=__APP__
 # gunicorn (production WSGI) terminating TLS directly on 8443.
-# ONE worker so there is a single background poller / alert engine; threads give
-# concurrency. Long timeout so slow systemctl stop/restart actions aren't killed.
+# ONE worker so there is a single background poller / alert engine. The gevent
+# worker handles many connections at once, so clients that connect and then go
+# quiet (scanners, slow-request attacks) can't use up the dashboard's capacity.
+# Long timeout so slow systemctl stop/restart actions aren't killed.
 ExecStart=__VENV__/bin/gunicorn \
-    --workers 1 --threads 8 --worker-class gthread --timeout 300 \
+    --workers 1 --worker-class gevent --worker-connections 1000 --keep-alive 5 --timeout 300 \
     --bind 0.0.0.0:8443 \
     --certfile __DATA__/certs/cert.pem \
     --keyfile __DATA__/certs/key.pem \
