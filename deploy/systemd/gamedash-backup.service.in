@@ -1,0 +1,11 @@
+[Unit]
+Description=GameDash — daily backup of all server saves
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=GAMEDASH_HOME=__DATA__
+WorkingDirectory=__APP__
+ExecStart=__VENV__/bin/python __APP__/backups.py all
+# don't pin the box if a backup is slow; saves are flushed per-server internally
+TimeoutStartSec=1800

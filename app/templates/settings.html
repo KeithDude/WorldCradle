@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Settings · GameDash{% endblock %}
+{% block content %}
+  <meta name="csrf" content="{{ csrf }}">
+  <div id="toast" class="toast" hidden></div>
+  <h2 class="page-title">⚙ System settings</h2>
+
+  <section class="settings-section">
+    <h3>General</h3>
+    <div class="alerts-form">
+      <label title="The internet address your friends type to connect — a name like mygames.example.net or your public IP. It's shown in each server's “How to join”. Leave blank to use whatever address this page was opened with.">Your public address (what friends connect to) <input type="text" id="gen-public-host" placeholder="your-host.example.com" autocomplete="off"></label>
+      <label title="ARK maps that share this name are one “cluster”: players can move their characters and dinos between them. Letters, digits and underscores only.">ARK cluster name <input type="text" id="gen-cluster" placeholder="gamedash" autocomplete="off"></label>
+      <label title="Optional text put in front of each new ARK server's name in the in-game list (for example “MyCrew-”), so yours are easy to spot.">Prefix for ARK server names — optional <input type="text" id="gen-prefix" placeholder="(none)" autocomplete="off"></label>
+      <label title="Advanced. The file where the two game passwords below are kept. Leave it alone unless you know you need to move it.">Password file location (advanced) <input type="text" id="gen-secrets" placeholder="~/.config/gamedash/secrets.conf" autocomplete="off"></label>
+      <label title="Advanced and optional. Lets the dashboard talk to a Satisfactory server with an access token instead of the admin password.">Satisfactory access token — optional (advanced) <input type="password" id="gen-sf-token" autocomplete="off"></label>
+      <fieldset class="settings-fs"><legend>Where each game's files live (advanced — set automatically when you install a game)</legend>
+        <label>ARK <input type="text" id="gen-dir-ark" placeholder="~/arkserver" autocomplete="off"></label>
+        <label>Palworld <input type="text" id="gen-dir-palworld" placeholder="~/palworldserver" autocomplete="off"></label>
+        <label>Valheim <input type="text" id="gen-dir-valheim" placeholder="~/valheimserver" autocomplete="off"></label>
+        <label>Satisfactory <input type="text" id="gen-dir-satisfactory" placeholder="~/satisfactoryserver" autocomplete="off"></label>
+        <label>Abiotic Factor <input type="text" id="gen-dir-abiotic" placeholder="~/abioticserver" autocomplete="off"></label>
+      </fieldset>
+      <div class="alerts-btns"><button class="btn" id="gen-save">Save general settings</button></div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3>Backups</h3>
+    <div class="alerts-form">
+      <p class="muted" id="bk-sched" style="font-size:.82rem"></p>
+      <label title="How many backups to keep per server by default for newly-added servers (existing servers keep their own setting, editable on the Backups page).">Default backups to keep (new servers) <input type="number" id="bk-default-keep" min="1" max="100" style="width:5rem"></label>
+      <div class="alerts-btns">
+        <button class="btn" id="bk-default-save">Save</button>
+        <button class="ctl" id="bk-run-all">Back up all servers now</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 id="passwords">🔑 Game-server passwords</h3>
+    <div class="alerts-form">
+      <p class="muted" id="pw-status" style="font-size:.82rem"></p>
+      <label title="The password your friends type to join. The same one is used for every game that has a join password. Leave blank to keep the current one.">Join password — give this to your friends <input type="password" id="pw-join" placeholder="leave blank to keep current" autocomplete="new-password"></label>
+      <label title="Keep this one to yourself. It makes you an admin inside the games, and the dashboard uses it to control the servers (the games call this RCON). Leave blank to keep the current one.">Admin password — keep this private <input type="password" id="pw-admin" placeholder="leave blank to keep current" autocomplete="new-password"></label>
+      <p class="muted" style="font-size:.76rem">Allowed: letters, digits, <code>!@#%^&amp;*()_+-=:.,</code> — no spaces, quotes, <code>$</code>, <code>`</code> or <code>\</code> (they'd break the launch scripts). Changes apply on the next <b>restart</b> of each server. Satisfactory's password is set in its own in-game Server Manager.</p>
+      <div class="alerts-btns"><button class="btn" id="pw-save">Save passwords</button></div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 id="alerts">🔔 Alerts</h3>
+    <div class="alerts-form">
+      <label title="Get a message when a server goes down or a backup fails. Discord posts into a channel; ntfy sends a free push notification to your phone.">Send alerts to
+        <select id="al-channel">
+          <option value="none">Off</option>
+          <option value="discord">A Discord channel</option>
+          <option value="ntfy">My phone (ntfy app)</option>
+          <option value="webhook">Another service (webhook)</option>
+        </select>
+      </label>
+      <label title="Discord: in the channel's settings choose Integrations → Webhooks → New Webhook → Copy URL. ntfy: the topic address you subscribed to in the app, e.g. https://ntfy.sh/my-secret-topic.">The web address your alert service gave you
+        <input type="text" id="al-target" placeholder="https://…" autocomplete="off"></label>
+      <label class="ck"><input type="checkbox" id="al-recovery"> alert on recovery</label>
+      <label class="ck"><input type="checkbox" id="al-unreachable"> alert when running-but-unreachable</label>
+      <label class="ck"><input type="checkbox" id="al-disabled"> alert even for disabled (parked) servers</label>
+      <div class="alerts-btns">
+        <button class="btn" id="al-save">Save</button>
+        <button class="ctl" id="al-test">Save &amp; send test</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 id="cert">🔒 Trusted certificate</h3>
+    <div class="alerts-form">
+      <p class="muted" id="cert-status" style="font-size:.85rem"></p>
+      <div id="cert-form">
+        <p class="muted" style="font-size:.82rem">Right now browsers warn that this site is “not private”, because its security certificate
+          was made by this computer itself. A free certificate from Let's Encrypt removes the warning. You need two things first:</p>
+        <ol class="muted" style="font-size:.82rem;margin:0 0 .6rem 1.1rem;padding:0;line-height:1.5">
+          <li><b>A name for this dashboard</b> — a web address that leads to your home, like <i>mygames.example.net</i>.
+            Free services such as No-IP or DuckDNS give you one.</li>
+          <li><b>One extra rule on your router</b>: send internet port <b>80</b> (TCP) to this computer
+            (<code id="cert-lan"></code>), port <b id="cert-port">8080</b>. Let's Encrypt uses it to check the name really is yours,
+            now and each time the certificate renews — so leave the rule in place.</li>
+        </ol>
+        <label>The name people use to reach this dashboard <input type="text" id="cert-domain" placeholder="mygames.example.net" autocomplete="off"></label>
+        <label title="Let's Encrypt emails you only if the certificate is about to expire and couldn't renew.">Your email — optional <input type="text" id="cert-email" placeholder="you@example.com" autocomplete="off"></label>
+        <label class="ck"><input type="checkbox" id="cert-agree"> I agree to <a id="cert-terms" href="#" target="_blank" rel="noopener noreferrer">Let's Encrypt's terms of service</a></label>
+        <div class="alerts-btns"><button class="btn" id="cert-go">Get a trusted certificate</button></div>
+      </div>
+      <p class="muted" id="cert-job" style="font-size:.85rem" hidden></p>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3>🔌 Port ranges for new servers (advanced)</h3>
+    <div class="alerts-form">
+      <p class="muted" style="font-size:.78rem">Optional. When set, <b>new</b> servers can draw ports from these ranges (via the "Use Port Pool" checkbox when adding). Leave a row blank to use each game's defaults. Existing servers keep their ports.</p>
+      <label>Game ports (UDP — forward on router)
+        <span class="pp-row"><input type="number" id="pp-game-lo" placeholder="low" min="1" max="65535"> – <input type="number" id="pp-game-hi" placeholder="high" min="1" max="65535"></span></label>
+      <label>Query ports (UDP — forward on router)
+        <span class="pp-row"><input type="number" id="pp-query-lo" placeholder="low" min="1" max="65535"> – <input type="number" id="pp-query-hi" placeholder="high" min="1" max="65535"></span></label>
+      <label>Admin console (RCON) ports (TCP — this computer only, never forward)
+        <span class="pp-row"><input type="number" id="pp-rcon-lo" placeholder="low" min="1" max="65535"> – <input type="number" id="pp-rcon-hi" placeholder="high" min="1" max="65535"></span></label>
+      <div class="alerts-btns"><button class="btn" id="pp-save">Save</button></div>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script nonce="{{ csp_nonce }}">gamedash.initSettings();</script>
+{% endblock %}

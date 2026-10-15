@@ -1,0 +1,15 @@
+[Unit]
+Description=gamedash: weekly OS maintenance window (daytime, clear of play hours)
+
+[Timer]
+# Wednesday 10:00 local — deliberately mid-morning. Observed play sessions on
+# this box are late-night (~01:00-04:00), so this is as far from them as a
+# daytime slot gets. The script still refuses to run if anyone is online.
+OnCalendar=Wed *-*-* 10:00:00
+RandomizedDelaySec=900
+# NOT Persistent: if the box was off at 10:00 we do NOT want the fleet stopped
+# and rebooted at whatever random time it next boots. Just wait for next week.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

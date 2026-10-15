@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Backups · GameDash{% endblock %}
+{% block content %}
+  <meta name="csrf" content="{{ csrf }}">
+  <div id="toast" class="toast" hidden></div>
+  <div class="page-head">
+    <h2 class="page-title">💾 Backups</h2>
+    <button class="ctl" id="bk-run-all">Back up all servers now</button>
+  </div>
+  <p class="muted" style="font-size:.82rem">Create, restore, download, or delete save backups per server.
+    Daily auto-backups run at 05:00; retention is per server (set with “keep”). Restore stops the server,
+    snapshots the current save first, then swaps the backup in.</p>
+  <div class="bk-servers">
+    {% for v in snap.servers.values() %}
+      <section class="bk-server card" id="bk-{{ v.key }}" data-key="{{ v.key }}" data-kind="{{ v.kind }}">
+        <h3><span class="dot {{ 'on' if v.online else 'off' }}"></span>{{ v.name }}</h3>
+        <div class="bk-controls">
+          <button class="ctl go" data-bkact="create">Create backup</button>
+          <span class="bk-keep-wrap muted">keep
+            <input type="number" class="bk-keep" min="1" max="100">
+            <button class="ctl" data-bkact="keep">set</button></span>
+          <label class="ck bk-cluster-wrap" hidden><input type="checkbox" class="bk-cluster"> restore also overwrites the <b>shared cluster</b> (ALL ARK maps)</label>
+        </div>
+        <p class="muted bk-info"></p>
+        <div class="bk-list">Loading…</div>
+      </section>
+    {% endfor %}
+  </div>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script nonce="{{ csp_nonce }}">gamedash.initBackupsPage();</script>
+{% endblock %}

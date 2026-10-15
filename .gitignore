@@ -1,0 +1,22 @@
+# Python venv + caches
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# transient
+*.tmp
+*.partial
+
+# Runtime data lives in $GAMEDASH_HOME (default ~/.config/gamedash), NEVER in the
+# repo. These guards keep personal data out even if someone points the data root
+# here or drops files in by habit:
+/config.json
+/servers.json
+/secrets.conf
+/certs
+/logs
+/app/config.json
+/app/servers.json
+/app/certs
+/app/logs

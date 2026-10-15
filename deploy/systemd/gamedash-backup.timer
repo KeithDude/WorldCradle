@@ -1,0 +1,11 @@
+[Unit]
+Description=GameDash — daily save-backup timer (all servers)
+
+[Timer]
+# every day at 05:00 local; small jitter so it doesn't fire on the exact second
+OnCalendar=*-*-* 05:00:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

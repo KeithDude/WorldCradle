@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}GameDash{% endblock %}
+{% block content %}
+  <p class="summary"><b id="online-count">{{ online }}</b> of {{ total }} servers online</p>
+  <div class="grid" id="grid">
+    {% set ns = namespace(last='') %}
+    {% for s in servers %}
+      {% set game = s.name.split(' · ')[0] %}
+      {% if game != ns.last %}<h3 class="group-head">{{ game_titles.get(game, game) }}</h3>{% set ns.last = game %}{% endif %}
+      <div class="card {{ '' if s.online else 'off' }}">
+        {% if s.join_port %}
+          <button class="joinbtn" data-kind="{{ s.kind }}" data-name="{{ s.name }}" data-srvname="{{ s.server_name }}" data-port="{{ s.join_port }}">ⓘ How to join</button>
+        {% endif %}
+        <h2><span class="dot {{ 'on' if s.online else 'off' }}"></span>{{ s.name }}</h2>
+        {% if s.server_name %}<div class="srvname">🎮 {{ s.server_name }}</div>{% endif %}
+        {% if s.online %}
+          {% if s.players is not none %}
+            <div class="players">{{ s.players }}<span class="max">{% if s.max_players %} / {{ s.max_players }}{% endif %} players</span></div>
+          {% else %}
+            <div class="players unknown">online</div>
+          {% endif %}
+        {% else %}
+          <div class="statusline">offline</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="pubnote">🔒 All servers are password-protected by the administrator. Repeated failed
+    connection/login attempts may get your IP <b>banned</b>.</p>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script nonce="{{ csp_nonce }}">gamedash.pollPublic();</script>
+{% endblock %}
