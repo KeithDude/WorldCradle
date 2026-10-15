@@ -50,7 +50,7 @@ prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
 gamedash/
 ├── app/          all application code (Flask app, games/, templates/, static/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
-├── docs/         SUPPORTED_GAMES.md, DEVELOPMENT_LOG.md
+├── docs/         SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
 ├── install.sh    one-step installer (calls setup.sh)
 ├── setup.sh      GameDash-only setup
 └── requirements.txt
@@ -89,7 +89,7 @@ the dashboard then shows the server as running without a player count.
   code. The dashboard login password is a bcrypt hash in `config.json`.
 - **Never forward an admin console (RCON) or other control port** on your router —
   see [deploy/SETUP.md](deploy/SETUP.md), section 6.
-- Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
+- Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
 
 ## License
 

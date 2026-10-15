@@ -19,6 +19,14 @@ The list of games and their test status is kept separately in
   ARK servers (player list, world save) and on Minecraft (player list, save, messages, long
   multi-part replies, graceful stop) with identical results to the old library.
 - Remaining dependencies are BSD, MIT or Apache licensed.
+- **Pre-push checks** (`tools/prepush-check.sh`, run automatically before every push): clean tree,
+  code and pages load, no control port marked for forwarding, script syntax, no passwords or personal
+  data in the repository, no GPL dependencies, dashboard answers. Anything not verified on a running
+  server is raised with the maintainer before pushing.
+- Verified the ARK stop path through the new RCON client with a real restart: the world saved and the
+  map came back. ARK still exits with a crash (SIGABRT) right after saving, as it did before this
+  change — recorded in the roadmap.
+- Added [ROADMAP.md](ROADMAP.md), a living plan.
 
 ## 2026-10-14 — Documentation, port safety, clearer figures
 
