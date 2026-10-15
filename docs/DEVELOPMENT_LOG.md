@@ -9,6 +9,16 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Installer checks the computer first
+
+- `install.sh` now checks, before installing anything: operating system (Ubuntu 22.04+ / Debian 12+),
+  64-bit Intel/AMD processor and AVX, memory, free disk space, background services (systemd for the
+  user), whether port 8443 is free, and internet access. Each result is one plain line (✓ / ⚠ / ✗);
+  any ✗ stops the install with the reason (`--force` overrides). Tested here (all ✓) and with
+  stand-in tools simulating an ARM processor, a full disk, no systemd and a busy port.
+- Roadmap: a *Packaging* plan (a `.deb` on GitHub Releases → a GameDash apt repository → possibly a
+  Launchpad PPA).
+
 ## 2026-10-15 — Patreon support link
 
 - The "Support the developer on Patreon" link (https://www.patreon.com/KeithDude) is switched on in

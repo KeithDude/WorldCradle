@@ -5,6 +5,7 @@
 #   bash install.sh --ask      ask before each optional extra (Java, Wine, fail2ban)
 #   bash install.sh --minimal  skip the optional extras (add them later by running it again)
 #   bash install.sh --check    show what would be done, change nothing
+#   bash install.sh --force    install even if the computer checks fail
 #
 # What it does, in order:
 #   1. installs the system packages GameDash and the game servers need
@@ -24,7 +25,8 @@ for arg in "$@"; do
         --ask)    YES=0 ;;
         --minimal) MINIMAL=1 ;;
         --check)  CHECK=1 ;;
-        -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --force)  ;;      # handled by the checks below
+        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
@@ -45,11 +47,78 @@ if [ "$(id -u)" = 0 ]; then
     echo "It will ask for your password itself when it needs to install system packages."
     exit 1
 fi
-if ! command -v apt-get >/dev/null 2>&1; then
-    echo "This installer supports Ubuntu and Debian (it uses 'apt')."
-    echo "On another Linux, install the packages listed in deploy/SETUP.md, then run ./setup.sh"
-    exit 1
-fi
+
+# --- 0. Can this computer run GameDash? -----------------------------------------
+# Checked before anything is installed. ✗ stops the install (--force to go ahead anyway);
+# ⚠ is a warning and the install continues.
+FORCE=0; for arg in "$@"; do [ "$arg" = "--force" ] && FORCE=1; done
+PRE_FAIL=0
+pre_ok()   { printf '   \033[32m✓\033[0m %s\n' "$*"; }
+pre_warn() { printf '   \033[33m⚠\033[0m %s\n' "$*"; }
+pre_bad()  { printf '   \033[31m✗\033[0m %s\n' "$*"; PRE_FAIL=1; }
+preflight() {
+    say "Checking this computer"
+    # operating system — the installer uses apt (Ubuntu / Debian)
+    local id="" ver="" name=""
+    [ -r /etc/os-release ] && . /etc/os-release && id="${ID:-}" ver="${VERSION_ID:-}" name="${PRETTY_NAME:-}"
+    if ! command -v apt-get >/dev/null 2>&1; then
+        pre_bad "This installer needs Ubuntu or Debian (it uses 'apt'). On another Linux, install the packages listed in deploy/SETUP.md, then run ./setup.sh"
+    elif { [ "$id" = ubuntu ] && [ "${ver%%.*}" -ge 22 ] 2>/dev/null; } || { [ "$id" = debian ] && [ "${ver%%.*}" -ge 12 ] 2>/dev/null; }; then
+        pre_ok "Operating system: ${name:-$id $ver}"
+    else
+        pre_warn "Operating system: ${name:-unknown}. GameDash is made for Ubuntu 22.04+ or Debian 12+; it may still work."
+    fi
+    # processor — game servers are built for 64-bit Intel/AMD processors
+    local arch; arch="$(uname -m)"
+    if [ "$arch" = x86_64 ]; then
+        pre_ok "Processor: 64-bit Intel/AMD ($(nproc) cores)"
+    else
+        pre_bad "Processor: $arch. Game servers are made for 64-bit Intel/AMD processors (x86_64), so they won't run on this computer (e.g. a Raspberry Pi)."
+    fi
+    if [ "$arch" = x86_64 ] && ! grep -qw avx /proc/cpuinfo 2>/dev/null; then
+        pre_warn "This processor doesn't offer AVX instructions, which some newer game servers need. If this is a virtual machine, set its CPU type to \"host\" in the hypervisor."
+    fi
+    # memory
+    local mem_gb; mem_gb=$(awk '/MemTotal/ {printf "%d", $2/1048576 + 0.5}' /proc/meminfo)
+    if [ "$mem_gb" -ge 8 ]; then pre_ok "Memory: ${mem_gb} GB"
+    elif [ "$mem_gb" -ge 4 ]; then pre_warn "Memory: ${mem_gb} GB. Enough for GameDash and a small game server; most game servers want 4-16 GB each."
+    else pre_bad "Memory: ${mem_gb} GB. Game servers need at least 4 GB; most want much more."; fi
+    # disk space where the games will be installed (the home folder)
+    local free_gb; free_gb=$(df -Pk "$HOME" | awk 'NR==2 {printf "%d", $4/1048576}')
+    if [ "$free_gb" -ge 50 ]; then pre_ok "Free disk space: ${free_gb} GB"
+    elif [ "$free_gb" -ge 15 ]; then pre_warn "Free disk space: ${free_gb} GB. Enough to start; many game servers take 5-30 GB each."
+    else pre_bad "Free disk space: ${free_gb} GB. Please free up space first — GameDash and one game server need at least 15 GB."; fi
+    # background services for this user (GameDash runs as one)
+    if systemctl --user show-environment >/dev/null 2>&1; then
+        pre_ok "Background services: available"
+    else
+        pre_bad "Background services (systemd) aren't available for your account here — GameDash needs them. On WSL, enable systemd first; otherwise log in normally (not through 'su') and try again."
+    fi
+    # the dashboard's port must be free (unless GameDash itself already uses it)
+    if command -v ss >/dev/null 2>&1 && ss -tlnH 2>/dev/null | awk '{print $4}' | grep -qE '[:.]8443$' \
+       && ! systemctl --user is-active --quiet gamedash 2>/dev/null; then
+        pre_bad "Port 8443, which the dashboard uses, is already taken by another program on this computer."
+    else
+        pre_ok "Dashboard port 8443: free"
+    fi
+    # internet — needed to download packages and game servers
+    if curl -fsS -m 10 -o /dev/null https://steamcdn-a.akamaihd.net/ 2>/dev/null || curl -fsS -m 10 -o /dev/null https://github.com/ 2>/dev/null; then
+        pre_ok "Internet connection: working"
+    else
+        pre_warn "Couldn't reach the internet. Packages and game servers are downloaded during setup — check the connection."
+    fi
+    if [ "$PRE_FAIL" = 1 ]; then
+        echo
+        if [ "$FORCE" = 1 ] || [ "$CHECK" = 1 ]; then
+            if [ "$CHECK" = 1 ]; then note "(--check: carrying on to show the rest; nothing is changed.)"; else note "Continuing anyway because of --force."; fi
+        else
+            note "GameDash can't be installed on this computer as it is — see the ✗ lines above."
+            note "(To try anyway: bash install.sh --force)"
+            exit 1
+        fi
+    fi
+}
+preflight
 
 # --- 1. System packages -------------------------------------------------------
 say "Step 1 of 4 — system packages"

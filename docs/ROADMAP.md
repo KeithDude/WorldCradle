@@ -40,9 +40,12 @@ Last updated: 2026-10-15
       installer. *(2026-10-15 — works once the repository is public)*
 - [ ] **Fresh-machine test** on a clean Ubuntu 24.04 and 26.04 (not the maintainer's machine),
       following only the README, timed, with every confusing moment written down and fixed.
-- [ ] Installer checks before it starts: supported Linux version, enough disk space, enough memory,
-      a 64-bit x86 processor with AVX (some servers need it), and explains anything missing in
-      plain words.
+- [x] Installer checks before it starts: operating system, 64-bit Intel/AMD processor (and AVX),
+      memory, disk space, background services (systemd), the dashboard's port, internet — each
+      explained in plain words; serious problems stop the install (`--force` to go ahead anyway).
+      *(2026-10-15)*
+- [ ] **Fresh-machine test** needs a clean Ubuntu machine or VM to run on (the maintainer's
+      machine can't be used — everything is already installed there).
 - [ ] The installer's last screen: the address to open, the setup code, and a QR code for opening it
       on a phone.
 - [ ] A short **Getting started** guide with screenshots (install → first server → friends join).
@@ -130,6 +133,27 @@ loading its save after a restart.
 
 ---
 
+## Packaging — making GameDash a "real" package
+
+Goal: install and update GameDash like any other program, with no scripts to download.
+
+1. [ ] **`.deb` package on GitHub Releases** — `sudo apt install ./gamedash_0.2.0_amd64.deb`.
+       Bundles GameDash and its Python environment, declares the system packages it needs
+       (apt installs them automatically), adds the `gamedash` command, and sets up the service on
+       first run for the user who runs it. Built automatically for each release.
+2. [ ] **GameDash apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
+       `apt install gamedash` after adding the repository once, and updates arrive with the
+       computer's normal system updates (`apt upgrade`).
+3. [ ] **Launchpad PPA** (`sudo add-apt-repository ppa:…/gamedash`) — the most familiar route for
+       Ubuntu users; Launchpad builds from source, which takes more packaging work.
+
+Things a package has to get right: GameDash runs as a *user* service (not as root), its data lives in
+the user's home folder and must survive upgrades and removal, the `gamedash update` command and the
+package manager must not fight over updates, and the noncommercial licence must be shown.
+Not a good fit: Snap and Flatpak (sandboxed apps can't manage background services and game servers
+the way GameDash needs). A Docker image is possible later for people who prefer containers, but game
+servers in containers add networking and storage steps that work against the "easy for anyone" goal.
+
 ## Open problems (need research or outside help)
 
 - [ ] **RuneScape: Dragonwilds admin password** — the developer calls it mandatory, but the server
@@ -151,7 +175,7 @@ loading its save after a restart.
 - [ ] Euro Truck Simulator 2 / American Truck Simulator: an upload step for the files the game client
       exports.
 - [ ] ARK automatic mod downloads done the documented way (Game.ini `[ModInstaller]`).
-- [ ] A Debian/Ubuntu package (`apt install gamedash`) once installs are stable.
+- [ ] **A real package** — see *Packaging* below.
 - [ ] Several machines in one dashboard (one GameDash, servers on more than one computer).
 - [ ] Translations of the dashboard.
 
