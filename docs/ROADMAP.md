@@ -45,8 +45,8 @@ Last updated: 2026-10-15
       memory, disk space, background services (systemd), the dashboard's port, internet — each
       explained in plain words; serious problems stop the install (`--force` to go ahead anyway).
       *(2026-10-15)*
-- [ ] The installer's last screen: the address to open, the setup code, and a QR code for opening it
-      on a phone.
+- [x] The installer's last screen: the address to open, the setup code, and a QR code for opening it
+      on a phone (also `gamedash qr`). *(2026-10-15)*
 - [ ] A short **Getting started** guide with screenshots (install → first server → friends join).
 
 ### Command line (`gamedash …`)

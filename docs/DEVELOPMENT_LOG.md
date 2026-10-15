@@ -9,6 +9,12 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — QR code for phones
+
+- The installer's last screen and the new `gamedash qr` command show a QR code of the dashboard's
+  home-network address, so it can be opened on a phone by pointing the camera at it. Uses `segno`
+  (BSD). Checked by decoding the code with an independent reader (zxing-cpp).
+
 ## 2026-10-15 — Installer checks the computer first
 
 - `install.sh` now checks, before installing anything: operating system (Ubuntu 22.04+ / Debian 12+),

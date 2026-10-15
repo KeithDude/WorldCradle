@@ -203,7 +203,10 @@ cat <<EOF
 
      The browser will warn that the connection is "not private". That is expected
      the first time: choose "Advanced", then "Proceed" / "Accept the risk".
+
+     On a phone: scan this code with the camera (phone on the same Wi-Fi).
 EOF
+"$REPO/venv/bin/python" "$REPO/app/cli.py" qr 2>/dev/null | tail -n +2 | sed 's/^/     /' || true
 if [ -n "$CODE" ]; then
     cat <<EOF
 

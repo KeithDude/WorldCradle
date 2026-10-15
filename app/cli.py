@@ -5,6 +5,7 @@ Usage: gamedash <command> [options]
 
   status                     Is the dashboard running, where to open it, and each server's state
   address                    The web addresses to open the dashboard at
+  qr                         A QR code to open the dashboard on a phone
   reset-password             Choose a new dashboard admin password (signs everyone out)
   setup-code                 A one-time code for choosing the first password in the browser
   start | stop | restart     Start, stop or restart the dashboard itself
@@ -90,6 +91,21 @@ def cmd_address(_args) -> int:
     if host:
         _say(f"  from anywhere:          https://{host}:{port}/   (if you forwarded port {port})")
     _say(f"  on this computer:       https://localhost:{port}/")
+    return 0
+
+
+def cmd_qr(_args) -> int:
+    """A QR code of the home-network address, to open the dashboard on a phone."""
+    ip = _lan_ip()
+    if not ip:
+        return _err("couldn't find this computer's home-network address")
+    url = f"https://{ip}:{_port()}/"
+    try:
+        import segno
+    except ImportError:
+        return _err("the QR code needs the 'segno' package — run setup.sh again")
+    _say(f"Scan with a phone on your home network to open {url}")
+    segno.make(url, error="m").terminal(compact=True)
     return 0
 
 
@@ -267,7 +283,7 @@ def cmd_help(_args) -> int:
 
 
 COMMANDS = {
-    "status": cmd_status, "address": cmd_address, "url": cmd_address,
+    "status": cmd_status, "address": cmd_address, "url": cmd_address, "qr": cmd_qr,
     "resetpassword": cmd_reset_password, "setpassword": cmd_reset_password, "password": cmd_reset_password,
     "setupcode": cmd_setup_code,
     "start": lambda a: _service("start"), "stop": lambda a: _service("stop"),
