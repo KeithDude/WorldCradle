@@ -105,6 +105,12 @@ the dashboard then shows the server as running without a player count.
   see [deploy/SETUP.md](deploy/SETUP.md), section 6.
 - Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
 
+## Support the project
+
+GameDash is free for noncommercial use. If it's useful to you, you can support its development on
+**[Patreon](https://www.patreon.com/KeithDude)**. The dashboard shows the same link at the bottom of
+each page; it only opens the Patreon page and nothing in GameDash depends on it.
+
 ## License
 
 GameDash is released under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.

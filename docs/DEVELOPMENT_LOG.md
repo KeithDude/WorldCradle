@@ -9,6 +9,12 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Patreon support link
+
+- The "Support the developer on Patreon" link (https://www.patreon.com/KeithDude) is switched on in
+  the dashboard footer; the README gains a "Support the project" section and GitHub a *Sponsor*
+  button via `.github/FUNDING.yml`.
+
 ## 2026-10-15 — Dashboard outage: connection exhaustion fixed
 
 - **What happened:** the live dashboard stopped answering while its service still showed "running".

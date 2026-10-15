@@ -66,11 +66,8 @@ Last updated: 2026-10-15
 - [ ] `CONTRIBUTING.md` (how to report tests and send changes, what the licence means for
       contributors), `SECURITY.md` (how to report a vulnerability privately).
 - [ ] Screenshots in the README.
-- [ ] **Support the developer (Patreon).** The dashboard footer link is built and stays hidden until
-      the Patreon address is set in `app/project.py` (`SUPPORT_URL`). Still to do once the address is
-      known: a "Support the project" section in the README and a GitHub *Sponsor* button
-      (`.github/FUNDING.yml`). The link only ever opens the Patreon page — no tracking, nothing in
-      the dashboard depends on it.
+- [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
+      section in the README, and a GitHub *Sponsor* button (`.github/FUNDING.yml`). *(2026-10-15)*
 - [ ] Version numbers and release notes (a git tag per release; the dashboard and `gamedash version`
       show it).
 
