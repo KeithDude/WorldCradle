@@ -74,7 +74,7 @@ $GAMEDASH_HOME            (default ~/.config/gamedash)
 The `gamedash` command covers the everyday jobs (`gamedash help` lists them all):
 ```
 gamedash status             is it running, where to open it, and each server's state
-gamedash reset-password     choose a new dashboard password (also: gamedash -resetpassword)
+gamedash reset-password     choose a new dashboard password
 gamedash restart            restart the dashboard
 gamedash logs               the dashboard's recent log
 gamedash servers            list the game servers

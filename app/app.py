@@ -75,8 +75,11 @@ def _cert_trusted() -> bool:
 
 @app.context_processor
 def _inject_nonce():
+    import project
+    support = project.SUPPORT_URL if re.match(r"^https://[^\s\"'<>]+$", project.SUPPORT_URL or "") else ""
     return {"csp_nonce": getattr(g, "csp_nonce", ""), "game_titles": games.titles(),
-            "cert_trusted": _cert_trusted()}
+            "cert_trusted": _cert_trusted(), "project_url": project.PROJECT_URL,
+            "support_url": support, "support_label": project.SUPPORT_LABEL}
 
 
 @app.after_request

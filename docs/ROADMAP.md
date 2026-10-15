@@ -48,8 +48,8 @@ Last updated: 2026-10-15
 - [ ] A short **Getting started** guide with screenshots (install → first server → friends join).
 
 ### Command line (`gamedash …`)
-- [x] `gamedash` command installed for the owner: `status`, `address`, `reset-password`
-      (also `-resetpassword`), `setup-code`, `start` / `stop` / `restart`, `logs`, `servers`,
+- [x] `gamedash` command installed for the owner: `status`, `address`, `reset-password`,
+      `setup-code`, `start` / `stop` / `restart`, `logs`, `servers`,
       `server start|stop|restart|logs <server>` (asks first when players are online),
       `backup <server|all>`, `check`, `version`, `help`. *(2026-10-15)*
 - [ ] `gamedash update` — update GameDash itself safely (download, run the checks, restart; roll
@@ -66,6 +66,11 @@ Last updated: 2026-10-15
 - [ ] `CONTRIBUTING.md` (how to report tests and send changes, what the licence means for
       contributors), `SECURITY.md` (how to report a vulnerability privately).
 - [ ] Screenshots in the README.
+- [ ] **Support the developer (Patreon).** The dashboard footer link is built and stays hidden until
+      the Patreon address is set in `app/project.py` (`SUPPORT_URL`). Still to do once the address is
+      known: a "Support the project" section in the README and a GitHub *Sponsor* button
+      (`.github/FUNDING.yml`). The link only ever opens the Patreon page — no tracking, nothing in
+      the dashboard depends on it.
 - [ ] Version numbers and release notes (a git tag per release; the dashboard and `gamedash version`
       show it).
 

@@ -332,3 +332,8 @@ label.ck.eula input { margin-top: .2rem; flex: none; }
 label.ck.eula a, .eula-note a, .game-row .g-need a, #games-terms a { color: var(--accent, #58a6ff); text-decoration: underline; }
 .reach-v.bad { border-color: #f85149; }
 
+
+/* footer: project link and the optional "support the developer" link */
+.foot-links { margin-top: .4rem; }
+.foot-links a { color: var(--muted); text-decoration: underline; }
+.foot-links a.support { color: #db61a2; }

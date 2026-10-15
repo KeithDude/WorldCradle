@@ -21,8 +21,7 @@ Usage: gamedash <command> [options]
   version                    Which version of GameDash this is
   help                       This list
 
-Server names are the short keys shown by "gamedash servers". Options may also be written
-the old way: "gamedash -resetpassword" works the same as "gamedash reset-password".
+Server names are the short keys shown by "gamedash servers".
 """
 from __future__ import annotations
 
@@ -284,7 +283,7 @@ COMMANDS = {
 def main(argv: list[str]) -> int:
     if not argv:
         return cmd_help([])
-    # "-resetpassword", "--reset-password", "reset_password" and "reset-password" all work
+    # forgiving about spelling: "reset-password", "reset_password" and "resetpassword" all work
     name = argv[0].lstrip("-").replace("-", "").replace("_", "").lower()
     fn = COMMANDS.get(name)
     if fn is None:

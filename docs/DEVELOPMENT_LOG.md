@@ -12,7 +12,7 @@ The list of games and their test status is kept separately in
 ## 2026-10-15 — Command line, simpler install, accurate CPU figures
 
 - **`gamedash` command** (`bin/gamedash`, installed to `~/.local/bin` by setup): status, address,
-  reset-password (`-resetpassword` also works), setup-code, start/stop/restart of the dashboard,
+  reset-password, setup-code, start/stop/restart of the dashboard,
   logs, servers, `server start|stop|restart|logs <server>` (asks first when players are online),
   backup, check, version, help. Reset-password tested end to end on a copy of the settings.
 - **Installer:** no questions by default (it installs the optional extras too; `--ask` and
@@ -21,6 +21,8 @@ The list of games and their test status is kept separately in
   its share of the whole computer, and its RAM is the total of all its processes, measured from the
   server's systemd control group (game servers are often several processes, e.g. under Wine). On the
   live machine the six servers' figures added up to about 6% against 8% total CPU usage.
+- **Footer:** a link to the project, and an optional "Support the developer on Patreon" link that
+  appears once `SUPPORT_URL` is set in `app/project.py` (only plain https addresses are accepted).
 - Roadmap expanded (principles, milestones, install, command line, testing, dashboard, security);
   a C++ rewrite was considered and judged not worthwhile (see the roadmap).
 
