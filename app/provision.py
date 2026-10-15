@@ -558,5 +558,12 @@ def destroy(key: str) -> dict:
         left = [x["key"] for x in store.load() if x.get("slot_group") == group]
         if len(left) == 1:
             store.update(left[0], slot_group="")
-    audit_log.info("server REMOVED key=%s unit=%s", key, unit)
-    return {"ok": True, "message": f"Removed '{e.get('name', key)}'. (Save data, if any, left on disk.)"}
+    # A Windows-only server's private Wine environment (~1 GB) holds no saves — remove it too.
+    extra = ""
+    from games import common
+    prefix = common.wine_prefix(e.get("kind", ""), key)
+    if e.get("kind") and os.path.basename(prefix).startswith(".wine-gd-") and os.path.isdir(prefix):
+        shutil.rmtree(prefix, ignore_errors=True)
+        extra = " Its Wine environment was deleted."
+    audit_log.info("server REMOVED key=%s unit=%s%s", key, unit, " (wine prefix deleted)" if extra else "")
+    return {"ok": True, "message": f"Removed '{e.get('name', key)}'.{extra} (Save data, if any, left on disk.)"}

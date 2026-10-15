@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # GameDash — get and install in one step.
 #
-#   curl -fsSL https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+#   (or: curl -fsSL …/get.sh | bash — a fresh Ubuntu desktop has wget but not curl)
 #
 # Downloads GameDash into ~/gamedash (or updates it if it is already there) and runs the
 # installer. Extra words are passed to install.sh, e.g.  ... | bash -s -- --minimal

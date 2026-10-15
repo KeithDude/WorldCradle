@@ -31,7 +31,7 @@ if [ ! -x "$VENV/bin/python" ]; then
     fi
 fi
 "$VENV/bin/python" -m pip install --upgrade pip >/dev/null
-"$VENV/bin/pip" install -r "$REPO/requirements.txt"
+"$VENV/bin/pip" install -q -r "$REPO/requirements.txt" && echo "Python libraries ready."
 
 # --- 2. Data root -------------------------------------------------------------
 say "Data root: $DATA"
@@ -96,11 +96,12 @@ if [ "${1:-}" = "--fail2ban" ]; then
     sudo systemctl enable --now fail2ban && sudo systemctl restart fail2ban
 fi
 
+# When run by install.sh, its own final screen gives the address and setup code — don't repeat it.
+[ "${GAMEDASH_FROM_INSTALLER:-0}" = 1 ] && exit 0
 say "Done"
 IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 echo "GameDash is running: https://${IP:-this-computer}:8443/   (the browser will warn about the certificate the first time — that is expected)"
 if GAMEDASH_HOME="$DATA" "$VENV/bin/python" -c "import sys; sys.path.insert(0,'$APP'); import config; sys.exit(0 if config.needs_setup() else 1)" 2>/dev/null; then
-    echo "First visit: you'll be asked for a one-time setup code. Get one with:"
-    echo "    GAMEDASH_HOME=$DATA $VENV/bin/python $APP/manage.py setup-code"
+    echo "First visit: you'll be asked for a one-time setup code. Get one with:  gamedash setup-code"
 fi
 echo "Then follow the Getting started checklist on the dashboard."

@@ -65,6 +65,9 @@ preflight() {
         pre_bad "This installer needs Ubuntu or Debian (it uses 'apt'). On another Linux, install the packages listed in deploy/SETUP.md, then run ./setup.sh"
     elif { [ "$id" = ubuntu ] && [ "${ver%%.*}" -ge 22 ] 2>/dev/null; } || { [ "$id" = debian ] && [ "${ver%%.*}" -ge 12 ] 2>/dev/null; }; then
         pre_ok "Operating system: ${name:-$id $ver}"
+        if { [ "$id" = ubuntu ] && [ "${ver%%.*}" -lt 24 ]; } || { [ "$id" = debian ] && [ "${ver%%.*}" -lt 13 ]; }; then
+            pre_warn "This version offers an older Wine (6.0). Windows-only game servers were tested with Wine 10; some may not work with 6.0 (V Rising does). Linux game servers are unaffected. For the Windows-only ones, Ubuntu 24.04 or newer is the safer choice."
+        fi
     else
         pre_warn "Operating system: ${name:-unknown}. GameDash is made for Ubuntu 22.04+ or Debian 12+; it may still work."
     fi
@@ -102,7 +105,17 @@ preflight() {
         pre_ok "Dashboard port 8443: free"
     fi
     # internet — needed to download packages and game servers
-    if curl -fsS -m 10 -o /dev/null https://steamcdn-a.akamaihd.net/ 2>/dev/null || curl -fsS -m 10 -o /dev/null https://github.com/ 2>/dev/null; then
+    if python3 - <<'NET' 2>/dev/null
+import sys, urllib.request
+for url in ("https://github.com/", "https://steamcdn-a.akamaihd.net/", "https://archive.ubuntu.com/"):
+    try:
+        urllib.request.urlopen(url, timeout=10); sys.exit(0)
+    except Exception as e:   # an HTTP error page still proves the internet works
+        if getattr(e, "code", None):
+            sys.exit(0)
+sys.exit(1)
+NET
+    then
         pre_ok "Internet connection: working"
     else
         pre_warn "Couldn't reach the internet. Packages and game servers are downloaded during setup — check the connection."
@@ -119,6 +132,14 @@ preflight() {
     fi
 }
 preflight
+case "$REPO" in
+    "$HOME/Downloads"/*|/tmp/*)
+        note ""
+        note "⚠ GameDash will run from this folder: $REPO"
+        note "  Don't delete or move it later. (A tidier place is your home folder, e.g. ~/gamedash —"
+        note "  move the folder there now and run install.sh again from the new place, if you like.)"
+        ;;
+esac
 
 # --- 1. System packages -------------------------------------------------------
 say "Step 1 of 4 — system packages"
@@ -159,8 +180,21 @@ if [ "${#MISSING[@]}" -eq 0 ]; then
 else
     note "To install: ${MISSING[*]}"
     note "This needs your computer's admin password (the one you log in with)."
-    run sudo apt-get update
-    run sudo apt-get install -y "${MISSING[@]}"
+    if [ "$CHECK" = 1 ]; then
+        run sudo apt-get update
+        run sudo apt-get install -y "${MISSING[@]}"
+    else
+        # apt prints thousands of lines; keep them in a log and show progress instead
+        APTLOG="$(mktemp /tmp/gamedash-install-XXXXXX.log)"
+        sudo -v || { note "The admin password is needed to install the packages above."; exit 1; }
+        note "Downloading and installing — this can take several minutes…"
+        if ! { sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING[@]}"; } >"$APTLOG" 2>&1; then
+            note "Installing the packages failed. The last lines of the log ($APTLOG):"
+            tail -n 15 "$APTLOG" | sed 's/^/     /'
+            exit 1
+        fi
+        note "Done. (Full details: $APTLOG)"
+    fi
 fi
 
 # --- 2. Keep running after logout / start at boot -----------------------------
@@ -182,6 +216,7 @@ fi
 
 # --- 3. GameDash itself --------------------------------------------------------
 say "Step 3 of 4 — GameDash"
+export GAMEDASH_FROM_INSTALLER=1
 if [ "$WANT_F2B" = 1 ]; then run "$REPO/setup.sh" --fail2ban; else run "$REPO/setup.sh"; fi
 
 # --- 4. Where to go next -------------------------------------------------------

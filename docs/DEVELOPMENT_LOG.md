@@ -9,6 +9,30 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — First fresh-machine test (Ubuntu 22.04 desktop VM)
+
+Installed from a downloaded copy on a clean Ubuntu 22.04.5 desktop VM (8 cores, 16 GB, 40 GB disk).
+The install took 1 min 45 s; first-visit setup with the code, sign-in, the dashboard, installing,
+running, messaging, saving, stopping and removing Terraria (Linux) and V Rising (Windows-only, under
+Wine 6.0) all worked, as did the `gamedash` command, the QR code and the CPU/RAM figures.
+Problems found and fixed:
+- A fresh Ubuntu desktop has **no curl**: the README's `curl … | bash` would fail → the README now
+  uses `wget -qO- … | bash` (curl still mentioned), and get.sh says so.
+- The installer's **internet check used curl** and so reported "no internet" on such a machine →
+  now uses Python, which every Ubuntu has.
+- A downloaded copy unpacks to `GameDash-main`, not `gamedash`, and GameDash then runs from wherever
+  it was unpacked → the README explains moving it to the home folder, and the installer warns when
+  it is run from Downloads or /tmp.
+- **Old Wine on 22.04** (6.0; our Windows-only servers were tested with Wine 10) → the installer
+  warns; V Rising was confirmed to work with 6.0, so the warning says "some may not work".
+- apt printed ~1,900 lines → the installer shows "Downloading and installing…" / "Done" and keeps
+  the full output in a log file (shown only if something fails).
+- setup.sh repeated an outdated, very long "get a setup code" command right before the installer's
+  own final screen → removed when run from the installer; standalone it says `gamedash setup-code`.
+  pip's ~35 "Requirement already satisfied" lines → one "Python libraries ready." line.
+- **Removing a Windows-only server left its Wine environment** (~1 GB) behind → it is now deleted
+  with the server (saves are still left alone).
+
 ## 2026-10-15 — `gamedash update`
 
 - Updates GameDash from its repository: lists what's new, asks (or `--yes`), fast-forwards the code,

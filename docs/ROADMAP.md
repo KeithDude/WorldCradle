@@ -38,9 +38,12 @@ Last updated: 2026-10-15
       to choose extras, `--minimal` to skip them. *(2026-10-15)*
 - [x] One-line "get and install": `curl -fsSL …/get.sh | bash` downloads GameDash and runs the
       installer. *(2026-10-15 — works once the repository is public)*
-- [ ] **Fresh-machine test** on a clean Ubuntu 24.04 and 26.04 (not the maintainer's machine),
-      following only the README, timed, with every confusing moment written down and fixed.
-      *Needs a clean machine or VM — the maintainer's machine already has everything installed.*
+- [x] **Fresh-machine test, Ubuntu 22.04 desktop** — full install in 1 min 45 s, first-visit setup,
+      sign-in, installing / running / removing a Linux game (Terraria) and a Windows-only one
+      (V Rising, under 22.04's Wine 6.0) all worked. Seven problems found and fixed (see the
+      development log). *(2026-10-15)*
+- [ ] Fresh-machine test on **Ubuntu 24.04** and **26.04**, and a Debian 12 / 13 run.
+- [ ] Repeat the fresh-machine test with the one-line installer once the repository is public.
 - [x] Installer checks before it starts: operating system, 64-bit Intel/AMD processor (and AVX),
       memory, disk space, background services (systemd), the dashboard's port, internet — each
       explained in plain words; serious problems stop the install (`--force` to go ahead anyway).

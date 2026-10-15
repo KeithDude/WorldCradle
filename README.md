@@ -36,13 +36,16 @@ full list and which games have been tested with real players.
   fail2ban; the launch-script editor is content-validated.
 
 ## Quick start
-One line (once the repository is public):
+One line in a terminal (once the repository is public):
 ```
-curl -fsSL https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+wget -qO- https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
 ```
-or, from a downloaded copy:
+This puts GameDash in `~/gamedash` and installs it. (`curl -fsSL … | bash` works too where curl is
+installed; a fresh Ubuntu desktop only has wget.)
+
+Or from a downloaded copy (GitHub → Code → Download ZIP): unpack it, move the folder to your home
+folder, open a terminal in it and run
 ```
-cd gamedash
 bash install.sh       # no questions; it only asks for your computer's password
 ```
 It prints the address to open and a one-time setup code. Open
