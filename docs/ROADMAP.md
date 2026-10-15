@@ -54,8 +54,9 @@ Last updated: 2026-10-15
       `setup-code`, `start` / `stop` / `restart`, `logs`, `servers`,
       `server start|stop|restart|logs <server>` (asks first when players are online),
       `backup <server|all>`, `check`, `version`, `help`. *(2026-10-15)*
-- [ ] `gamedash update` — update GameDash itself safely (download, run the checks, restart; roll
-      back if the new version doesn't start).
+- [x] `gamedash update` — update GameDash itself safely: shows what's new, downloads it, installs
+      libraries, checks the new version loads, restarts, and puts the old version back if anything
+      fails. *(2026-10-15)*
 - [ ] `gamedash backup list|restore <server> <backup>` from the terminal.
 - [ ] `gamedash unban <address>` — lift a fail2ban block after someone mistypes the password
       (needs the admin password, like any system change).

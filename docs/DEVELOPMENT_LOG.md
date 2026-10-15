@@ -9,6 +9,18 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — `gamedash update`
+
+- Updates GameDash from its repository: lists what's new, asks (or `--yes`), fast-forwards the code,
+  installs the Python libraries, checks the new version loads (web app, every game type, pages),
+  restarts the dashboard and waits for it to answer. If any step fails it resets to the previous
+  version, reinstalls its libraries and restarts it. Refuses when the copy has local edits or
+  commits that aren't published. Settings, passwords, servers and saves are never touched (they
+  live outside the code).
+- Tested in a sandbox (separate install, stand-in repository, throwaway dashboard on a spare port):
+  already up to date; a good update; a broken update (rolled back, dashboard kept answering); local
+  edits (refused). Not yet tested: a version that loads but then fails to start.
+
 ## 2026-10-15 — QR code for phones
 
 - The installer's last screen and the new `gamedash qr` command show a QR code of the dashboard's

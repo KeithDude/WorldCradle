@@ -80,6 +80,8 @@ gamedash logs               the dashboard's recent log
 gamedash servers            list the game servers
 gamedash server restart <server>
 gamedash backup all
+gamedash update             update GameDash itself (rolls back if the new version fails)
+gamedash qr                 a QR code to open the dashboard on a phone
 gamedash check              quick health check
 ```
 - Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `gamedash.log`.
