@@ -3,6 +3,7 @@
 
 Usage: gamedash <command> [options]
 
+  setup                      Set GameDash up for your account (after installing the package; safe to repeat)
   status                     Is the dashboard running, where to open it, and each server's state
   address                    The web addresses to open the dashboard at
   qr                         A QR code to open the dashboard on a phone
@@ -44,6 +45,10 @@ os.environ.setdefault("GAMEDASH_QUIET_LOG", "1")   # log lines still go to the l
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UNIT = os.environ.get("GAMEDASH_UNIT", "gamedash.service")   # overridable for testing
+DEFAULT_PORT = int(os.environ.get("GAMEDASH_PORT") or 8443)
+# Installed from the package: the program folder belongs to the system, and the package manager
+# installs new versions. Otherwise this is a git checkout that updates itself with git.
+PACKAGED = not os.access(REPO, os.W_OK)
 
 
 def _say(text: str = "") -> None:
@@ -69,9 +74,9 @@ def _port() -> int:
         out = _systemctl("cat", UNIT).stdout
         import re
         m = re.search(r"--bind\s+\S*:(\d+)", out) or re.search(r":(\d{4,5})\b", out)
-        return int(m.group(1)) if m else 8443
+        return int(m.group(1)) if m else DEFAULT_PORT
     except Exception:
-        return 8443
+        return DEFAULT_PORT
 
 
 def _lan_ip() -> str:
@@ -162,6 +167,67 @@ def cmd_setup_code(_args) -> int:
         return _err("an admin password is already set. To choose a new one, run: gamedash reset-password")
     _say("Open the dashboard in your browser and enter this one-time code:")
     _say(f"  {config.new_setup_code()}")
+    return 0
+
+
+def cmd_setup(args) -> int:
+    """Run setup.sh (normally started straight from the `gamedash` command, before Python)."""
+    os.execvp("bash", ["bash", os.path.join(REPO, "setup.sh"), *args])
+
+
+def cmd_welcome(args) -> int:
+    """The last screen of setup: where to open the dashboard and what to do first."""
+    import config
+    port = _port()
+    ip = _lan_ip()
+    _say()
+    _say("  GameDash is running.")
+    _say()
+    _say("  1. On any computer or phone on your home network, open a web browser and go to:")
+    _say()
+    _say(f"         https://{ip or 'this-computer'}:{port}/")
+    _say()
+    _say('     The browser will warn that the connection is "not private". That is expected')
+    _say('     the first time: choose "Advanced", then "Proceed" / "Accept the risk".')
+    if ip:
+        _say()
+        _say("     On a phone: scan this code with the camera (phone on the same Wi-Fi).")
+        try:
+            import io
+            import segno
+            out = io.StringIO()
+            segno.make(f"https://{ip}:{port}/", error="m").terminal(out=out, compact=True)
+            _say("\n".join("     " + line for line in out.getvalue().splitlines()))
+        except Exception:
+            pass
+    _say()
+    if config.needs_setup():
+        _say("  2. Enter this one-time setup code and choose your password:")
+        _say()
+        _say(f"         {config.new_setup_code()}")
+        _say()
+        _say("     (Lost it? Type:  gamedash setup-code)")
+    else:
+        _say("  2. Sign in with the admin password you already chose.")
+    _say()
+    _say('  3. Follow the "Getting started" checklist on the dashboard: install a game,')
+    _say("     add a server, and check that friends can connect.")
+    import registry
+    join = registry.load_secrets().get("GAME_SERVER_PASSWORD", "")
+    if join:
+        _say()
+        _say("  Your friends will need this password to join your game servers:")
+        _say()
+        _say(f"         {join}")
+        _say()
+        _say("     (Change it any time in the dashboard: Settings → Game passwords.")
+        _say("      To see it again later, type:  gamedash passwords)")
+    if "--firewall" in args:
+        _say()
+        _say("  Note: this computer's firewall (ufw) is on. Each game server's ports also have")
+        _say('  to be allowed through it. After adding a server, open "Can friends connect?" on')
+        _say("  its card for the list, then run for each port, e.g.:  sudo ufw allow 7777/udp")
+    _say()
     return 0
 
 
@@ -356,8 +422,8 @@ def _answers(timeout: int = 60) -> bool:
 
 
 def _install_requirements() -> None:
-    pip = os.path.join(REPO, "venv", "bin", "pip")
-    r = subprocess.run([pip, "install", "-q", "-r", os.path.join(REPO, "requirements.txt")],
+    """Bring the Python libraries in line with this version (see bin/gamedash-ensure-venv)."""
+    r = subprocess.run([os.path.join(REPO, "bin", "gamedash-ensure-venv")],
                        capture_output=True, text=True, timeout=1200)
     if r.returncode != 0:
         raise RuntimeError("installing the Python libraries failed:\n" + (r.stderr or r.stdout).strip()[-1500:])
@@ -365,7 +431,7 @@ def _install_requirements() -> None:
 
 def _self_test() -> None:
     """The new code must at least load: the web app, every game type and every page."""
-    py = os.path.join(REPO, "venv", "bin", "python")
+    py = sys.executable   # this command runs in GameDash's own Python environment
     code = ("import sys; sys.path.insert(0, '.'); import app, games\n"
             "[ (g.port_fields(), g.extra_fields) for g in games.all_types() if g.kind != 'custom' ]\n"
             "[ app.app.jinja_env.get_template(t) for t in ('admin.html', 'public.html', 'base.html', 'login.html') ]")
@@ -374,8 +440,61 @@ def _self_test() -> None:
         raise RuntimeError("the new version doesn't load:\n" + (r.stderr or r.stdout).strip()[-1500:])
 
 
+def _confirm_update(args) -> bool:
+    if "--yes" in args or "-y" in args:
+        return True
+    try:
+        return input("Update now? The dashboard restarts (game servers keep running). [Y/n] ").strip().lower() \
+            not in ("n", "no")
+    except EOFError:
+        return True
+
+
+def _update_package(args) -> int:
+    """Install the newest published package; put the previous one back if the new one fails."""
+    import release
+    current = release.installed_version()
+    if not current:
+        return _err("GameDash's package isn't installed on this computer — nothing to update.")
+    _say("Checking for a new version…")
+    try:
+        new = release.latest()
+    except release.ReleaseError as e:
+        return _err(str(e))
+    if not release.is_newer(new["version"], current):
+        _say(f"GameDash is up to date ({current}).")
+        return 0
+    _say(f"New version: {new['version']} (you have {current}). What's new:")
+    for line in [ln for ln in new["notes"].splitlines() if ln.strip()][:30]:
+        _say(f"  {line}")
+    if not _confirm_update(args):
+        return _err("cancelled — nothing changed")
+    folder = os.path.join(os.path.expanduser("~/.cache/gamedash"), "updates")
+    try:
+        _say("Downloading and checking it…")
+        path = release.download(new, folder)
+        _say("Installing (this asks for your computer's password)…")
+        release.install(path)
+    except release.ReleaseError as e:
+        return _err(f"{e}. Nothing was changed.")
+    _say("Waiting for the dashboard to start…")
+    if _answers(timeout=600):   # the first start installs any new libraries, which takes a while
+        _say(f"Updated to {new['version']}. The dashboard is running.")
+        return 0
+    _say("Problem: the new version isn't answering. Putting the previous one back…")
+    try:
+        release.install(release.download(release.for_version(current), folder))
+    except release.ReleaseError as e:
+        return _err(f"putting the previous version back failed too ({e}). Check: gamedash logs")
+    _say("The previous version is running again." if _answers(timeout=600) else
+         "The previous version is back, but the dashboard isn't answering yet — check: gamedash logs")
+    return 1
+
+
 def cmd_update(args) -> int:
-    """Update GameDash itself from its home repository; roll back if the new version fails."""
+    """Update GameDash itself; roll back if the new version fails."""
+    if PACKAGED:
+        return _update_package(args)
     if not os.path.isdir(os.path.join(REPO, ".git")):
         return _err("this copy of GameDash wasn't installed with git, so it can't update itself. "
                     "Download the new version and run install.sh again.")
@@ -398,12 +517,8 @@ def cmd_update(args) -> int:
     _say("What's new:")
     for line in _git("log", "--oneline", "--no-decorate", f"{old}..{new}").splitlines()[:30]:
         _say(f"  • {line.split(' ', 1)[1] if ' ' in line else line}")
-    if "--yes" not in args and "-y" not in args:
-        try:
-            if input("Update now? The dashboard restarts (game servers keep running). [Y/n] ").strip().lower() in ("n", "no"):
-                return _err("cancelled — nothing changed")
-        except EOFError:
-            pass
+    if not _confirm_update(args):
+        return _err("cancelled — nothing changed")
 
     def rollback(reason: str) -> int:
         _say(f"Problem: {reason}")
@@ -528,7 +643,10 @@ def cmd_uninstall(args) -> int:
     # 5. what is left and how to finish
     _say()
     _say("Done. Still on this computer, on purpose:")
-    _say(f"  • the GameDash program folder: {REPO}  — delete it with:  rm -rf {REPO}")
+    if PACKAGED:
+        _say("  • the GameDash program itself — remove it with:  sudo apt remove gamedash")
+    else:
+        _say(f"  • the GameDash program folder: {REPO}  — delete it with:  rm -rf {REPO}")
     if installs:
         _say("  • your games and saves: " + ", ".join(installs))
     if os.path.isfile("/etc/fail2ban/jail.d/gamedash.conf"):
@@ -572,9 +690,16 @@ def cmd_test_alert(_args) -> int:
 
 def cmd_version(_args) -> int:
     from version import version
-    r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
-                       capture_output=True, text=True)
-    build = f" (build {r.stdout.strip()})" if r.returncode == 0 and r.stdout.strip() else ""
+    if PACKAGED:
+        import release
+        _say(f"GameDash {release.installed_version() or version()}  (installed package)")
+        return 0
+    try:
+        r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
+                           capture_output=True, text=True)
+        build = f" (build {r.stdout.strip()})" if r.returncode == 0 and r.stdout.strip() else ""
+    except OSError:   # git isn't installed
+        build = ""
     _say(f"GameDash {version()}{build}  —  {REPO}")
     return 0
 
@@ -587,7 +712,7 @@ def cmd_help(_args) -> int:
 COMMANDS = {
     "status": cmd_status, "address": cmd_address, "url": cmd_address, "qr": cmd_qr,
     "resetpassword": cmd_reset_password, "setpassword": cmd_reset_password, "password": cmd_reset_password,
-    "setupcode": cmd_setup_code, "passwords": cmd_passwords,
+    "setupcode": cmd_setup_code, "passwords": cmd_passwords, "welcome": cmd_welcome, "setup": cmd_setup,
     "start": lambda a: _service("start"), "stop": lambda a: _service("stop"),
     "restart": lambda a: _service("restart"),
     "logs": cmd_logs, "log": cmd_logs,

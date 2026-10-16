@@ -195,11 +195,31 @@ on real servers before it ships:
 ## Packaging — making GameDash a "real" package
 
 Goal: install and update GameDash like any other program, with no scripts to download.
+**Priority for going public** (2026-10-16): the package and the install/update process must be
+right before the repository is made public.
 
-1. [ ] **`.deb` package on GitHub Releases** — `sudo apt install ./gamedash_0.2.0_amd64.deb`.
-       Bundles GameDash and its Python environment, declares the system packages it needs
-       (apt installs them automatically), adds the `gamedash` command, and sets up the service on
-       first run for the user who runs it. Built automatically for each release.
+1. [x] **`.deb` package** — `tools/build-deb.sh` → `gamedash_<version>_all.deb` + `.sha256`.
+       Program in `/usr/lib/gamedash`, `gamedash` command in `/usr/bin`; system packages declared
+       from `deploy/packages.conf` (GameDash's own needs as Depends, game libraries and extras as
+       Recommends); each account's Python libraries built by `gamedash setup` from
+       `requirements.lock` (pinned, checksum-verified) in `~/.local/share/gamedash/venv`; an upgrade
+       restarts every account's dashboard; removal stops them and keeps all data. *(2026-10-16)*
+   - [x] `gamedash setup` (same setup as `install.sh`), `gamedash update` installs the newest
+         release's package after checking its checksum and rolls back to the previous release if
+         the new one doesn't answer; `gamedash uninstall` and `gamedash version` know about the
+         package; `get.sh` installs the package when a release exists. *(2026-10-16)*
+   - [x] Tested on the VM: the package's files run as a package install would (libraries built in
+         the home folder, dashboard and backup services, every command). *(2026-10-16)*
+   - [ ] **Tested with apt for real** on a fresh VM: install, `gamedash setup`, upgrade to a newer
+         package (dashboard restarts, new libraries installed), `gamedash update` with rollback,
+         `apt remove`, reinstall keeps the data. *(Needs sudo on the test VM.)*
+   - [ ] Build the package and create the GitHub release automatically when a version is tagged
+         (GitHub Actions), and add the release steps to *Public-release preparation*.
+   - [ ] **Sign releases** (beyond the checksum, which only proves the download is complete): sign
+         the package / checksum file so `gamedash update` and `get.sh` can tell it came from the
+         maintainer even if GitHub were compromised.
+   - [ ] A desktop shortcut ("GameDash") that opens the dashboard, and running `gamedash setup` for
+         you when the package is installed from the Ubuntu App Center (no terminal at all).
 2. [ ] **GameDash apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
        `apt install gamedash` after adding the repository once, and updates arrive with the
        computer's normal system updates (`apt upgrade`).

@@ -16,6 +16,11 @@ footer of the dashboard when signed in.
 - **One-step install** that asks no questions (only your computer's password) and checks first that
   the computer can run GameDash. Shows a QR code to open the dashboard on a phone, and the password
   your friends need to join.
+- **A GameDash package** (`.deb`) for Ubuntu and Debian: `sudo apt install ./gamedash_….deb`, then
+  `gamedash setup`. The one-line installer uses it, and `gamedash update` installs new versions
+  of it (and puts the old one back if the new one doesn't start).
+- GameDash's Python libraries are **exact, checksum-verified versions**, so every install gets
+  exactly what was tested.
 - **The `gamedash` command** for everyday jobs: `status`, `passwords`, `reset-password`, `restart`,
   `logs`, `servers`, `server start|stop|restart <server>`, `backup`, `backup list|restore`, `unban`,
   `update`, `uninstall`, `check`, `qr`. Type `gamedash help` for the list.

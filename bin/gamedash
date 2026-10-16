@@ -1,14 +1,19 @@
 #!/bin/sh
 # gamedash — command-line tools for GameDash. "gamedash help" lists them.
-# Installed as ~/.local/bin/gamedash (a link to this file) by setup.sh.
-REAL="$(readlink -f "$0")"
-REPO="$(dirname "$(dirname "$REAL")")"
+# A git checkout links ~/.local/bin/gamedash here (setup.sh); the package installs /usr/bin/gamedash.
+GAMEDASH_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
 # use the same data folder as the running dashboard
 if [ -z "${GAMEDASH_HOME:-}" ]; then
     GAMEDASH_HOME="$(systemctl --user show gamedash.service -p Environment --value 2>/dev/null \
                      | tr ' ' '\n' | sed -n 's/^GAMEDASH_HOME=//p')"
-    [ -n "$GAMEDASH_HOME" ] && export GAMEDASH_HOME
+    [ -n "$GAMEDASH_HOME" ] || unset GAMEDASH_HOME
+fi
+. "$GAMEDASH_CODE/bin/gamedash-env.sh"
+# "gamedash setup" builds everything (Python environment included), so it runs before the rest
+if [ "${1:-}" = setup ]; then
+    shift
+    exec bash "$GAMEDASH_CODE/setup.sh" "$@"
 fi
 # repair the Python environment first if a system upgrade broke it
-"$REPO/bin/gamedash-ensure-venv" || exit 1
-exec "$REPO/venv/bin/python" "$REPO/app/cli.py" "$@"
+"$GAMEDASH_CODE/bin/gamedash-ensure-venv" || exit 1
+exec "$GAMEDASH_VENV/bin/python" "$GAMEDASH_CODE/app/cli.py" "$@"

@@ -1,41 +1,59 @@
 #!/usr/bin/env bash
-# GameDash installer — sets up the venv, data root, self-signed TLS cert,
-# systemd user units + daily-backup timer, and linger. Idempotent and
-# non-destructive: it never overwrites an existing config/secrets/cert/servers.
+# GameDash setup for your user account: the Python environment, the settings folder, the
+# dashboard's certificate, the background services, and the final "here's how to open it" screen.
 #
-# Usage:
-#   ./setup.sh                 full install (venv, data, cert, units, linger)
-#   ./setup.sh --fail2ban      also install the fail2ban jail (needs sudo)
+#   gamedash setup              after installing the GameDash package
+#   ./install.sh                from a downloaded copy (installs the system packages, then runs this)
 #
-# Data root: $GAMEDASH_HOME (default ~/.config/gamedash). Backups:
-# $GAMEDASH_BACKUPS (default ~/.local/share/gamedash/backups).
+# Options:  --fail2ban / --no-fail2ban   set up (or skip) blocking of password guessers; the
+#                                        default is to set it up when fail2ban is installed
+#           --force                      carry on even if the computer checks fail
+#
+# Safe to run again at any time: it never overwrites existing settings, passwords, certificate
+# or server list. Data: $GAMEDASH_HOME (default ~/.config/gamedash). Backups: $GAMEDASH_BACKUPS
+# (default ~/.local/share/gamedash/backups).
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP="$REPO/app"
-VENV="$REPO/venv"
-DATA="${GAMEDASH_HOME:-$HOME/.config/gamedash}"
+GAMEDASH_CODE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+. "$GAMEDASH_CODE/bin/gamedash-env.sh"
+CODE="$GAMEDASH_CODE"; VENV="$GAMEDASH_VENV"; DATA="$GAMEDASH_HOME"; PORT="$GAMEDASH_PORT"
 BACKUPS="${GAMEDASH_BACKUPS:-$HOME/.local/share/gamedash/backups}"
 UNITS="$HOME/.config/systemd/user"
-say() { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
+PACKAGED=0; [ -w "$CODE" ] || PACKAGED=1      # the package's program folder belongs to the system
+FAIL2BAN=auto; FORCE=()
+for arg in "$@"; do
+    case "$arg" in
+        --fail2ban) FAIL2BAN=yes ;;
+        --no-fail2ban) FAIL2BAN=no ;;
+        --force) FORCE=(--force) ;;
+        -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
+    esac
+done
+FROM_INSTALLER="${GAMEDASH_FROM_INSTALLER:-0}"
+say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
+note() { printf '   %s\n' "$*"; }
 
-# --- 1. Python venv -----------------------------------------------------------
-say "Python venv"
+# --- 0. Can this computer run GameDash? (install.sh has already checked) ----------
+if [ "$FROM_INSTALLER" != 1 ]; then
+    "$CODE/bin/gamedash-preflight" "${FORCE[@]}" || exit 1
+fi
+
+# --- 1. Python environment ---------------------------------------------------------
+say "Python libraries"
 # creates the environment, or rebuilds it if it's missing or broken (e.g. after a Python upgrade)
-"$REPO/bin/gamedash-ensure-venv" || exit 1
-"$VENV/bin/python" -m pip install --upgrade pip >/dev/null
-"$VENV/bin/pip" install -q -r "$REPO/requirements.txt" && echo "Python libraries ready."
+"$CODE/bin/gamedash-ensure-venv" || exit 1
 
-# --- 2. Data root -------------------------------------------------------------
-say "Data root: $DATA"
+# --- 2. Settings folder ------------------------------------------------------------
+say "Settings: $DATA"
 mkdir -p "$DATA/certs" "$DATA/logs" "$BACKUPS"
 chmod 700 "$DATA" "$DATA/certs" "$DATA/logs"
-[ -f "$DATA/servers.json" ] || cp "$REPO/deploy/examples/servers.json.example" "$DATA/servers.json"
+[ -f "$DATA/servers.json" ] || cp "$CODE/deploy/examples/servers.json.example" "$DATA/servers.json"
 if [ ! -f "$DATA/secrets.conf" ]; then
     # Never start with the example's well-known placeholders: pick random passwords (letters and
     # digits only, which every game accepts). The owner can change them in Settings at any time.
     umask 077
-    python3 - "$REPO/deploy/examples/secrets.conf.example" "$DATA/secrets.conf" <<'PW'
+    python3 - "$CODE/deploy/examples/secrets.conf.example" "$DATA/secrets.conf" <<'PW'
 import re, secrets, sys
 src, dst = sys.argv[1:3]
 abc = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"     # no look-alike characters
@@ -47,11 +65,10 @@ open(dst, "w", encoding="utf-8").write(t)
 PW
     umask 022
     chmod 600 "$DATA/secrets.conf"
-    echo "Picked random game passwords — see or change them in the dashboard (Settings → Game passwords)."
+    note "Picked random game passwords — see or change them in the dashboard (Settings → Game passwords)."
 fi
 
-# --- 3. Self-signed TLS cert --------------------------------------------------
-say "TLS certificate"
+# --- 3. The dashboard's certificate (self-signed; a trusted one can be added in Settings) ---
 if [ ! -f "$DATA/certs/cert.pem" ]; then
     HOSTN="$(hostname -f 2>/dev/null || hostname)"
     openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
@@ -59,55 +76,70 @@ if [ ! -f "$DATA/certs/cert.pem" ]; then
         -subj "/CN=$HOSTN" \
         -addext "subjectAltName=DNS:$HOSTN,DNS:localhost,IP:127.0.0.1" 2>/dev/null
     chmod 600 "$DATA/certs/"*.pem
-    echo "Self-signed cert generated (CN=$HOSTN, 10y). Browsers will warn once — expected."
+    note "Made the dashboard's certificate (browsers warn about it once — expected)."
 fi
 
-# --- 4. Dashboard admin password ---------------------------------------------
-# The password is chosen in the browser on first visit (/setup), unlocked by a
-# one-time code that install.sh prints at the end. Nothing to do here; to set it
-# from the terminal instead:  gamedash reset-password
-say "Dashboard admin password"
-echo "Chosen in the browser on first visit, using the one-time setup code shown at the end."
-
-# --- 5. systemd user units ----------------------------------------------------
-say "systemd user units"
+# --- 4. Background services: the dashboard and the daily backup ----------------------
+say "Background services"
 mkdir -p "$UNITS"
-subst() { sed -e "s#__APP__#$APP#g" -e "s#__VENV__#$VENV#g" -e "s#__DATA__#$DATA#g" "$1"; }
-subst "$REPO/deploy/systemd/gamedash.service.in"        > "$UNITS/gamedash.service"
-subst "$REPO/deploy/systemd/gamedash-backup.service.in" > "$UNITS/gamedash-backup.service"
-cp    "$REPO/deploy/systemd/gamedash-backup.timer"        "$UNITS/gamedash-backup.timer"
+subst() { sed -e "s#__CODE__#$CODE#g" -e "s#__VENV__#$VENV#g" -e "s#__DATA__#$DATA#g" -e "s#__PORT__#$PORT#g" "$1"; }
+subst "$CODE/deploy/systemd/gamedash.service.in"        > "$UNITS/gamedash.service"
+subst "$CODE/deploy/systemd/gamedash-backup.service.in" > "$UNITS/gamedash-backup.service"
+cp    "$CODE/deploy/systemd/gamedash-backup.timer"        "$UNITS/gamedash-backup.timer"
 systemctl --user daemon-reload
-systemctl --user enable --now gamedash.service
-systemctl --user enable --now gamedash-backup.timer
+systemctl --user enable --quiet gamedash.service gamedash-backup.timer
+systemctl --user restart gamedash.service       # picks up a new version on re-runs
+systemctl --user start gamedash-backup.timer
+note "The dashboard and the daily 05:00 backup are running."
 
-# --- the "gamedash" command (gamedash help) ---------------------------------------
-say "gamedash command"
-mkdir -p "$HOME/.local/bin"
-ln -sfn "$REPO/bin/gamedash" "$HOME/.local/bin/gamedash"
-case ":$PATH:" in
-    *":$HOME/.local/bin:"*) echo "installed: type  gamedash help" ;;
-    *) echo "installed in ~/.local/bin — open a new terminal (or log in again), then type: gamedash help" ;;
-esac
-
-# --- 6. Linger (auto-start on boot without an active login) -------------------
-say "Linger"
-loginctl enable-linger "$USER" 2>/dev/null && echo "linger enabled" || \
-    echo "Could not enable linger (try: sudo loginctl enable-linger $USER) — needed for boot auto-start."
-
-# --- 7. Optional fail2ban -----------------------------------------------------
-if [ "${1:-}" = "--fail2ban" ]; then
-    say "fail2ban jail"
-    sed "s#__GAMEDASH_LOGS__#$DATA/logs#" "$REPO/deploy/fail2ban/gamedash-jail.conf" | sudo tee /etc/fail2ban/jail.d/gamedash.conf >/dev/null
-    sudo cp "$REPO/deploy/fail2ban/gamedash-filter.conf" /etc/fail2ban/filter.d/gamedash.conf
-    sudo systemctl enable --now fail2ban && sudo systemctl restart fail2ban
+# The `gamedash` command. The package installs it for everyone; a downloaded copy links it here.
+if [ "$PACKAGED" = 0 ]; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$CODE/bin/gamedash" "$HOME/.local/bin/gamedash"
+    case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) note "The gamedash command works in new terminal windows (or after logging in again)." ;;
+    esac
 fi
 
-# When run by install.sh, its own final screen gives the address and setup code — don't repeat it.
-[ "${GAMEDASH_FROM_INSTALLER:-0}" = 1 ] && exit 0
-say "Done"
-IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-echo "GameDash is running: https://${IP:-this-computer}:8443/   (the browser will warn about the certificate the first time — that is expected)"
-if GAMEDASH_HOME="$DATA" "$VENV/bin/python" -c "import sys; sys.path.insert(0,'$APP'); import config; sys.exit(0 if config.needs_setup() else 1)" 2>/dev/null; then
-    echo "First visit: you'll be asked for a one-time setup code. Get one with:  gamedash setup-code"
+# --- 5. Keep running after you log out, and start with the computer --------------------
+if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -q 'Linger=yes'; then
+    :
+elif loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER"; then
+    note "GameDash keeps running after you log out and starts with the computer."
+else
+    note "⚠ Couldn't set GameDash to start with the computer. Run: sudo loginctl enable-linger $USER"
 fi
-echo "Then follow the Getting started checklist on the dashboard."
+
+# --- 6. The computer's firewall, if it has one switched on ------------------------------
+UFW_ACTIVE=0
+if command -v ufw >/dev/null 2>&1 && grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then
+    UFW_ACTIVE=1
+    note "This computer's firewall (ufw) is on — letting the dashboard through (port $PORT); this asks for your password."
+    sudo ufw allow "$PORT/tcp" >/dev/null || note "⚠ Couldn't change the firewall. Run: sudo ufw allow $PORT/tcp"
+fi
+
+# --- 7. Block people who keep guessing the dashboard password (fail2ban) --------------
+if [ "$FAIL2BAN" = auto ]; then
+    command -v fail2ban-client >/dev/null 2>&1 && FAIL2BAN=yes || FAIL2BAN=no
+fi
+if [ "$FAIL2BAN" = yes ]; then
+    jail="$(sed -e "s#__GAMEDASH_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/gamedash-jail.conf")"
+    if [ "$jail" = "$(cat /etc/fail2ban/jail.d/gamedash.conf 2>/dev/null)" ] \
+       && cmp -s "$CODE/deploy/fail2ban/gamedash-filter.conf" /etc/fail2ban/filter.d/gamedash.conf; then
+        :   # already set up
+    else
+        note "Setting up protection against password guessing (fail2ban) — this asks for your password."
+        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/gamedash.conf >/dev/null \
+           && sudo cp "$CODE/deploy/fail2ban/gamedash-filter.conf" /etc/fail2ban/filter.d/gamedash.conf \
+           && sudo systemctl enable --quiet --now fail2ban && sudo systemctl restart fail2ban; then
+            note "Done: an address that gets the dashboard password wrong 4 times is blocked for an hour."
+        else
+            note "⚠ Couldn't set up fail2ban. GameDash still slows down password guessing by itself."
+        fi
+    fi
+fi
+
+# --- 8. How to open it ----------------------------------------------------------
+if [ "$UFW_ACTIVE" = 1 ]; then set -- --firewall; else set --; fi
+"$VENV/bin/python" "$CODE/app/cli.py" welcome "$@"

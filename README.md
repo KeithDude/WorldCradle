@@ -40,14 +40,11 @@ One line in a terminal (once the repository is public):
 ```
 wget -qO- https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
 ```
-This puts GameDash in `~/gamedash` and installs it. (`curl -fsSL … | bash` works too where curl is
-installed; a fresh Ubuntu desktop only has wget.)
+It installs the GameDash package (checked against its published checksum) and sets it up.
+(`curl -fsSL … | bash` works too where curl is installed; a fresh Ubuntu desktop only has wget.)
 
-Or from a downloaded copy (GitHub → Code → Download ZIP): unpack it, move the folder to your home
-folder, open a terminal in it and run
-```
-bash install.sh       # no questions; it only asks for your computer's password
-```
+Or install the package yourself — `sudo apt install ./gamedash_<version>_all.deb`, then
+`gamedash setup` — or, from a downloaded copy of the source, run `bash install.sh` in its folder.
 It prints the address to open and a one-time setup code. A step-by-step walk-through with
 screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
@@ -60,14 +57,15 @@ gamedash/
 ├── app/          all application code (Flask app, games/, templates/, static/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
 ├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
-├── get.sh        one-line download + install
-├── install.sh    one-step installer (calls setup.sh)
-├── bin/gamedash  the `gamedash` command
-├── setup.sh      GameDash-only setup
-└── requirements.txt
+├── get.sh        one-line download + install (the package, or the source before a release exists)
+├── install.sh    install from the source: system packages, then setup.sh
+├── setup.sh      setup for your account (`gamedash setup`)
+├── bin/          the `gamedash` command, its self-repairing Python environment, the computer checks
+├── tools/        pre-push checks, package builder, lock-file generator
+└── requirements.txt / requirements.lock   Python libraries (the lock pins them with checksums)
 ```
 Runtime data lives **outside the code** in the data root (so updating the code
-never touches your data):
+never touches your data); [deploy/SETUP.md](deploy/SETUP.md) says where everything goes:
 ```
 $GAMEDASH_HOME            (default ~/.config/gamedash)
 ├── config.json  servers.json  secrets.conf  certs/  logs/

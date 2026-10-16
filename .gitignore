@@ -20,3 +20,6 @@ __pycache__/
 /app/servers.json
 /app/certs
 /app/logs
+
+# packages built by tools/build-deb.sh
+/dist/

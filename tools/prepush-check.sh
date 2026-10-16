@@ -79,23 +79,50 @@ pat="\\b($(id -un)|$(hostname)|$(hostname -I 2>/dev/null | awk '{print $1}' | se
 hits=$(cd "$REPO" && echo "$files" | xargs /usr/bin/grep -nIE -e "$pat" -e 'BEGIN [A-Z ]*PRIVATE KEY' -e 'gh[pousr]_[A-Za-z0-9]{30,}' 2>/dev/null | grep -v '^tools/prepush-check.sh')
 [ -z "$hits" ] && ok "no user name, host name, LAN address, private key or token in tracked files" || { bad "personal data / secrets found:"; echo "$hits" | cut -c1-150 | sed 's/^/         /'; }
 
-# 7. Dependencies: nothing GPL (the project licence is PolyForm Noncommercial)
-gpl=$("$PY" - "$REPO/requirements.txt" <<'T' 2>/dev/null
+# 7. Dependencies: requirements.lock matches requirements.txt, and nothing in it is GPL (the
+#    project licence is PolyForm Noncommercial) — every library, including the ones pulled in
+deps=$("$PY" - "$REPO/requirements.txt" "$REPO/requirements.lock" <<'T' 2>/dev/null
 import re, sys
 from importlib.metadata import metadata, PackageNotFoundError
-for line in open(sys.argv[1]):
-    name = re.split(r"[<>=!~\[ ;#]", line.strip())[0]
-    if not name: continue
+from packaging.markers import Marker
+norm = lambda n: re.sub(r"[-_.]+", "-", n).lower()
+top = {norm(re.split(r"[<>=!~\[ ;#]", l.strip())[0]) for l in open(sys.argv[1]) if l.strip() and not l.startswith("#")}
+locked = {}
+for line in open(sys.argv[2]):
+    m = re.match(r"^([A-Za-z0-9_.-]+)==\S+(?:\s*;\s*([^\\]+))?", line)
+    if m:
+        locked[norm(m[1])] = m[2]
+for name in sorted(top - set(locked)):
+    print(f"{name} is in requirements.txt but not requirements.lock (run tools/lock-requirements.sh)")
+for name, marker in sorted(locked.items()):
+    if marker and not Marker(marker.strip()).evaluate():
+        continue   # not used on this system (e.g. Windows-only)
     try:
         m = metadata(name)
-        lic = " ".join([m.get("License-Expression") or "", (m.get("License") or "")[:200]] + (m.get_all("Classifier") or []))
-        if re.search(r"\bA?GPL|General Public License", lic) and not re.search(r"LGPL|Lesser", lic):
-            print(name)
     except PackageNotFoundError:
-        print(name + " (not installed — licence unchecked)")
+        print(f"{name} (not installed here — licence unchecked)")
+        continue
+    lic = " ".join([m.get("License-Expression") or "", (m.get("License") or "")[:200]] + (m.get_all("Classifier") or []))
+    if re.search(r"\bA?GPL|General Public License", lic) and not re.search(r"LGPL|Lesser", lic):
+        print(f"{name} has a GPL licence")
 T
 )
-[ -z "$gpl" ] && ok "dependencies: no GPL licences" || bad "dependency licence problem: $gpl"
+[ -z "$deps" ] && ok "dependencies: lock file up to date, no GPL licences" || { bad "dependency problems:"; echo "$deps" | sed 's/^/         /'; }
+
+# 7b. The .deb package builds and holds what it must
+if command -v dpkg-deb >/dev/null 2>&1; then
+  if out=$(bash "$REPO/tools/build-deb.sh" 2>&1); then
+    deb=$(ls -t "$REPO"/dist/*.deb | head -1)
+    missing=""; listing=$(dpkg-deb -c "$deb")
+    for f in ./usr/bin/gamedash ./usr/lib/gamedash/setup.sh ./usr/lib/gamedash/requirements.lock \
+             ./usr/lib/gamedash/bin/gamedash-ensure-venv ./usr/lib/gamedash/app/app.py ./usr/share/doc/gamedash/copyright; do
+      grep -q " $f\( \|$\)" <<< "$listing" || missing="$missing $f"
+    done
+    [ -z "$missing" ] && ok "package builds: dist/$(basename "$deb")" || bad "package is missing:$missing"
+  else
+    bad "package doesn't build:"; echo "$out" | tail -5 | sed 's/^/         /'
+  fi
+fi
 
 # 8. The running dashboard still answers (when it runs here)
 if systemctl --user is-active -q gamedash 2>/dev/null; then

@@ -1,0 +1,30 @@
+#!/bin/sh
+# GameDash package: after installing or upgrading.
+set -e
+
+# Python can't write its byte-code cache into this system folder while GameDash runs as a normal
+# user, so make it now (the same Python the users' GameDash environments are built from).
+python3 -m compileall -q /usr/lib/gamedash/app >/dev/null 2>&1 || true
+
+if [ "$1" = configure ]; then
+    if [ -n "$2" ]; then
+        # An upgrade: restart the dashboard of every account that runs one, so the new version
+        # takes over. It installs any new Python libraries it needs as it starts.
+        for dir in /run/user/*; do
+            [ -d "$dir" ] || continue
+            user="$(getent passwd "${dir##*/}" | cut -d: -f1)"
+            [ -n "$user" ] || continue
+            if systemctl --user -M "$user@" is-active --quiet gamedash.service 2>/dev/null; then
+                systemctl --user -M "$user@" restart --no-block gamedash.service 2>/dev/null \
+                    && echo "GameDash: restarting the dashboard for $user." || true
+            fi
+        done
+    else
+        echo
+        echo "GameDash is installed. To set it up, type this as your normal user (no 'sudo'):"
+        echo
+        echo "    gamedash setup"
+        echo
+    fi
+fi
+exit 0

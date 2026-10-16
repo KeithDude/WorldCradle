@@ -9,6 +9,46 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — A real package; one setup for every way of installing
+
+The owner made the package and the install/update process the priority before going public.
+
+- **`.deb` package** (`tools/build-deb.sh`). The program goes in `/usr/lib/gamedash`. Each account's
+  Python libraries live in its home folder (`~/.local/share/gamedash/venv`), not in the package:
+  the package stays `all`-architecture and small (~200 KB), and Python upgrades are handled by the
+  existing self-repair.
+  - System packages are listed once, in `deploy/packages.conf`. The package Depends only on what
+    GameDash itself needs; game libraries and extras are Recommends, so it still installs where a
+    game library is missing.
+  - postinst restarts every account's running dashboard after an upgrade. prerm stops them on
+    removal; settings, servers and saves are always kept.
+- **Pinned libraries:** `requirements.lock` (generated with `uv pip compile --universal
+  --generate-hashes` for Python 3.10+, `tools/lock-requirements.sh`) installed with
+  `--require-hashes`. The environment remembers which list it was built from, so a new version
+  that needs different libraries gets them on its first start.
+  - The pre-push check now checks the licence of every pinned library (it used to check only the
+    direct ones) and that the lock matches `requirements.txt`.
+- **One setup:** `setup.sh` now does everything account-level, including the computer checks (now
+  `bin/gamedash-preflight`, shared with `install.sh`), linger, the firewall, fail2ban and the
+  final screen (now `gamedash welcome`).
+  - `install.sh` is just: checks, system packages, setup.
+  - `gamedash setup` runs the same setup after installing the package.
+  - The dashboard's port is set in one place for the scripts (`bin/gamedash-env.sh`).
+- **Updates:** `gamedash update` on a package install finds the newest GitHub release, checks the
+  download against its published SHA-256 checksum, installs it with apt, and reinstalls the
+  previous release if the new one doesn't answer. `get.sh` installs the newest release's package
+  (checksum-checked) and falls back to the source while none is published.
+- **Smaller fixes:**
+  - The OS-maintenance script now backs up through the dashboard's own backup service instead
+    of a hard-coded program path.
+  - `gamedash version` no longer crashes without git.
+- Tested on the VM: the source install re-run (libraries moved to the pinned versions), and the
+  package's files run as a package install would (libraries built in the home folder in 13 s;
+  dashboard, backup service, `status`, `version`, `update`). `install.sh --check` too.
+  **Not yet tested: installing with apt for real** — that needs sudo on the VM.
+- Found on the way: another product called "GameDash" exists — a commercial game-server control
+  panel. The owner was told before going public.
+
 ## 2026-10-16 — Alerts checked against each service's documentation; code clean-up
 
 Every alert service was compared with its own developer documentation, and the whole codebase was

@@ -1,0 +1,20 @@
+#!/bin/sh
+# GameDash package: before removing (not before an upgrade).
+set -e
+if [ "$1" = remove ]; then
+    # Stop the dashboard of every account that runs one; its files are about to go. Settings,
+    # passwords, game servers and their saves stay in each account's home folder.
+    for dir in /run/user/*; do
+        [ -d "$dir" ] || continue
+        user="$(getent passwd "${dir##*/}" | cut -d: -f1)"
+        [ -n "$user" ] || continue
+        systemctl --user -M "$user@" disable --now gamedash.service gamedash-backup.timer \
+            >/dev/null 2>&1 || true
+    done
+    echo "GameDash: the dashboard is stopped. Your settings, game servers and saves are kept"
+    echo "          (in ~/.config/gamedash and the game folders); installing GameDash again uses them."
+    echo "          Game servers you created keep running; to remove those too, reinstall GameDash"
+    echo "          and run: gamedash uninstall"
+fi
+find /usr/lib/gamedash -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+exit 0

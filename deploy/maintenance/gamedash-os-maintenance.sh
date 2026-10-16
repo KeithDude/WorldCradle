@@ -27,10 +27,8 @@ set -uo pipefail
 GAME_USER="__GAME_USER__"
 GAME_UID="__GAME_UID__"
 case "$GAME_USER$GAME_UID" in *__*) echo "gamedash-os-maintenance: not configured — see install.md" >&2; exit 1 ;; esac
-DASH_URL="https://127.0.0.1:8443/api/public.json"
-GAMEDASH_HOME="/home/${GAME_USER}/.config/gamedash"
-VENV_PY="/home/${GAME_USER}/gamedash/venv/bin/python"
-BACKUPS_PY="/home/${GAME_USER}/gamedash/app/backups.py"
+DASH_PORT=8443            # the dashboard's port (gamedash.service)
+DASH_URL="https://127.0.0.1:${DASH_PORT}/api/public.json"
 LOG="/var/log/gamedash-os-maintenance.log"
 STOP_TIMEOUT=300          # seconds to wait for a graceful game-server stop
 DRY_RUN=0
@@ -104,7 +102,8 @@ fi
 
 # --- 3. back up saves before touching anything -------------------------------
 log "backing up all server saves…"
-if run as_user env GAMEDASH_HOME="$GAMEDASH_HOME" "$VENV_PY" "$BACKUPS_PY" all >>"$LOG" 2>&1; then
+# the dashboard's own daily-backup service: it knows where GameDash and its settings live
+if run as_user systemctl --user start gamedash-backup.service >>"$LOG" 2>&1; then
   log "backups: ok"
 else
   log "ABORT: save backup failed — refusing to patch without a good backup."

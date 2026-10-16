@@ -40,6 +40,8 @@ lot, and so does being able to test it.
   the automated tests in `tests/`), and say what you tested — on a real server if the change touches
   one. A bug fix should come with a test that fails without the fix.
 - Don't add dependencies with a GPL or AGPL licence (they can't be combined with GameDash's licence).
+  After changing `requirements.txt`, regenerate the pinned list with `tools/lock-requirements.sh`
+  (the pre-push check fails if they disagree, and checks every pinned library's licence).
 
 ## Licence of contributions
 

@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 Environment=GAMEDASH_HOME=__DATA__
-WorkingDirectory=__APP__
-ExecStart=__VENV__/bin/python __APP__/backups.py all
+WorkingDirectory=__CODE__/app
+ExecStart=__VENV__/bin/python __CODE__/app/backups.py all
 # don't pin the box if a backup is slow; saves are flushed per-server internally
 TimeoutStartSec=1800
