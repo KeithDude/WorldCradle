@@ -8,6 +8,7 @@ Usage: gamedash <command> [options]
   qr                         A QR code to open the dashboard on a phone
   reset-password             Choose a new dashboard admin password (signs everyone out)
   setup-code                 A one-time code for choosing the first password in the browser
+  passwords                  Show the game passwords (the one friends type to join, and the admin one)
   start | stop | restart     Start, stop or restart the dashboard itself
   logs [N]                   The dashboard's last N log lines (default 50)
 
@@ -19,6 +20,7 @@ Usage: gamedash <command> [options]
   backup <server|all>        Back up a server's saves now ("all" = every server)
 
   update                     Update GameDash itself (puts the old version back if the new one fails)
+  uninstall                  Remove GameDash (asks before each step; never deletes games or saves)
   check                      Quick health check: service, disk space, certificate, admin password
   version                    Which version of GameDash this is
   help                       This list
@@ -92,6 +94,20 @@ def cmd_address(_args) -> int:
     if host:
         _say(f"  from anywhere:          https://{host}:{port}/   (if you forwarded port {port})")
     _say(f"  on this computer:       https://localhost:{port}/")
+    return 0
+
+
+def cmd_passwords(args) -> int:
+    """The two shared game passwords (join and admin)."""
+    import registry
+    sec = registry.load_secrets()
+    join, admin = sec.get("GAME_SERVER_PASSWORD", ""), sec.get("GAME_ADMIN_PASSWORD", "")
+    if "--join" in args:                      # just the join password (used by the installer)
+        _say(join)
+        return 0 if join else 1
+    _say(f"Join password (give this to friends):   {join or '(not set)'}")
+    _say(f"Admin password (keep this to yourself):  {admin or '(not set)'}")
+    _say("Change them in the dashboard: Settings → Game passwords (then restart the servers).")
     return 0
 
 
@@ -379,6 +395,103 @@ def cmd_update(args) -> int:
     return 0
 
 
+def _yes(question: str, default: bool = False) -> bool:
+    hint = "[Y/n]" if default else "[y/N]"
+    try:
+        answer = input(f"{question} {hint} ").strip().lower()
+    except EOFError:
+        return default
+    return default if not answer else answer in ("y", "yes")
+
+
+def cmd_uninstall(args) -> int:
+    """Remove GameDash from this computer, step by step, asking before anything that can't be undone.
+    Game installs and saves are never deleted; backups and settings only if asked."""
+    import config
+    from registry import by_key
+    home = os.path.expanduser("~")
+    data = os.environ.get("GAMEDASH_HOME", os.path.join(home, ".config", "gamedash"))
+    backups = os.environ.get("GAMEDASH_BACKUPS", os.path.join(home, ".local", "share", "gamedash", "backups"))
+    units_dir = os.path.join(home, ".config", "systemd", "user")
+    servers = sorted(by_key().values(), key=lambda s: s.key)
+    running = [s for s in servers if _active(s.unit)]
+    # where the games live — read now, while the settings still exist
+    installs = sorted({config.install_dir(s.kind) for s in servers if s.kind != "custom"})
+
+    _say("This removes GameDash from this computer.")
+    _say("Your games and their saved worlds are NOT deleted. You'll be asked about anything else.")
+    _say()
+    if input('Type "uninstall" to continue: ').strip().lower() != "uninstall":
+        return _err("cancelled — nothing changed")
+
+    # 1. game servers GameDash manages: they are background services that would otherwise keep running
+    if servers:
+        _say()
+        _say(f"GameDash manages {len(servers)} game server(s)" + (f", {len(running)} running now" if running else "") + ":")
+        for s in servers:
+            _say(f"  {s.key:<16} {s.name}")
+        if _yes("Stop them and remove them from the computer's start-up? (Their games and saves stay on disk.)", True):
+            import controls
+            for s in running:
+                try:
+                    who = controls.live_players(s)[0]
+                except Exception:
+                    who = None
+                if who:
+                    _say(f"  {s.name} has {who} player(s) online.")
+                    if not _yes(f"  Stop {s.name} anyway?"):
+                        _say(f"  Left {s.name} running.")
+                        continue
+            for s in servers:
+                _systemctl("disable", "--now", s.unit)
+                path = os.path.join(units_dir, s.unit)
+                if os.path.basename(path).startswith("gamedash-") and os.path.isfile(path):
+                    os.remove(path)
+                _say(f"  removed {s.unit}")
+
+    # 2. the dashboard itself
+    _say()
+    for unit in ("gamedash-backup.timer", "gamedash-backup.service", UNIT, "gamedash-cert-renew.timer",
+                 "gamedash-cert-renew.service"):
+        _systemctl("disable", "--now", unit)
+        path = os.path.join(units_dir, unit)
+        if os.path.isfile(path):
+            os.remove(path)
+    _systemctl("daemon-reload")
+    link = os.path.join(home, ".local", "bin", "gamedash")
+    if os.path.islink(link):
+        os.remove(link)
+    _say("Removed the dashboard service, the daily backup timer and the gamedash command.")
+
+    # 3. settings (dashboard password, game passwords, server list, certificate) — ask
+    if os.path.isdir(data) and _yes(f"Delete GameDash's settings too ({data})? This includes the game passwords."):
+        shutil.rmtree(data, ignore_errors=True)
+        _say("Settings deleted.")
+    elif os.path.isdir(data):
+        _say(f"Kept the settings in {data} (installing GameDash again will use them).")
+
+    # 4. backups — they hold copies of saves, so ask separately and default to keeping them
+    if os.path.isdir(backups) and os.listdir(backups):
+        size = sum(os.path.getsize(os.path.join(dp, f)) for dp, _, fs in os.walk(backups) for f in fs) / 2**30
+        if _yes(f"Delete the save backups too ({backups}, {size:.1f} GB)? They can't be recovered."):
+            shutil.rmtree(backups, ignore_errors=True)
+            _say("Backups deleted.")
+        else:
+            _say(f"Kept the backups in {backups}.")
+
+    # 5. what is left and how to finish
+    _say()
+    _say("Done. Still on this computer, on purpose:")
+    _say(f"  • the GameDash program folder: {REPO}  — delete it with:  rm -rf {REPO}")
+    if installs:
+        _say("  • your games and saves: " + ", ".join(installs))
+    if os.path.isfile("/etc/fail2ban/jail.d/gamedash.conf"):
+        _say("  • the login-protection rule: sudo rm /etc/fail2ban/jail.d/gamedash.conf "
+             "/etc/fail2ban/filter.d/gamedash.conf && sudo systemctl reload fail2ban")
+    _say("  • system packages installed for the games (Wine, Java, …): remove with apt if you no longer need them.")
+    return 0
+
+
 def cmd_version(_args) -> int:
     r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
                        capture_output=True, text=True)
@@ -394,13 +507,14 @@ def cmd_help(_args) -> int:
 COMMANDS = {
     "status": cmd_status, "address": cmd_address, "url": cmd_address, "qr": cmd_qr,
     "resetpassword": cmd_reset_password, "setpassword": cmd_reset_password, "password": cmd_reset_password,
-    "setupcode": cmd_setup_code,
+    "setupcode": cmd_setup_code, "passwords": cmd_passwords,
     "start": lambda a: _service("start"), "stop": lambda a: _service("stop"),
     "restart": lambda a: _service("restart"),
     "logs": cmd_logs, "log": cmd_logs,
     "servers": cmd_servers, "list": cmd_servers, "server": cmd_server,
     "backup": cmd_backup,
     "check": cmd_check, "doctor": cmd_check, "update": cmd_update, "upgrade": cmd_update,
+    "uninstall": cmd_uninstall, "remove": cmd_uninstall,
     "version": cmd_version, "help": cmd_help,
 }
 

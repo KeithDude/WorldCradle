@@ -257,11 +257,23 @@ else
   2. Sign in with the admin password you already chose.
 EOF
 fi
+JOINPW="$("$REPO/venv/bin/python" "$REPO/app/cli.py" passwords --join 2>/dev/null || true)"
 cat <<EOF
 
   3. Follow the "Getting started" checklist on the dashboard: install a game,
      add a server, and check that friends can connect.
 EOF
+if [ -n "$JOINPW" ]; then
+    cat <<EOF
+
+  Your friends will need this password to join your game servers:
+
+         $JOINPW
+
+     (Change it any time in the dashboard: Settings → Game passwords.
+      To see it again later, type:  gamedash passwords)
+EOF
+fi
 if [ "$UFW_ACTIVE" = 1 ]; then
     cat <<EOF
 

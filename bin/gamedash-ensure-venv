@@ -25,7 +25,11 @@ if [ ! -x "$VENV/bin/pip" ]; then
     # this Python came without pip for environments (python3-venv not installed) — fetch it
     "$VENV/bin/python" -c "import urllib.request; urllib.request.urlretrieve('https://bootstrap.pypa.io/get-pip.py', '$VENV/get-pip.py')" \
         && "$VENV/bin/python" "$VENV/get-pip.py" -q >/dev/null 2>&1; rm -f "$VENV/get-pip.py"
-    [ -x "$VENV/bin/pip" ] || { echo "GameDash: couldn't set up pip — install python3-venv (sudo apt install python3-venv), then run: gamedash restart"; exit 1; }
+    [ -x "$VENV/bin/pip" ] || {
+        echo "GameDash: couldn't set up pip. Check the internet connection — or install the system"
+        echo "          package python3-venv (sudo apt install python3-venv) — then run: gamedash restart"
+        exit 1
+    }
 fi
 "$VENV/bin/python" -m pip install -q --upgrade pip >/dev/null 2>&1
 if "$VENV/bin/pip" install -q -r "$REPO/requirements.txt"; then

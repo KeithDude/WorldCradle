@@ -45,7 +45,10 @@ Last updated: 2026-10-15
 - [x] **Ubuntu 24.04:** upgrading 22.04 → 24.04 with GameDash installed broke it (Python 3.10 → 3.12)
       → GameDash now repairs its Python environment by itself; then a clean install on 24.04 passed
       the same tests as 22.04. *(2026-10-15)*
-- [ ] Fresh-machine test on **Ubuntu 26.04**, and a Debian 12 / 13 run.
+- [x] **Ubuntu 26.04:** upgrading 24.04 → 26.04 (Python 3.12 → 3.14) — GameDash repaired itself on
+      the first boot with no help; V Rising (Wine 10) and Terraria ran; clean install passed.
+      *(2026-10-16)*
+- [ ] A Debian 12 / 13 run.
 - [ ] Repeat the fresh-machine test with the one-line installer once the repository is public.
 - [x] Installer checks before it starts: operating system, 64-bit Intel/AMD processor (and AVX),
       memory, disk space, background services (systemd), the dashboard's port, internet — each
@@ -66,11 +69,11 @@ Last updated: 2026-10-15
 - [ ] `gamedash backup list|restore <server> <backup>` from the terminal.
 - [ ] `gamedash unban <address>` — lift a fail2ban block after someone mistypes the password
       (needs the admin password, like any system change).
-- [ ] `gamedash uninstall` — remove GameDash cleanly, asking before touching any game or save.
-      (Needed it while testing: removing by hand meant knowing about services, data folder, the
-      command link and fail2ban rules.)
-- [ ] Show the join password on the installer's last screen (it's now random), so the owner can
-      tell friends straight away.
+- [x] `gamedash uninstall` — removes GameDash step by step; stops and unregisters the game servers
+      after asking (checking for players), asks separately about settings and backups, never
+      deletes games or saves, and lists what's left. *(2026-10-16)*
+- [x] The installer's last screen shows the (random) join password; `gamedash passwords` shows both
+      game passwords any time. *(2026-10-16)*
 - [ ] Tab completion for commands and server names.
 
 ### Public-release preparation

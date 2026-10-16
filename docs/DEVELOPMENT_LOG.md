@@ -9,6 +9,27 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Ubuntu 26.04, uninstall, passwords on screen
+
+- **Upgrade 24.04 → 26.04** on the test VM with GameDash installed (Python 3.12 → 3.14): on the
+  first boot the dashboard rebuilt its Python environment by itself and came back — no help needed
+  this time. V Rising (Wine 10) and Terraria ran; a clean install on 26.04 passed too.
+- **`gamedash uninstall`:** confirms, offers to stop and unregister the game servers (asking per
+  server when players are online), removes the dashboard service, backup timer, certificate-renewal
+  timer and the command, asks separately before deleting settings and backups, and never deletes
+  games or saves; ends with a list of what's left and how to remove it. A bug on the first try
+  (the closing summary read the settings after they had been deleted) was fixed and the test
+  repeated: the game and both world files were kept, everything else was gone.
+- **`gamedash passwords`**, and the installer's last screen now shows the join password (new
+  installs pick a random one).
+- **Self-repair without internet** stops after a few seconds with a message naming both possible
+  causes (no internet, or the python3-venv package missing).
+- **Keep-alive 5 s → 30 s:** a client reusing an idle connection at the exact moment the server
+  closed it got a dropped request (browsers retry, scripts may not). With the gevent worker idle
+  connections are cheap; re-checked that 50 held connections still don't slow the dashboard.
+- A Terraria card briefly shows "not answering" while the world is being generated — expected; it
+  switches by itself once the port opens.
+
 ## 2026-10-15 — Ubuntu 24.04: upgrade survival and clean install
 
 - **Upgrade test:** the test VM (GameDash installed) was upgraded 22.04 → 24.04.5 with
