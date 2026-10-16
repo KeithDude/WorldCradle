@@ -26,6 +26,10 @@ footer of the dashboard when signed in.
 - **Total CPU usage, RAM and storage** at the top; each server's own share of the computer on its
   card.
 
+- **Alerts to the services you use:** Discord, Telegram, email, Slack, Microsoft Teams, Pushover,
+  ntfy, Gotify, Matrix or a webhook — several at once, each with a Test button that tells you whether
+  it worked and, if not, why. Also `gamedash test-alert`.
+
 ### Safer
 - New installs pick **random game passwords** instead of well-known placeholders.
 - **Admin consoles are never forwarded**: they're marked "keep closed" everywhere, and *Can friends

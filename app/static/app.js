@@ -851,26 +851,66 @@ const gamedash = (() => {
   }
 
   async function loadAlerts() {
-    if (!document.getElementById("al-channel")) return;
+    if (!document.getElementById("al-dests")) return;
+    let services = [], dests = [];
+    const box = document.getElementById("al-dests");
+    const svc = (type) => services.find((s) => s.type === type);
+    // read the form back into a list of destinations
+    const collect = () => [...box.querySelectorAll(".al-dest")].map((card) => {
+      const d = { type: card.querySelector(".al-type").value };
+      card.querySelectorAll("[data-field]").forEach((i) => { d[i.dataset.field] = i.value; });
+      return d;
+    });
+    const fieldHtml = (f, value) => {
+      const tip = esc(f.help || "");
+      if (f.kind.startsWith("choice:")) {
+        const opts = f.kind.slice(7).split("|").map((o) =>
+          `<option value="${esc(o)}"${o === value ? " selected" : ""}>${esc(o.toUpperCase())}</option>`).join("");
+        return `<label title="${tip}">${esc(f.label)} <select data-field="${esc(f.name)}">${opts}</select></label>`;
+      }
+      const secret = f.kind === "secret";
+      const saved = secret && value === "__saved__";
+      return `<label title="${tip}">${esc(f.label)}
+        <input type="${secret ? "password" : "text"}" data-field="${esc(f.name)}" autocomplete="off"
+          value="${saved ? "__saved__" : esc(value || "")}" placeholder="${saved ? "saved" : ""}">
+        <span class="muted" style="font-size:.75rem;font-weight:normal">${tip}</span></label>`;
+    };
+    const render = () => {
+      box.innerHTML = dests.map((d, n) => {
+        const s = svc(d.type) || services[0];
+        const options = services.map((x) => `<option value="${esc(x.type)}"${x.type === s.type ? " selected" : ""}>${esc(x.label)}</option>`).join("");
+        return `<div class="al-dest" data-n="${n}">
+          <label>Send alerts to <select class="al-type">${options}</select></label>
+          ${s.fields.map((f) => fieldHtml(f, d[f.name])).join("")}
+          <div class="alerts-btns"><button class="ctl" data-al-test="${n}">Test</button>
+            <button class="linkbtn" data-al-remove="${n}">Remove</button></div>
+          <div class="al-result" id="al-result-${n}"></div></div>`;
+      }).join("") || `<p class="muted" style="font-size:.85rem">No alerts set up yet.</p>`;
+    };
+    const showResults = (results, target) => {
+      const html = (results || []).map((r) => r.ok
+        ? `<div class="note good">✅ ${esc(r.service)}: sent — check it arrived.</div>`
+        : `<div class="note bad">❌ ${esc(r.service)}: ${esc(r.error)}</div>`).join("")
+        || `<div class="note">Nothing to send to yet — add a place first.</div>`;
+      document.getElementById(target).innerHTML = html;
+    };
     try {
       const r = await fetch("/admin/alerts", { credentials: "same-origin" });
       if (!r.ok) return;
       const a = await r.json();
-      document.getElementById("al-channel").value = a.alert_channel || "none";
-      document.getElementById("al-target").value = a.alert_target || "";
+      services = a.services || []; dests = a.destinations || [];
       document.getElementById("al-recovery").checked = !!a.alert_on_recovery;
       document.getElementById("al-unreachable").checked = !!a.alert_on_unreachable;
       document.getElementById("al-disabled").checked = !!a.alert_on_disabled;
-    } catch (e) { /* ignore */ }
+      render();
+    } catch (e) { return; }
 
     const save = async (test) => {
       const body = {
-        alert_channel: document.getElementById("al-channel").value,
-        alert_target: document.getElementById("al-target").value,
+        destinations: collect(), test,
         alert_on_recovery: document.getElementById("al-recovery").checked,
         alert_on_unreachable: document.getElementById("al-unreachable").checked,
         alert_on_disabled: document.getElementById("al-disabled").checked,
-        test: !!test,
       };
       const r = await fetch("/admin/alerts", {
         method: "POST", credentials: "same-origin",
@@ -879,12 +919,26 @@ const gamedash = (() => {
       });
       const d = await r.json();
       if (!d.ok) { toast(d.error || "Save failed.", true); return; }
-      if (test) {
-        toast(d.test_sent ? "Saved. Test alert sent." : "Saved, but no channel configured to test.", !d.test_sent);
-      } else { toast("Alert settings saved."); }
+      dests = d.destinations || []; render();
+      if (test === "all") showResults(d.test_results, "al-results");
+      else if (typeof test === "number") showResults(d.test_results, `al-result-${test}`);
+      else toast("Alert settings saved.");
     };
-    document.getElementById("al-save").onclick = () => save(false);
-    document.getElementById("al-test").onclick = () => save(true);
+    box.addEventListener("change", (e) => {
+      if (!e.target.classList.contains("al-type")) return;
+      const n = +e.target.closest(".al-dest").dataset.n;
+      dests = collect(); dests[n] = { type: e.target.value }; render();
+    });
+    box.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-al-test]"), rm = e.target.closest("[data-al-remove]");
+      if (t) { e.preventDefault(); save(+t.dataset.alTest); }
+      if (rm) { e.preventDefault(); dests = collect(); dests.splice(+rm.dataset.alRemove, 1); render(); }
+    });
+    document.getElementById("al-add").onclick = (e) => {
+      e.preventDefault(); dests = collect(); dests.push({ type: services[0].type }); render();
+    };
+    document.getElementById("al-save").onclick = () => save(null);
+    document.getElementById("al-test").onclick = () => save("all");
   }
 
   async function loadPortPool() {

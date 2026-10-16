@@ -588,27 +588,43 @@ def admin_alerts():
     if request.method == "POST":
         if not csrf_ok():
             return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
+        import notifiers
         data = request.get_json(silent=True) or {}
-        changed = {}
-        for k in config.ALERT_KEYS:
+        previous = alerts.destinations()
+        raw = data.get("destinations")
+        if not isinstance(raw, list) or len(raw) > 10:
+            return jsonify({"ok": False, "error": "Up to 10 alert destinations."}), 400
+        try:   # the browser only knows secret values as a placeholder: keep the stored ones
+            dests = [notifiers.clean(d if isinstance(d, dict) else {},
+                                     previous[i] if i < len(previous) else None)
+                     for i, d in enumerate(raw)]
+        except ValueError as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+        changed = {"alert_destinations": dests, "alert_channel": "none", "alert_target": ""}
+        for k in ("alert_on_recovery", "alert_on_unreachable", "alert_on_disabled"):
             if k in data:
-                if k in ("alert_on_recovery", "alert_on_unreachable", "alert_on_disabled"):
-                    changed[k] = bool(data[k])
-                elif k == "alert_channel":
-                    changed[k] = data[k] if data[k] in ("none", "discord", "ntfy", "webhook") else "none"
-                else:
-                    changed[k] = str(data[k]).strip()
-        target = changed.get("alert_target", "")
-        if target and not re.match(r"^https?://[^\s]{1,2000}$", target):
-            return jsonify({"ok": False, "error": "alert target must be an http(s) URL"}), 400
-        cfg = config.update(lambda c: c.update(changed))
-        audit_log.info("alert settings changed ip=%s channel=%s", _client_ip(),
-                       cfg.get("alert_channel"))
-        sent = alerts.send_test() if data.get("test") else None
-        return jsonify({"ok": True, "settings": {k: cfg[k] for k in config.ALERT_KEYS},
-                        "test_sent": sent})
+                changed[k] = bool(data[k])
+        config.update(lambda c: c.update(changed))
+        audit_log.info("alert settings changed ip=%s destinations=%s", _client_ip(),
+                       ",".join(d["type"] for d in dests) or "none")
+        test = data.get("test")
+        results = None
+        if test == "all":
+            results = alerts.send_test()
+        elif isinstance(test, int) and 0 <= test < len(dests):
+            results = alerts.send_test(dests[test])
+        return jsonify({"ok": True, "test_results": results, **_alert_view()})
+    return jsonify(_alert_view())
+
+
+def _alert_view() -> dict:
+    import notifiers
     cfg = config.load()
-    return jsonify({k: cfg[k] for k in config.ALERT_KEYS})
+    return {"services": notifiers.describe(),
+            "destinations": [notifiers.public_view(d) for d in alerts.destinations(cfg)],
+            "alert_on_recovery": cfg.get("alert_on_recovery", True),
+            "alert_on_unreachable": cfg.get("alert_on_unreachable", True),
+            "alert_on_disabled": cfg.get("alert_on_disabled", False)}
 
 
 @app.route("/admin/portpool", methods=["GET", "POST"])

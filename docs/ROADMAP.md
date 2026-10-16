@@ -146,14 +146,17 @@ loading its save after a restart.
 - [ ] Mod support beyond Valheim and ARK where games have an official mod system.
 
 ### Alerts and notifications
-- [ ] **Test the alerts end to end — they have never been tried for real.** For every channel:
-      the Settings "send a test" button, a server going down and recovering, a server that keeps
-      crashing, a failed backup. Confirm each message arrives, reads clearly, and isn't sent twice.
-- [ ] **All the popular notification services**, each with a simple form (no technical addresses
-      to type): Discord, Telegram, email, Slack, Microsoft Teams, Pushover, ntfy, Gotify, Matrix,
-      plus a generic webhook and an "other service" option for anything else.
-- [ ] Send to more than one service at once (e.g. Discord for the group, a phone push for the owner).
-- [ ] `gamedash test-alert` to send a test from the terminal.
+- [ ] **Test the alerts end to end with real accounts.** Each service is tested against stand-in
+      servers, and the Settings page was tried in a browser against a local receiver — but no message
+      has yet reached a real Discord / Telegram / email / Slack / Teams / Pushover / ntfy / Gotify /
+      Matrix account. For each: the Test button, a server going down and recovering, a server that
+      keeps crashing, a failed backup. Confirm each message arrives, reads clearly, and isn't sent
+      twice. *(Needs the owner's accounts.)*
+- [x] **Popular notification services**, each with a simple form and plain help: Discord, Telegram,
+      email, Slack, Microsoft Teams, Pushover, ntfy, Gotify, Matrix, generic webhook. *(2026-10-16)*
+- [x] Several destinations at once, each with its own **Test** button showing sent / the reason it
+      failed. *(2026-10-16)*
+- [x] `gamedash test-alert`. *(2026-10-16)*
 
 ### Security
 - [x] Idle or slow connections can no longer lock everyone out of the dashboard (event-based web

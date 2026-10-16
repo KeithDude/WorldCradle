@@ -9,6 +9,27 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Alerts: ten services, several destinations, an honest Test button
+
+- **Bug: the "send test" button always reported success.** Delivery errors were swallowed and an
+  error answer from the service (e.g. a mistyped Discord address) still counted as sent, so the
+  alerts — which the maintainer had never tried — couldn't be trusted. Each send now reports what
+  happened, in plain words ("the service refused it — check the token", "that address doesn't
+  exist", "couldn't reach the service"…).
+- **`app/notifiers.py`:** Discord, Telegram, email (SMTP with STARTTLS/SSL), Slack, Microsoft Teams
+  (Workflows / Adaptive Card), Pushover, ntfy, Gotify, Matrix and a generic webhook. Each has a form
+  with plain help on where to find the token or address, and checks that values look right before
+  saving. Tokens, passwords and webhook addresses are never sent back to the browser (shown as
+  "saved"; kept unless replaced).
+- **Several destinations at once** (up to 10), each with its own Test button; "Save & test all";
+  `gamedash test-alert`. Older single-destination settings are read as one destination.
+- Tested: every service against stand-in servers on this machine (HTTP and a small SMTP server),
+  including the failure messages (122 tests); the Settings page in a real browser on the test VM
+  (webhook test reached a local receiver; a wrong Discord address was refused; secrets stayed hidden
+  after a reload). **Not yet tested with real accounts** — on the roadmap.
+- Found while checking: the maintainer's dashboard had no alert destination set, so no alert had
+  ever been sent.
+
 ## 2026-10-16 — Automated tests
 
 - `tests/` (pytest, a development-only dependency in `requirements-dev.txt`): 113 tests in half a

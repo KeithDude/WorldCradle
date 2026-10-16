@@ -17,9 +17,9 @@ from __future__ import annotations
 import threading
 import time
 
-import requests
 
 import config
+import notifiers
 from applog import app_log
 
 UNREACHABLE_POLLS = 3   # consecutive running-but-unreachable polls before alerting
@@ -46,48 +46,52 @@ def _is_suppressed(key: str) -> bool:
 
 # ---- delivery --------------------------------------------------------------
 
-def _deliver(title: str, message: str, level: str) -> None:
-    cfg = config.load()
-    channel = cfg.get("alert_channel", "none")
-    target = cfg.get("alert_target", "")
-    if channel == "none" or not target:
-        return
-    text = f"{title}\n{message}"
-    try:
-        if channel == "discord":
-            # JSON body is UTF-8 — emoji in the title are fine here.
-            requests.post(target, json={"content": text[:1900]}, timeout=SEND_TIMEOUT)
-        elif channel == "ntfy":
-            # ntfy's Title is an HTTP header → must be ASCII. Keep the emoji as a
-            # ntfy Tag (rendered client-side) and strip it from the header.
-            tag = {"bad": "rotating_light", "good": "white_check_mark",
-                   "warn": "warning"}.get(level, "video_game")
-            prio = {"bad": "high", "good": "default", "warn": "high"}.get(level, "default")
-            ascii_title = title.encode("ascii", "ignore").decode().strip() or "gamedash"
-            requests.post(target, data=message.encode("utf-8"),
-                          headers={"Title": ascii_title, "Priority": prio, "Tags": tag},
-                          timeout=SEND_TIMEOUT)
-        elif channel == "webhook":
-            requests.post(target, json={"title": title, "message": message,
-                                        "level": level}, timeout=SEND_TIMEOUT)
-    except Exception as e:  # never let alerting break the poll loop, but log it
-        app_log.warning("alert delivery to %s failed: %r", channel, e)
+def destinations(cfg: dict | None = None) -> list[dict]:
+    """Where alerts go. Settings from before multiple destinations existed (one alert_channel +
+    alert_target) count as a single destination."""
+    cfg = cfg or config.load()
+    dests = [d for d in cfg.get("alert_destinations") or [] if isinstance(d, dict)]
+    if not dests and cfg.get("alert_channel", "none") in notifiers.SERVICES and cfg.get("alert_target"):
+        dests = [{"type": cfg["alert_channel"], "url": cfg["alert_target"]}]
+    return dests
+
+
+def _deliver(title: str, message: str, level: str) -> list[dict]:
+    """Send to every destination. Never raises (the poller calls this); failures are logged and
+    returned as [{"service", "ok", "error"}]."""
+    results = []
+    for d in destinations():
+        label = notifiers.SERVICES.get(d.get("type"), {}).get("label", d.get("type"))
+        try:
+            notifiers.send(d, title, message, level)
+            results.append({"service": label, "ok": True, "error": ""})
+        except notifiers.NotifyError as e:
+            app_log.warning("alert delivery to %s failed: %s", label, e)
+            results.append({"service": label, "ok": False, "error": str(e)})
+        except Exception as e:   # never let alerting break the poll loop
+            app_log.warning("alert delivery to %s failed: %r", label, e)
+            results.append({"service": label, "ok": False, "error": "unexpected error — see the GameDash log"})
+    return results
 
 
 def notify(title: str, message: str, level: str = "warn") -> None:
     """Send a one-off notice (not tied to a server state transition) through the
-    configured channel. Best-effort; a no-op when no channel is set up."""
+    configured destinations. Best-effort; a no-op when none are set up."""
     _deliver(title, message, level)
 
 
-def send_test() -> bool:
-    """Send a test alert; returns False if no channel is configured."""
-    cfg = config.load()
-    if cfg.get("alert_channel", "none") == "none" or not cfg.get("alert_target"):
-        return False
-    _deliver("🎮 gamedash test alert",
-             "If you can read this, alert delivery is working.", "good")
-    return True
+def send_test(dest: dict | None = None) -> list[dict]:
+    """Send a test alert to one destination, or to all of them. Returns what happened for each
+    ([] when there is nowhere to send to) — the Settings page shows it."""
+    title, message = "🎮 GameDash test alert", "If you can read this, GameDash alerts reach you here."
+    if dest is None:
+        return _deliver(title, message, "good")
+    label = notifiers.SERVICES.get(dest.get("type"), {}).get("label", dest.get("type"))
+    try:
+        notifiers.send(dest, title, message, "good")
+        return [{"service": label, "ok": True, "error": ""}]
+    except Exception as e:
+        return [{"service": label, "ok": False, "error": str(e)}]
 
 
 # ---- engine ----------------------------------------------------------------

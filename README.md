@@ -88,6 +88,7 @@ gamedash passwords          show the game passwords (the one friends need to joi
 gamedash update             update GameDash itself (rolls back if the new version fails)
 gamedash uninstall          remove GameDash (asks first; never deletes games or saves)
 gamedash qr                 a QR code to open the dashboard on a phone
+gamedash test-alert         send a test alert to every place alerts are set up to go
 gamedash check              quick health check
 ```
 - Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `gamedash.log`.

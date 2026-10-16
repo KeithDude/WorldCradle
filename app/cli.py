@@ -24,6 +24,7 @@ Usage: gamedash <command> [options]
 
   update                     Update GameDash itself (puts the old version back if the new one fails)
   uninstall                  Remove GameDash (asks before each step; never deletes games or saves)
+  test-alert                 Send a test alert to every place alerts are set up to go
   check                      Quick health check: service, disk space, certificate, admin password
   version                    Which version of GameDash this is
   help                       This list
@@ -560,6 +561,17 @@ def cmd_unban(args) -> int:
     return 0
 
 
+def cmd_test_alert(_args) -> int:
+    """Send a test alert to every place alerts are set up to go."""
+    import alerts
+    results = alerts.send_test()
+    if not results:
+        return _err("no alerts are set up yet — add one in the dashboard: Settings → Alerts")
+    for r in results:
+        _say(f"  {'✅' if r['ok'] else '❌'} {r['service']}: " + ("sent — check it arrived" if r["ok"] else r["error"]))
+    return 0 if all(r["ok"] for r in results) else 1
+
+
 def cmd_version(_args) -> int:
     from version import version
     r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
@@ -585,6 +597,7 @@ COMMANDS = {
     "backup": cmd_backup,
     "check": cmd_check, "doctor": cmd_check, "update": cmd_update, "upgrade": cmd_update,
     "uninstall": cmd_uninstall, "remove": cmd_uninstall, "unban": cmd_unban,
+    "testalert": cmd_test_alert,
     "version": cmd_version, "help": cmd_help,
 }
 

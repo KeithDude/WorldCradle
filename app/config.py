@@ -40,8 +40,9 @@ DEFAULTS = {
     "bind_port": 8770,
     "satisfactory_api_token": "",       # optional static Bearer token override; otherwise the
                                         # Satisfactory password comes from the secrets file
-    "alert_channel": "none",       # none | discord | ntfy | webhook
-    "alert_target": "",            # webhook URL or ntfy topic URL
+    "alert_channel": "none",       # (older single-destination setting; see alert_destinations)
+    "alert_target": "",
+    "alert_destinations": [],      # [{"type": <notifiers.SERVICES key>, <field>: <value>, ...}]
     "alert_on_recovery": True,
     "alert_on_unreachable": True,
     "alert_on_disabled": False,

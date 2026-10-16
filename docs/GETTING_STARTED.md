@@ -94,7 +94,14 @@ shown next to *Friends connect to*. If that works, it works for your friends too
 Give your friends the address and the **join password** (type `gamedash passwords` in a terminal to
 see it again, or change it in **Settings → Game passwords**).
 
-## 7. Everyday things
+## 7. Get told when something goes wrong
+
+In **Settings → Alerts**, press **Add a place to send alerts** and pick a service — Discord, Telegram,
+email, your phone (ntfy or Pushover) and others. Each one explains where to find what it asks for.
+Press **Test**: it tells you straight away whether the message got through. You'll then hear about a
+server going down, a server that keeps crashing, or a backup that failed.
+
+## 8. Everyday things
 
 | You want to… | In the dashboard | Or in a terminal |
 |---|---|---|
@@ -104,6 +111,7 @@ see it again, or change it in **Settings → Game passwords**).
 | Message the players | **Message** on the card (games that support it) | — |
 | Forgot the dashboard password | — | `gamedash reset-password` |
 | Update GameDash | — | `gamedash update` |
+| Check alerts reach you | **Settings → Alerts → Test** | `gamedash test-alert` |
 | Get help | — | `gamedash help` |
 
 ## If something goes wrong

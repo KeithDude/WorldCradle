@@ -50,23 +50,18 @@
   <section class="settings-section">
     <h3 id="alerts">🔔 Alerts</h3>
     <div class="alerts-form">
-      <label title="Get a message when a server goes down or a backup fails. Discord posts into a channel; ntfy sends a free push notification to your phone.">Send alerts to
-        <select id="al-channel">
-          <option value="none">Off</option>
-          <option value="discord">A Discord channel</option>
-          <option value="ntfy">My phone (ntfy app)</option>
-          <option value="webhook">Another service (webhook)</option>
-        </select>
-      </label>
-      <label title="Discord: in the channel's settings choose Integrations → Webhooks → New Webhook → Copy URL. ntfy: the topic address you subscribed to in the app, e.g. https://ntfy.sh/my-secret-topic.">The web address your alert service gave you
-        <input type="text" id="al-target" placeholder="https://…" autocomplete="off"></label>
-      <label class="ck"><input type="checkbox" id="al-recovery"> alert on recovery</label>
-      <label class="ck"><input type="checkbox" id="al-unreachable"> alert when running-but-unreachable</label>
-      <label class="ck"><input type="checkbox" id="al-disabled"> alert even for disabled (parked) servers</label>
+      <p class="muted" style="font-size:.85rem;margin:0">Get a message when a server goes down, keeps crashing,
+        or a backup fails. Add one or more places to send it, then press <b>Test</b> to check it arrives.</p>
+      <div id="al-dests"></div>
+      <div class="alerts-btns"><button class="ctl" id="al-add">➕ Add a place to send alerts</button></div>
+      <label class="ck"><input type="checkbox" id="al-recovery"> also tell me when a server is back up</label>
+      <label class="ck"><input type="checkbox" id="al-unreachable"> also when a server is running but not answering</label>
+      <label class="ck"><input type="checkbox" id="al-disabled"> also for servers I've switched off on purpose</label>
       <div class="alerts-btns">
         <button class="btn" id="al-save">Save</button>
-        <button class="ctl" id="al-test">Save &amp; send test</button>
+        <button class="ctl" id="al-test">Save &amp; test all</button>
       </div>
+      <div id="al-results"></div>
     </div>
   </section>
 
