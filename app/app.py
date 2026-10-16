@@ -79,7 +79,8 @@ def _inject_nonce():
     support = project.SUPPORT_URL if re.match(r"^https://[^\s\"'<>]+$", project.SUPPORT_URL or "") else ""
     return {"csp_nonce": getattr(g, "csp_nonce", ""), "game_titles": games.titles(),
             "cert_trusted": _cert_trusted(), "project_url": project.PROJECT_URL,
-            "support_url": support, "support_label": project.SUPPORT_LABEL}
+            "support_url": support, "support_label": project.SUPPORT_LABEL,
+            "gd_version": __import__("version").version()}
 
 
 @app.after_request

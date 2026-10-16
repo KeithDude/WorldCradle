@@ -86,8 +86,11 @@ Last updated: 2026-10-15
 - [ ] Screenshots in the README.
 - [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
       section in the README, and a GitHub *Sponsor* button (`.github/FUNDING.yml`). *(2026-10-15)*
-- [ ] Version numbers and release notes (a git tag per release; the dashboard and `gamedash version`
-      show it).
+- [x] Version number (`VERSION`, now 0.2.0-dev) shown by `gamedash version` and in the dashboard
+      footer for signed-in admins (hidden from the public page); release notes in `CHANGELOG.md`.
+      *(2026-10-16)*
+- [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, tag `v0.2.0` and
+      publish a GitHub Release with those notes.
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44

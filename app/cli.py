@@ -561,9 +561,11 @@ def cmd_unban(args) -> int:
 
 
 def cmd_version(_args) -> int:
+    from version import version
     r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
                        capture_output=True, text=True)
-    _say(f"GameDash {r.stdout.strip() or '(version unknown)'}  —  {REPO}")
+    build = f" (build {r.stdout.strip()})" if r.returncode == 0 and r.stdout.strip() else ""
+    _say(f"GameDash {version()}{build}  —  {REPO}")
     return 0
 
 

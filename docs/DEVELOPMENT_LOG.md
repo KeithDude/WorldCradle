@@ -9,6 +9,14 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Version number and release notes
+
+- `VERSION` (0.2.0-dev) read by `app/version.py`; `gamedash version` shows it with the git build,
+  and the dashboard footer shows it to signed-in admins only — the public page doesn't reveal the
+  version, so it can't be used to look up known problems.
+- `CHANGELOG.md`: user-facing release notes (0.2.0 not yet released; 0.1.0 = private alpha), kept
+  separate from this log.
+
 ## 2026-10-16 — Contributor files, backups and unban from the terminal
 
 - GitHub issue forms (`.github/ISSUE_TEMPLATE/`): a **game test report** that asks exactly what was

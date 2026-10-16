@@ -110,7 +110,7 @@ the dashboard then shows the server as running without a player count.
   code. The dashboard login password is a bcrypt hash in `config.json`.
 - **Never forward an admin console (RCON) or other control port** on your router —
   see [deploy/SETUP.md](deploy/SETUP.md), section 6.
-- Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
+- What changed in each version: **[CHANGELOG.md](CHANGELOG.md)**. Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
 
 ## Support the project
 
