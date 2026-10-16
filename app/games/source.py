@@ -1,4 +1,4 @@
-"""Valve Source-engine game types: Counter-Strike 2, Garry's Mod, Left 4 Dead 2.
+"""Valve Source-engine game types: Counter-Strike 2, Garry's Mod, Left 4 Dead 2, Team Fortress 2.
 
 They share one shape: everything is set on the launch line ("+cvar value"),
 the Steam query and the RCON admin console both live on the game port, and
@@ -40,7 +40,6 @@ class SourceGame(GameType):
     `launch()` (the command line for one server)."""
     actions = {"broadcast", "kick"}
     provisionable = True
-    base_port = 27015
     token_app = 0            # the App ID a game-server token must be created for
     lib_path = ".:bin"       # where the server binary finds its own libraries
     default_map = ""

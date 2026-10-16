@@ -142,7 +142,6 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
   position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
-#chat-modal[hidden] { display: none; }
 .chat-box {
   background: var(--panel); border: 1px solid var(--line); border-radius: .6rem;
   width: 100%; max-width: 560px; max-height: 80vh; display: flex; flex-direction: column;
@@ -162,7 +161,6 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
   background: rgba(210,153,34,.14); border-bottom: 1px solid var(--warn);
   color: #e3b341; padding: .65rem 1rem; font-size: .85rem; line-height: 1.45;
 }
-.certnote[hidden] { display: none; }
 .certnote-body { flex: 1; }
 .certnote-body strong { color: #e3b341; }
 .certnote-x {
@@ -172,7 +170,6 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
 .certnote-x:hover { color: #fff; }
 
 .srvname { color: var(--text); font-size: .82rem; margin: .1rem 0 .3rem; opacity: .85; }
-.cardfoot { margin-top: .6rem; }
 .joinbtn {
   position: absolute; top: .7rem; right: .8rem; z-index: 1;
   background: var(--panel2); color: var(--accent); border: 1px solid var(--accent);
@@ -190,7 +187,6 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
   position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
-#join-modal[hidden] { display: none; }
 .join-box {
   background: var(--panel); border: 1px solid var(--line); border-radius: .6rem;
   width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
@@ -207,11 +203,10 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
 .join-steps { margin: 0; padding-left: 1.2rem; }
 .join-steps li { margin: .35rem 0; line-height: 1.45; }
 
-#logs-modal, #script-modal, #backups-modal {
+#logs-modal, #script-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
-#logs-modal[hidden], #script-modal[hidden], #backups-modal[hidden] { display: none; }
 .bk-row { display: flex; justify-content: space-between; align-items: center; gap: .8rem;
   padding: .45rem .2rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .bk-meta { font-size: .82rem; }
@@ -273,7 +268,6 @@ a.ctl { text-decoration: none; display: inline-flex; align-items: center; }
   position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 30;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
-#ports-modal[hidden] { display: none; }
 #ports-modal .join-box { max-width: 560px; }
 #ports-modal .join-body p { margin: 0 0 .7rem; line-height: 1.5; }
 #ports-modal ul { margin: 0 0 .8rem; padding-left: 1.2rem; }

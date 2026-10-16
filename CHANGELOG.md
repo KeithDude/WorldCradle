@@ -42,6 +42,13 @@ footer of the dashboard when signed in.
 - **Terraria servers no longer crash every few minutes** — GameDash's "is it answering?" check used
   to connect to the game in a way Terraria's server can't handle. It now asks the computer instead.
 - The dashboard works properly on phones (the top menu used to run off the screen).
+- When you're signed out while the dashboard is open, it now goes to the login page instead of
+  quietly showing old information.
+- `gamedash uninstall` now leaves a server running if you say so, and also offers to remove a
+  backup folder you moved elsewhere.
+- Don't Starve Together servers now pick up a changed join password when they start.
+- Alerts follow each service's own documentation: new Matrix rooms can be used, email over "SSL"
+  uses the right port, and when a service refuses a message you're told its actual reason.
 - A server that **keeps crashing** now says so on its card (and sends an alert), instead of looking
   "running" between crashes.
 

@@ -1,12 +1,14 @@
-"""controls.py — admin actions on servers (systemd lifecycle + RCON).
+"""controls.py — admin actions on servers: start/stop through systemd, and the in-game
+actions (save, message, kick, ban, chat) through each server's game type.
 
 Safety model (mirrors the operator's standing rule: never disrupt a server
 without checking players first):
   * start / save / broadcast are non-disruptive.
-  * stop / restart are disruptive — the caller must pass confirm=True, and we
-    re-check the LIVE player count here regardless of the cached snapshot.
+  * stop / restart / force stop are disruptive — with players online the caller
+    must pass confirm=True, and the LIVE player count is re-checked here
+    regardless of the cached snapshot.
   * starting a server whose port-slot sibling is already running is refused
-    (island/extinction share ports — only one at a time).
+    (servers that share ports run one at a time).
 """
 from __future__ import annotations
 
@@ -23,6 +25,10 @@ from games.base import ActionError
 from registry import Server, by_key
 
 DISRUPTIVE = {"stop", "restart", "kill"}
+# How long to hold back "server is down" alerts after GameDash itself takes a server down
+QUIET_AFTER_STOP = 180
+QUIET_AFTER_RESTART = 300
+QUIET_DURING_UPDATE = 3600
 VALID_ACTIONS = {"start", "stop", "restart", "kill", "save", "broadcast",
                  "kick", "ban", "chat"}
 
@@ -107,7 +113,7 @@ def start_update(app, confirm: bool = False) -> dict:
     servers = [s for s in by_key().values() if s.steam_app == app]
     if not servers:
         raise ActionError("no servers for that game")
-    game = servers[0].name.split(" · ", 1)[0]
+    game = _game_for_app(app).label
     running = [s for s in servers if monitor.unit_active(s.unit)]
 
     # Player-check: updating stops the server(s).
@@ -146,7 +152,7 @@ def _run_update(app: int, running: list, game: str):
     try:
         # Stop running servers (suppress alerts; this is planned downtime).
         for s in running:
-            alerts.suppress(s.key, 3600)
+            alerts.suppress(s.key, QUIET_DURING_UPDATE)
         _set_step(f"stopping {len(running)} server(s)")
         for s in running:
             try:
@@ -205,9 +211,9 @@ def _run_update(app: int, running: list, game: str):
 
 
 def read_logs(key: str, lines=300) -> str:
-    """Recent log lines for a server. Prefers the game's own log file when we
-    know it (Valheim writes to ServerLog.txt); otherwise reads the systemd
-    journal for the unit (every server is a --user service)."""
+    """Recent log lines for a server. Prefers the game's own log file when it
+    has one (log_path); otherwise reads the systemd journal for the unit
+    (every server is a --user service)."""
     s = by_key().get(key)
     if s is None:
         raise ActionError("That server isn't on the dashboard any more — reload the page.")
@@ -291,13 +297,15 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
         _systemctl("start", s.unit)
         return {"ok": True, "message": f"Started {s.name}."}
 
-    if action == "kill":
+    if action in DISRUPTIVE:
         if not monitor.unit_active(s.unit):
             raise ActionError(f"{s.name} is not running.")
         count, names = live_players(s)
         if not confirm and count:  # players online and not yet confirmed
             raise ConfirmRequired(count, names)
-        alerts.suppress(s.key, 300)
+
+    if action == "kill":
+        alerts.suppress(s.key, QUIET_AFTER_RESTART)
         # Hard kill: SIGKILL the process so NO graceful ExecStop/save runs, then
         # stop to cancel Restart=on-failure (ExecStop now hits a dead process →
         # still no save), then clear the resulting 'failed' state.
@@ -309,16 +317,11 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
             pass  # already dying; the kill is what matters
         subprocess.run(["systemctl", "--user", "reset-failed", s.unit],
                        capture_output=True, text=True, timeout=15)
-        return {"ok": True, "message": f"Killed {s.name} — process force-stopped, NOT saved."}
+        return {"ok": True, "message": f"Force-stopped {s.name} — it was NOT saved."}
 
-    if action in DISRUPTIVE:
-        if not monitor.unit_active(s.unit):
-            raise ActionError(f"{s.name} is not running.")
-        count, names = live_players(s)
-        if not confirm and count:  # players online and not yet confirmed
-            raise ConfirmRequired(count, names)
+    if action in ("stop", "restart"):
         # Expected downtime — suppress the down/recovery alert for this server.
-        alerts.suppress(s.key, 300 if action == "restart" else 180)
+        alerts.suppress(s.key, QUIET_AFTER_RESTART if action == "restart" else QUIET_AFTER_STOP)
         _systemctl(action, s.unit)
         verb = "Stopped" if action == "stop" else "Restarted"
         return {"ok": True, "message": f"{verb} {s.name}."}

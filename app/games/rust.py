@@ -7,7 +7,6 @@ no join password. Player numbers come from the Steam query port.
 from __future__ import annotations
 
 import os
-import re
 
 import config
 import monitor
@@ -43,7 +42,6 @@ class RustGame(GameType):
     actions: set[str] = set()
 
     provisionable = True
-    base_port = 28015
     port_layout = [
         {"name": "game", "klass": "game", "start": 28015, "proto": "UDP", "forward": True,
          "label": "Game port (UDP)", "help": "The port players connect to. Forward it."},
@@ -105,9 +103,6 @@ class RustGame(GameType):
             "world": identity, "save_root": ident_dir,
             "extra_ports": [ports["rcon"], ports["app"]],
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

@@ -26,7 +26,6 @@ class SatisfactoryGame(GameType):
     # so multiple can run from one install. The one thing that corrupts data is
     # two instances writing the SAME save — hence the note below.
     provisionable = True
-    base_port = 7779  # 7777 (game) + 8888 (reliable) taken by the existing server
     extra_fields = [
         {"name": "maxplayers", "label": "Max players (1-64, game default is 4)", "type": "number",
          "min": 1, "max": 64, "default": 4,
@@ -46,7 +45,8 @@ class SatisfactoryGame(GameType):
     # draw from the "game" class; the reliable port is stored as query_port
     # (matching the existing server's convention).
     port_layout = [
-        {"name": "game", "klass": "game", "start": base_port, "proto": "UDP and TCP", "forward": True, "label": "Game port (UDP + TCP)",
+        # starts above the game's defaults (7777, and 8888 for its reliable port) so a server set up by hand keeps them
+        {"name": "game", "klass": "game", "start": 7779, "proto": "UDP and TCP", "forward": True, "label": "Game port (UDP + TCP)",
          "help": "Game traffic, server query and the HTTPS API. Forward both UDP and TCP."},
         {"name": "query", "klass": "game", "start": 8889, "proto": "TCP", "forward": True, "label": "Reliable messaging port (TCP)",
          "help": "Without this one forwarded, players hang on the loading screen."},
@@ -103,10 +103,6 @@ class SatisfactoryGame(GameType):
         if tok:
             self._tokens[s.game_port] = tok
         return tok
-
-    def save_paths(self, s) -> list[dict]:
-        # the per-instance SaveGames dir (HOME-rooted); stored at provision time
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

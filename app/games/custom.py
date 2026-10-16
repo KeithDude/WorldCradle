@@ -13,9 +13,6 @@ class CustomGame(GameType):
     label = "Custom service"
     actions: set[str] = set()  # no game-specific RCON controls by default
 
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
-
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
                "max_players": None, "reachable": None}

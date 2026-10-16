@@ -1,8 +1,8 @@
 """ports.py — port allocation for provisioning new gamedash instances.
 
-If config.json defines a `port_pool` range for a port class (game / query /
-rcon), allocation draws from that range; otherwise it falls back to the game
-template's conventional start port (the pre-pool behavior). What's already
+Each game template has a conventional start port per port class (game / query /
+rcon). A `port_pool` range in config.json is only used when the caller asks for
+it (the Add form's "use port pool" box): allocation then draws from that range. What's already
 taken is computed live by `provision.used_ports()` (configured servers +
 listening sockets + reserved), so there's no separate allocation ledger to
 drift out of sync — the pool only *bounds* where we hunt for a free port.

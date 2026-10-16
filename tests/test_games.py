@@ -61,3 +61,30 @@ def test_7dtd_commented_setting_becomes_live():
     out = games.get("sdtd")._set(xml, "UserDataFolder", "/srv/data")
     assert '<property name="UserDataFolder" value="/srv/data"/>' in out
     assert "<!--" not in out
+
+
+def test_dst_picks_up_a_changed_join_password_at_start(tmp_path, monkeypatch):
+    import os
+    import stat
+    import subprocess
+    import config
+    from games import dst
+    install = tmp_path / "dst"
+    (install / "bin64").mkdir(parents=True)
+    exe = install / "bin64" / dst.EXE
+    exe.write_text("#!/bin/sh\nexit 0\n")                      # stands in for the real server
+    exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
+    secrets = tmp_path / "secrets.conf"
+    secrets.write_text('GAME_SERVER_PASSWORD="first-pw"\n')
+    monkeypatch.setattr(config, "install_dir", lambda kind: str(install))
+    monkeypatch.setattr(config, "secrets_path", lambda: str(secrets))
+    monkeypatch.setattr(os.path, "expanduser", lambda p: p.replace("~", str(tmp_path)))
+    g = dst.DstGame()
+    ports = {"game": 10999, "caves": 11000, "steam_master": 27050, "auth_master": 8770,
+             "steam_caves": 27051, "auth_caves": 8771, "shard": 10888}
+    fields = g.provision({"key": "dsttest", "name": "Test", "cluster_token": "pds-g^KU_test^" + "x" * 30,
+                          "caves": False}, ports)
+    ini = os.path.join(fields["save_root"], "cluster.ini")
+    secrets.write_text('GAME_SERVER_PASSWORD="changed-pw"\n')   # changed in Settings after creation
+    subprocess.run(["sh", fields["exec_start"]], check=True, timeout=30)
+    assert "cluster_password = changed-pw\n" in open(ini).read()

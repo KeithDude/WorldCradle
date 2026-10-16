@@ -31,6 +31,15 @@ _RUN_TEMPLATE = """#!/bin/sh
 # One process per level: Caves (if enabled) runs in the background, the surface
 # world ("Master") in the foreground. Settings live in the cluster folder:
 #   {cluster_dir}
+. {secrets}
+# keep the join password in step with the one set in GameDash
+python3 - "{cluster_dir}/cluster.ini" "$GAME_SERVER_PASSWORD" <<'SYNC'
+import re, sys
+p, pw = sys.argv[1], sys.argv[2]
+t = open(p, encoding="utf-8").read()
+t = re.sub(r"(?m)^cluster_password = .*$", lambda m: "cluster_password = " + pw, t)
+open(p, "w", encoding="utf-8").write(t)
+SYNC
 cd "{install}/bin64" || exit 1
 {caves}exec ./{exe} -persistent_storage_root "{root}" -conf_dir {conf} -cluster {cluster} -shard Master
 """
@@ -47,7 +56,6 @@ class DstGame(GameType):
     actions: set[str] = set()   # no remote console — admin is done in-game
 
     provisionable = True
-    base_port = 10999
     # Players connect to each level directly, so both level ports are forwarded.
     # The rest are bound on this computer only and are picked automatically.
     port_layout = [
@@ -119,12 +127,6 @@ class DstGame(GameType):
         maxp = opt_int(spec, "maxplayers", 6, 1, 64, "Max players")
         caves = opt_bool(spec, "caves", True)
         b = lambda name, default: str(opt_bool(spec, name, default)).lower()  # noqa: E731
-        secrets_file = {}
-        try:
-            import registry
-            secrets_file = registry.load_secrets()
-        except Exception:
-            pass
         cluster_ini = self._ini({
             "GAMEPLAY": {
                 "game_mode": opt_choice(spec, "game_mode", [v for v, _ in GAME_MODES], "survival", "Game mode"),
@@ -135,7 +137,7 @@ class DstGame(GameType):
             "NETWORK": {
                 "cluster_name": display,
                 "cluster_description": safe_name(spec.get("description") or "", 200),
-                "cluster_password": secrets_file.get("GAME_SERVER_PASSWORD", ""),
+                "cluster_password": "",   # filled in from the shared join password at each start
                 "cluster_intention": opt_choice(spec, "intention", [v for v, _ in INTENTIONS],
                                                 "cooperative", "Play style"),
                 "lan_only_cluster": b("lan_only", False),
@@ -172,15 +174,15 @@ class DstGame(GameType):
         if caves:  # tells the second level to generate a cave world, not another surface
             with open(os.path.join(cluster_dir, "Caves", "worldgenoverride.lua"), "w", encoding="utf-8") as f:
                 f.write('return {\n    override_enabled = true,\n    preset = "DST_CAVE",\n}\n')
-        common = f'-persistent_storage_root "{root}" -conf_dir {CONF_DIR} -cluster {cluster}'
+        shard_args = f'-persistent_storage_root "{root}" -conf_dir {CONF_DIR} -cluster {cluster}'
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(
                 install=install, exe=EXE, root=root, conf=CONF_DIR, cluster=cluster,
-                cluster_dir=cluster_dir,
+                cluster_dir=cluster_dir, secrets=config.secrets_path(),
                 # A background job started by a script ignores Ctrl-C (SIGINT) by default, and
                 # SIGINT is how the server is told to save and quit — so hand Caves the signal back.
-                caves=(f"env --default-signal=INT ./{EXE} {common} -shard Caves &\n" if caves else "")))
+                caves=(f"env --default-signal=INT ./{EXE} {shard_args} -shard Caves &\n" if caves else "")))
         os.chmod(run, 0o755)
         extra = [ports[n] for n in ("steam_master", "auth_master", "shard")]
         extra += [ports[n] for n in ("caves", "steam_caves", "auth_caves")] if caves else []
@@ -196,9 +198,6 @@ class DstGame(GameType):
             "kill_signal": "SIGINT", "timeout_stop": 40,
             "world": cluster, "save_root": cluster_dir, "extra_ports": extra,
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

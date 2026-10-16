@@ -22,7 +22,6 @@ from games import common
 from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
 
 LINKS_URL = "https://net-secondary.web.minecraft-services.net/api/v1.0/download/links"
-EULA_URL = "https://aka.ms/MinecraftEULA"
 EXE = "bedrock_server"
 GAMEMODES = [["survival", "Survival"], ["creative", "Creative"], ["adventure", "Adventure"]]
 DIFFICULTIES = [["peaceful", "Peaceful (no monsters)"], ["easy", "Easy"], ["normal", "Normal"],
@@ -56,7 +55,6 @@ class BedrockGame(GameType):
     actions = {"broadcast", "kick"}
 
     provisionable = True
-    base_port = 19132
     port_layout = [
         {"name": "game", "klass": "game", "start": 19132, "proto": "UDP and TCP", "forward": True,
          "label": "Game port (UDP and TCP)",

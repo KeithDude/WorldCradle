@@ -36,7 +36,6 @@ from __future__ import annotations
 import getpass
 import os
 import shutil
-import socket
 import subprocess
 import sys
 
@@ -76,14 +75,8 @@ def _port() -> int:
 
 
 def _lan_ip() -> str:
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("192.0.2.1", 9))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except OSError:
-        return ""
+    import monitor
+    return monitor.lan_ip()
 
 
 # ---- commands --------------------------------------------------------------------
@@ -145,7 +138,7 @@ def cmd_status(_args) -> int:
 
 def cmd_reset_password(_args) -> int:
     import config
-    _say("Choose a new admin password for the dashboard (at least 12 characters).")
+    _say(f"Choose a new admin password for the dashboard (at least {config.MIN_ADMIN_PASSWORD} characters).")
     _say("Everyone currently signed in will be signed out.")
     try:
         pw = getpass.getpass("New password: ")
@@ -155,8 +148,8 @@ def cmd_reset_password(_args) -> int:
         return _err("cancelled — nothing changed")
     if pw != again:
         return _err("the two passwords don't match — nothing changed")
-    if len(pw) < 12:
-        return _err("too short: use at least 12 characters (this password guards full control "
+    if len(pw) < config.MIN_ADMIN_PASSWORD:
+        return _err(f"too short: use at least {config.MIN_ADMIN_PASSWORD} characters (this password guards full control "
                     "of your servers) — nothing changed")
     config.set_password(pw)
     _say("Done. Sign in to the dashboard with the new password.")
@@ -456,10 +449,11 @@ def cmd_uninstall(args) -> int:
     """Remove GameDash from this computer, step by step, asking before anything that can't be undone.
     Game installs and saves are never deleted; backups and settings only if asked."""
     import config
+    import paths
     from registry import by_key
     home = os.path.expanduser("~")
-    data = os.environ.get("GAMEDASH_HOME", os.path.join(home, ".config", "gamedash"))
-    backups = os.environ.get("GAMEDASH_BACKUPS", os.path.join(home, ".local", "share", "gamedash", "backups"))
+    data = paths.HOME
+    backups = os.path.expanduser(config.load().get("backups_dir") or paths.DEFAULT_BACKUP_ROOT)
     units_dir = os.path.join(home, ".config", "systemd", "user")
     servers = sorted(by_key().values(), key=lambda s: s.key)
     running = [s for s in servers if _active(s.unit)]
@@ -480,6 +474,7 @@ def cmd_uninstall(args) -> int:
             _say(f"  {s.key:<16} {s.name}")
         if _yes("Stop them and remove them from the computer's start-up? (Their games and saves stay on disk.)", True):
             import controls
+            keep = set()
             for s in running:
                 try:
                     who = controls.live_players(s)[0]
@@ -488,10 +483,13 @@ def cmd_uninstall(args) -> int:
                 if who:
                     _say(f"  {s.name} has {who} player(s) online.")
                     if not _yes(f"  Stop {s.name} anyway?"):
-                        _say(f"  Left {s.name} running.")
-                        continue
+                        keep.add(s.key)
+                        _say(f"  Left {s.name} running (stop it later with: systemctl --user disable --now {s.unit}).")
             for s in servers:
+                if s.key in keep:
+                    continue
                 _systemctl("disable", "--now", s.unit)
+                # only service files GameDash wrote are deleted; hand-made ones are just switched off
                 path = os.path.join(units_dir, s.unit)
                 if os.path.basename(path).startswith("gamedash-") and os.path.isfile(path):
                     os.remove(path)

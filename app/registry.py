@@ -17,7 +17,7 @@ import config
 
 def load_secrets() -> dict:
     """Parse the central secrets file (KEY="value" lines) — path from config
-    (default ~/Scripts/secrets.conf). Optional; missing file → {}."""
+    (default: secrets.conf in the data folder, see paths.py). Missing file → {}."""
     out: dict[str, str] = {}
     try:
         for line in open(config.secrets_path(), encoding="utf-8"):
@@ -37,12 +37,6 @@ def load_secrets() -> dict:
     return out
 
 
-def _resolve(text: str, secrets: dict) -> str:
-    """Substitute ${VAR} / $VAR references using the secrets registry."""
-    return re.sub(r"\$\{(\w+)\}|\$(\w+)",
-                  lambda m: secrets.get(m.group(1) or m.group(2), m.group(0)), text)
-
-
 def game_admin_password() -> str:
     """The shared admin/RCON password from the central registry."""
     return load_secrets().get("GAME_ADMIN_PASSWORD", "")
@@ -53,7 +47,6 @@ def write_secrets(updates: dict) -> None:
     (comments, other keys, ordering). Creates the file (0600) if missing. The
     file is sourced by bash run scripts, so callers must validate values are
     shell-safe before calling (no quotes/$/backtick/whitespace)."""
-    import os as _os
     path = config.secrets_path()
     try:
         lines = open(path, encoding="utf-8").read().splitlines()
@@ -71,18 +64,18 @@ def write_secrets(updates: dict) -> None:
     for k, v in pending.items():
         out.append(f'{k}="{v}"')
     tmp = path + ".tmp"
-    _os.makedirs(_os.path.dirname(path), exist_ok=True)
-    fd = _os.open(tmp, _os.O_WRONLY | _os.O_CREAT | _os.O_TRUNC, 0o600)
-    with _os.fdopen(fd, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
-    _os.replace(tmp, path)
+    os.replace(tmp, path)
 
 
 @dataclass
 class Server:
     key: str                      # short id, also used in URLs
     name: str                     # display name
-    kind: str                     # ark | palworld | valheim | satisfactory
+    kind: str                     # game type key (see games/)
     unit: str                     # systemd --user unit
     game_port: int                # UDP game port
     query_port: int | None        # UDP Steam A2S query port (None if none)
@@ -93,7 +86,6 @@ class Server:
     # ARK maps that reuse the same ports are mutually exclusive. Servers that
     # share a slot carry the same non-empty group id; only one runs at a time.
     slot_group: str = ""
-    map_code: str = ""            # ARK map code (info only)
     save_dir: str = ""            # ARK save dir (info only)
     log_path: str = ""            # log file to parse for players (Valheim)
     server_name: str = ""         # the actual in-game/session name players see
@@ -105,7 +97,7 @@ class Server:
     save_root: str = ""           # absolute base save dir (Valheim savedir / Satisfactory SaveGames / custom folder)
     world: str = ""               # Valheim world name (its save files are <world>.db/.fwl)
     cluster_id: str = ""          # ARK cluster id (its shared cluster dir is also backed up)
-    backup_keep: int = 5          # how many backups to retain for this server (prune oldest)
+    backup_keep: int = config.DEFAULT_BACKUP_KEEP  # how many backups to retain for this server (prune oldest)
     # ports the server binds beyond game/query/rcon (e.g. a second shard, Steam
     # ports) — tracked so nothing else is handed the same number
     extra_ports: list = field(default_factory=list)
@@ -132,8 +124,8 @@ def _expand(p: str) -> str:
 
 
 def _load_store(secrets: dict) -> list[Server]:
-    """Build Server objects from the servers.json store (non-ARK + any servers
-    added via the dashboard). Passwords come from secrets.conf via a *_ref."""
+    """Build Server objects from the servers.json store. Passwords come from the
+    secrets file via a *_ref."""
     import store
     out: list[Server] = []
     for e in store.load():
@@ -158,7 +150,7 @@ def _load_store(secrets: dict) -> list[Server]:
                 save_root=_expand(e.get("save_root", "")),
                 world=e.get("world", ""),
                 cluster_id=e.get("cluster_id", ""),
-                backup_keep=int(e.get("backup_keep") or 5),
+                backup_keep=int(e.get("backup_keep") or config.DEFAULT_BACKUP_KEEP),
                 extra_ports=[int(p) for p in (e.get("extra_ports") or [])],
                 port_map=dict(e.get("port_map") or {}),
             ))

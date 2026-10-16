@@ -15,18 +15,19 @@
 #   4. prints the address to open in your browser and a one-time setup code.
 #
 # It is safe to run again at any time — nothing already set up is overwritten.
+# (--yes is accepted for older instructions; not asking is already the default.)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-YES=1; CHECK=0; MINIMAL=0
+YES=1; CHECK=0; MINIMAL=0; FORCE=0
 for arg in "$@"; do
     case "$arg" in
         --yes|-y) YES=1 ;;
         --ask)    YES=0 ;;
         --minimal) MINIMAL=1 ;;
         --check)  CHECK=1 ;;
-        --force)  ;;      # handled by the checks below
-        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --force)  FORCE=1 ;;
+        -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
@@ -36,7 +37,7 @@ note() { printf '   %s\n' "$*"; }
 run()  { if [ "$CHECK" = 1 ]; then printf '   would run: %s\n' "$*"; else "$@"; fi; }
 ask()  {  # ask "Question?"  → 0 for yes. Default: yes without asking; --ask asks; --minimal says no.
     [ "$MINIMAL" = 1 ] && return 1
-    [ "$YES" = 1 ] || [ "$CHECK" = 1 ] && return 0
+    if [ "$YES" = 1 ] || [ "$CHECK" = 1 ]; then return 0; fi
     local reply
     read -r -p "   $1 [Y/n] " reply </dev/tty || reply=""
     case "$reply" in [nN]*) return 1 ;; *) return 0 ;; esac
@@ -51,7 +52,6 @@ fi
 # --- 0. Can this computer run GameDash? -----------------------------------------
 # Checked before anything is installed. ✗ stops the install (--force to go ahead anyway);
 # ⚠ is a warning and the install continues.
-FORCE=0; for arg in "$@"; do [ "$arg" = "--force" ] && FORCE=1; done
 PRE_FAIL=0
 pre_ok()   { printf '   \033[32m✓\033[0m %s\n' "$*"; }
 pre_warn() { printf '   \033[33m⚠\033[0m %s\n' "$*"; }

@@ -2,9 +2,9 @@
 
 Holds server *definitions* as plain data; `registry.py` maps these to Server
 objects (resolving password refs from secrets.conf). This is the single place
-the dashboard adds/edits servers. Existing servers are recorded as
-`managed: "legacy"` (they keep their hand-made systemd units); servers added
-via the dashboard will be `managed: "gamedash"` (generated units).
+the dashboard adds/edits servers. `managed` says who owns a server's systemd
+unit: "gamedash" (generated here, removable from the dashboard) or "legacy"
+(a hand-made unit GameDash only monitors and controls, and never deletes).
 
 Passwords are NOT stored here — entries reference secrets.conf via
 `rcon_password_ref` (e.g. "GAME_ADMIN_PASSWORD").

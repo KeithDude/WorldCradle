@@ -24,7 +24,8 @@ SERVERS_FILE = data("servers.json")
 SECRETS_FILE = data("secrets.conf")          # default for FRESH installs
 CERTS_DIR = data("certs")
 LOG_DIR = data("logs")
-DEFAULT_BACKUP_ROOT = os.path.expanduser("~/.local/share/gamedash/backups")
+# setup.sh creates this folder; the "backups_dir" setting overrides it
+DEFAULT_BACKUP_ROOT = os.environ.get("GAMEDASH_BACKUPS") or os.path.expanduser("~/.local/share/gamedash/backups")
 
 
 def ensure_home() -> str:

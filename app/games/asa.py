@@ -15,6 +15,7 @@ import config
 from games import common
 from games.ark import GAMEDASH_DIR, ArkGame
 from games.base import ActionError, opt_bool, opt_choice, opt_int, safe_name
+from games.simple import RCON_PORT_HELP
 
 EXE = "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
 MAPS = [["TheIsland_WP", "The Island"], ["ScorchedEarth_WP", "Scorched Earth"],
@@ -46,12 +47,11 @@ class AsaGame(ArkGame):
     ram_note = "about 12-16 GB of memory per running map"
     about = "The remake of ARK. Very heavy; the server is Windows-only, so it runs through Wine."
 
-    base_port = 7800
     port_layout = [
         {"name": "game", "klass": "game", "start": 7800, "proto": "UDP", "forward": True,
          "label": "Game port (UDP)", "help": "The port players connect to. Forward it (UDP)."},
         {"name": "rcon", "klass": "rcon", "start": 27045, "proto": "TCP", "label": "Admin console port (TCP)",
-         "help": "Lets the dashboard control the server (player list, messages, saving). Keep it closed: never forward it on your router — anyone who could reach it could take over the server."},
+         "help": RCON_PORT_HELP},
     ]
     provision_hint = ("ARK: Survival Ascended — adds a map (a Windows server, run through Wine). The join "
                       "and admin passwords are the shared ones; maps with the same cluster name share "
@@ -133,13 +133,3 @@ class AsaGame(ArkGame):
             "install_dir": install, "steam_app": self.steam_app,
             "timeout_stop": 130, "save_dir": save, "cluster_id": cluster_id,
         }
-
-    def save_paths(self, s) -> list[dict]:
-        install = s.install_dir or config.install_dir(self.kind)
-        out = []
-        if s.save_dir:
-            out.append({"path": os.path.join(install, "ShooterGame", "Saved", s.save_dir), "role": "save"})
-        cl = os.path.join(install, "cluster")
-        if s.cluster_id and os.path.isdir(cl):
-            out.append({"path": cl, "role": "cluster"})
-        return out

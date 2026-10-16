@@ -11,15 +11,19 @@ from notifiers import NotifyError
 
 
 class _Capture(BaseHTTPRequestHandler):
-    status, reply, got = 200, b"{}", []
+    status, reply, got, replies = 200, b"{}", [], []   # replies: (status, body, headers) used first
 
     def _handle(self):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
-        type(self).got.append({"method": self.command, "path": self.path, "headers": dict(self.headers), "body": body})
-        self.send_response(type(self).status)
+        cls = type(self)
+        cls.got.append({"method": self.command, "path": self.path, "headers": dict(self.headers), "body": body})
+        status, reply, headers = cls.replies.pop(0) if cls.replies else (cls.status, cls.reply, {})
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        for k, v in headers.items():
+            self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(type(self).reply)
+        self.wfile.write(reply)
 
     do_POST = do_PUT = _handle
 
@@ -29,7 +33,7 @@ class _Capture(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def server():
-    _Capture.status, _Capture.reply, _Capture.got = 200, b"{}", []
+    _Capture.status, _Capture.reply, _Capture.got, _Capture.replies = 200, b"{}", [], []
     srv = HTTPServer(("127.0.0.1", 0), _Capture)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_address[1]}", _Capture
@@ -159,4 +163,107 @@ def test_clean_rejects_wrong_or_missing_values():
         notifiers.clean({"type": "no-such-service"})
     ok = notifiers.clean({"type": "email", "to_addr": "a@b.org", "smtp_host": "smtp.b.org",
                           "username": "a@b.org", "password": "pw"})
-    assert ok["smtp_port"] == "587" and ok["security"] == "starttls"
+    assert ok["smtp_port"] == "" and ok["security"] == "starttls"   # empty: the usual port for the security
+
+
+# ---- what each service's documentation asks for ----
+
+def test_discord_never_pings_everyone(server):
+    base, cap = server
+    notifiers.send({"type": "discord", "url": base + "/api/webhooks/1/abc"}, "@everyone server", "x")
+    assert _json(cap)["allowed_mentions"] == {"parse": []}
+
+
+def test_slack_control_characters_are_escaped(server):
+    base, cap = server
+    notifiers.send({"type": "slack", "url": base + "/s"}, "A & B", "<!channel> went down")
+    assert _json(cap)["text"] == "*A &amp; B*\n&lt;!channel&gt; went down"
+
+
+def test_teams_card_has_content_url(server):
+    base, cap = server
+    notifiers.send({"type": "teams", "url": base + "/t"}, "T", "M")
+    att = _json(cap)["attachments"][0]
+    assert "contentUrl" in att and att["contentUrl"] is None
+
+
+def test_telegram_errors_say_what_telegram_said(server, monkeypatch):
+    base, cap = server
+    monkeypatch.setattr(notifiers, "TELEGRAM_API", base)
+    dest = {"type": "telegram", "bot_token": "123:abc", "chat_id": "-100200"}
+    cap.replies = [(403, b'{"ok": false, "error_code": 403, "description": "Forbidden: bot was kicked"}', {})]
+    with pytest.raises(NotifyError, match="bot was kicked"):
+        notifiers.send(dest, "T", "M")
+    cap.replies = [(400, b'{"ok": false, "description": "Bad Request: group chat was upgraded",'
+                         b' "parameters": {"migrate_to_chat_id": -1009876}}', {})]
+    with pytest.raises(NotifyError, match="-1009876"):
+        notifiers.send(dest, "T", "M")
+    cap.replies = [(401, b'{"ok": false, "description": "Unauthorized"}', {})]
+    with pytest.raises(NotifyError, match="bot token"):
+        notifiers.send(dest, "T", "M")
+
+
+def test_matrix_and_pushover_reasons_are_shown(server, monkeypatch):
+    base, cap = server
+    cap.replies = [(403, b'{"errcode": "M_FORBIDDEN", "error": "User not in room"}', {})]
+    with pytest.raises(NotifyError, match="User not in room"):
+        notifiers.send({"type": "matrix", "homeserver": base, "access_token": "mt", "room_id": "!a:b"}, "T", "M")
+    monkeypatch.setattr(notifiers, "PUSHOVER_API", base)
+    cap.replies = [(400, b'{"status": 0, "errors": ["user identifier is invalid"]}', {})]
+    with pytest.raises(NotifyError, match="user identifier is invalid"):
+        notifiers.send({"type": "pushover", "user_key": "u" * 30, "app_token": "a" * 30}, "T", "M")
+
+
+def test_too_many_messages_waits_once_then_gives_up(server, monkeypatch):
+    base, cap = server
+    monkeypatch.setattr(notifiers.time, "sleep", lambda s: None)
+    cap.replies = [(429, b"{}", {"Retry-After": "1"})]
+    notifiers.send({"type": "slack", "url": base + "/s"}, "T", "M")     # retried and delivered
+    assert len(cap.got) == 2
+    cap.replies = [(429, b"{}", {"Retry-After": "1"}), (429, b"{}", {"Retry-After": "1"})]
+    with pytest.raises(NotifyError, match="too many"):
+        notifiers.send({"type": "slack", "url": base + "/s"}, "T", "M")
+    cap.replies = [(429, b"{}", {"Retry-After": "600"})]                 # too long to wait: no retry
+    with pytest.raises(NotifyError, match="too many"):
+        notifiers.send({"type": "slack", "url": base + "/s"}, "T", "M")
+
+
+def test_ntfy_keeps_accents_in_the_title(server):
+    base, cap = server
+    notifiers.send({"type": "ntfy", "url": base + "/topic"}, "🔴 Señor's world is DOWN", "x", "bad")
+    import email.header
+    raw = cap.got[-1]["headers"]["Title"]
+    text = "".join(p.decode(c or "ascii") if isinstance(p, bytes) else p
+                   for p, c in email.header.decode_header(raw))
+    assert text == "Señor's world is DOWN"
+
+
+def test_new_matrix_room_ids_and_exact_pushover_keys():
+    base = {"type": "matrix", "homeserver": "https://m.org", "access_token": "x" * 20}
+    notifiers.clean({**base, "room_id": "!abc:example.org"})
+    notifiers.clean({**base, "room_id": "!31hneApxJ_1o-63DmFrpeqnkFfWppnzWso1JvH3ogLM"})   # room version 12
+    with pytest.raises(ValueError):
+        notifiers.clean({**base, "room_id": "#alias:example.org"})
+    with pytest.raises(ValueError):
+        notifiers.clean({"type": "pushover", "user_key": "u" * 29, "app_token": "a" * 30})
+
+
+def test_email_ssl_uses_port_465_when_left_empty(monkeypatch):
+    seen = {}
+
+    class FakeSSL:
+        def __init__(self, host, port, **kw):
+            seen["port"] = port
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def login(self, *a): pass
+        def send_message(self, msg):
+            seen["msg"] = msg
+
+    monkeypatch.setattr(notifiers.smtplib, "SMTP_SSL", FakeSSL)
+    dest = notifiers.clean({"type": "email", "to_addr": "a@b.org", "smtp_host": "smtp.b.org",
+                            "security": "ssl", "username": "apikey", "password": "pw"})
+    notifiers.send(dest, "T", "M")
+    assert seen["port"] == 465
+    assert seen["msg"]["From"] == "a@b.org"        # "apikey" isn't an address
+    assert seen["msg"]["Date"] and seen["msg"]["Message-ID"]

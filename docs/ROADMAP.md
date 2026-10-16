@@ -113,6 +113,26 @@ loading its save after a restart.
       what changed since the last run (games update and break things).
 - [ ] Watch for game updates that change a server's settings or launch options.
 
+### Code clean-up, part 2
+Part 1 (dead code, duplicated checks, outdated comments, bugs found on the way) is done — see the
+development log, 2026-10-16. Part 2 changes how launch scripts are built, so each step must be tried
+on real servers before it ships:
+- [ ] One shared "put the passwords into the settings file at start" helper instead of ~20
+      hand-written ones (key=value, JSON and INI variants); Palworld's two INI rewriters become one.
+- [ ] Game form limits written once (today "Max players 1-32" is typed in the form, the check and
+      the settings writer).
+- [ ] Shared helpers for an empty probe result, player lists, "send an admin command or say why
+      not", private settings files and downloads.
+- [ ] Move the older game types onto the shared `SimpleGame` / `WineGame` bases where they fit.
+- [ ] One game per file (split `more.py` and `winegames.py`); shared script pieces in their own
+      module.
+- [ ] One `systemd` helper instead of six ways of calling `systemctl`; one background-job helper
+      instead of three.
+- [ ] `app.js`: one window (modal) helper instead of six, one "players are online — continue?"
+      step instead of five, per-game join instructions and actions sent by the server, and the
+      file split into a few modules. Move inline styles into the stylesheet, which also lets the
+      security policy drop `'unsafe-inline'` for styles.
+
 ### Dashboard
 - [x] Total CPU usage at the top; each server's CPU as its share of the whole computer, and RAM, for
       all of its processes together; storage used; binary units throughout. *(2026-10-14/15)*
@@ -146,6 +166,9 @@ loading its save after a restart.
 - [ ] Mod support beyond Valheim and ARK where games have an official mod system.
 
 ### Alerts and notifications
+- [x] **Each alert service checked against its own documentation** and fixed where it differed
+      (Matrix room IDs, email SSL port and headers, Telegram/Matrix/Slack error reasons, Discord
+      mentions, Slack escaping, Teams card, ntfy titles, retry on "too many"). *(2026-10-16)*
 - [ ] **Test the alerts end to end with real accounts.** Each service is tested against stand-in
       servers, and the Settings page was tried in a browser against a local receiver — but no message
       has yet reached a real Discord / Telegram / email / Slack / Teams / Pushover / ntfy / Gotify /

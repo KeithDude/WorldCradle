@@ -13,8 +13,14 @@ echo "GameDash pre-push checks"
 # 1. Everything is committed (what is pushed is what was tested)
 if [ -z "$(git -C "$REPO" status --porcelain)" ]; then ok "working tree clean"; else bad "uncommitted changes:"; git -C "$REPO" status --short | sed 's/^/         /'; fi
 
-# 2. Python compiles
+# 2. Python compiles, with nothing unused left behind
 if "$PY" -m compileall -q "$REPO/app" >/dev/null; then ok "Python compiles"; else bad "Python compile errors"; fi
+if "$PY" -c "import pyflakes" 2>/dev/null; then
+  if out=$("$PY" -m pyflakes "$REPO/app" "$REPO/tests" 2>&1); then ok "no unused imports or variables (pyflakes)"
+  else bad "pyflakes found problems:"; printf '%s\n' "$out" | sed 's/^/         /'; fi
+else
+  bad "pyflakes isn't installed — run: venv/bin/pip install -r requirements-dev.txt"
+fi
 
 # 3. App, game types, templates load
 if (cd "$REPO/app" && "$PY" - <<'T' 2>&1 | grep -v Warning
@@ -51,9 +57,10 @@ elif command -v gjs >/dev/null; then
 else bad "no JavaScript checker (install nodejs or gjs)"; fi
 
 # 5. Shell scripts parse
-for f in "$REPO"/*.sh "$REPO"/tools/*.sh "$REPO"/deploy/maintenance/*.sh; do
-  [ -f "$f" ] && { bash -n "$f" 2>/dev/null || bad "shell syntax: ${f#$REPO/}"; }
-done; [ $fail = 0 ] && ok "shell scripts parse"
+sh_fail=0
+for f in "$REPO"/*.sh "$REPO"/tools/*.sh "$REPO"/deploy/maintenance/*.sh "$REPO"/bin/*; do
+  [ -f "$f" ] && { bash -n "$f" 2>/dev/null || { bad "shell syntax: ${f#$REPO/}"; sh_fail=1; }; }
+done; [ $sh_fail = 0 ] && ok "shell scripts parse"
 
 # 6. No secrets or personal data in tracked files
 files=$(git -C "$REPO" ls-files)

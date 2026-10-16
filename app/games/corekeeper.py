@@ -49,7 +49,6 @@ class CoreKeeperGame(GameType):
     actions: set[str] = set()
 
     provisionable = True
-    base_port = 27400
     port_layout = [
         {"name": "game", "klass": "game", "start": 27400, "span": 2, "proto": "UDP", "forward": True,
          "label": "Game port (UDP) — only used with “Direct” connections",
@@ -107,9 +106,6 @@ class CoreKeeperGame(GameType):
             "log_path": log, "install_dir": install, "steam_app": self.steam_app,
             "timeout_stop": 45, "world": key, "save_root": server_dir,
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     _ids: dict = {}   # log path -> (inode, Game ID) — the line is printed once, at startup
 

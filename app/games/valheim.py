@@ -46,7 +46,6 @@ class ValheimGame(GameType):
 
     # provisioning: a new world from the shared install
     provisionable = True
-    base_port = 2460            # leaves the conventional 2456/2457 for the first world
     provision_hint = ("Valheim — spins up a world from your existing install (a new one, or an "
                       "existing world if the name matches). Ports and the launch are generated for "
                       "you; the join password is the shared one. Leave the world modifiers on "
@@ -82,7 +81,8 @@ class ValheimGame(GameType):
     mod_profiles = ["vanilla", "modded"]
 
     port_layout = [
-        {"name": "game", "klass": "game", "start": base_port, "span": 2,
+        # leaves the conventional 2456/2457 for the first world
+        {"name": "game", "klass": "game", "start": 2460, "span": 2,
          "proto": "UDP", "forward": True, "label": "Game port (UDP)",
          "help": "Valheim also uses the next port up as its query port. Forward both."},
     ]
@@ -167,7 +167,7 @@ class ValheimGame(GameType):
                 extra += f" -{arg} {n}"
         # Modded: the BepInEx doorstop preamble (loads the shared install's
         # BepInEx/plugins). Vanilla: clean launch, no doorstop. Both source the
-        # join password from the central registry and share the launch tail.
+        # join password set in GameDash and share the launch tail.
         doorstop = (
             "# BepInEx doorstop — loads ./BepInEx/plugins from the shared install.\n"
             "# Add/remove mods there; edit this script for per-world launch tweaks.\n"

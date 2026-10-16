@@ -83,7 +83,7 @@ def info() -> dict:
         pass
     cfg = config.load()
     out["domain"] = cfg.get("cert_domain", "")
-    out["http_port"] = int(cfg.get("cert_http_port") or 8080)
+    out["http_port"] = _http_port(cfg)
     out["auto_renew"] = os.path.isfile(os.path.join(UNITS, "gamedash-cert-renew.timer"))
     return out
 
@@ -175,7 +175,14 @@ def _explain(output: str) -> str:
     return "The certificate couldn't be issued: " + (lines[-1][:300] if lines else "unknown error")
 
 
-def start(domain: str, email: str, agree: bool) -> dict:
+def _http_port(cfg: dict | None = None) -> int:
+    """The local port Let's Encrypt's check reaches (the router forwards internet port 80 here)."""
+    return int((cfg or config.load()).get("cert_http_port") or config.DEFAULTS["cert_http_port"])
+
+
+def start(domain: str, email: str, agree: bool, dashboard_port: int = 8443) -> dict:
+    """Start getting a certificate in the background. dashboard_port is only used in the
+    "reload the page at …" message once it's done."""
     domain = (domain or "").strip().lower().rstrip(".")
     email = (email or "").strip()
     if not _DOMAIN_RE.match(domain):
@@ -190,7 +197,7 @@ def start(domain: str, email: str, agree: bool) -> dict:
     if not certbot_path():
         raise ActionError("The certificate tool (certbot) isn't installed. Run the GameDash "
                           "installer again, then retry.")
-    http_port = int(config.load().get("cert_http_port") or 8080)
+    http_port = _http_port()
     if not _port_free(http_port):
         raise ActionError(f"Port {http_port} on this computer is in use by another program, and "
                           f"the certificate check needs it for a moment.")
@@ -201,11 +208,12 @@ def start(domain: str, email: str, agree: bool) -> dict:
         _job.update({"state": "running", "domain": domain, "step": "Asking Let's Encrypt",
                      "started_ts": time.time()})
     audit_log.info("certificate REQUEST domain=%s", domain)
-    threading.Thread(target=_run, args=(domain, email, http_port), name="cert", daemon=True).start()
+    threading.Thread(target=_run, args=(domain, email, http_port, dashboard_port), name="cert",
+                     daemon=True).start()
     return {"ok": True, "message": "Requesting the certificate — this takes up to a minute."}
 
 
-def _run(domain: str, email: str, http_port: int) -> None:
+def _run(domain: str, email: str, http_port: int, dashboard_port: int) -> None:
     base = [certbot_path(), "certonly", "--standalone", "--preferred-challenges", "http",
             "--http-01-port", str(http_port), "-d", domain, "--non-interactive", "--agree-tos",
             *(["-m", email] if email else ["--register-unsafely-without-email"]), *_dirs()]
@@ -227,7 +235,7 @@ def _run(domain: str, email: str, http_port: int) -> None:
             _job.update({"state": "done", "ok": True, "finished_ts": time.time(),
                          "message": f"Done — a trusted certificate for {domain} is installed and "
                                     f"will renew itself. The dashboard is restarting; reload this "
-                                    f"page in a few seconds using https://{domain}:8443/"})
+                                    f"page in a few seconds using https://{domain}:{dashboard_port}/"})
         audit_log.info("certificate ISSUED domain=%s", domain)
         time.sleep(2)   # let the page read the result before the restart
         restart_dashboard()

@@ -6,8 +6,8 @@ managed=="gamedash" can be torn down here — legacy (hand-made) servers are
 refused, so the existing fleet can't be deleted by accident.
 
 Most games provision synchronously (write a small launch script into a shared
-install). Games that can't share an install (`needs_install_clone`, e.g.
-Palworld) clone the base install first — a multi-GB copy — so they run as a
+install). Games that can't share an install (`needs_install_clone`: Palworld,
+Barotrauma, Eco and others) clone the base install first — a multi-GB copy — so they run as a
 background job, gated behind a disk pre-flight + explicit confirm.
 """
 from __future__ import annotations
@@ -28,7 +28,8 @@ from games.base import ActionError
 
 SYSTEMD_DIR = os.path.expanduser("~/.config/systemd/user")
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,30}$")
-# never hand these out as game ports
+# Never handed out as game ports: SSH, DNS, web (80/443), the dashboard (8443), the dashboard's
+# development server (8770, config "bind_port") and 8888, a common local web/admin port.
 RESERVED = {22, 53, 80, 443, 8443, 8770, 8888}
 
 
@@ -144,14 +145,6 @@ def _join_slot_group(key: str, siblings: list) -> None:
 def _running(siblings: list) -> list:
     import monitor
     return [s for s in siblings if monitor.unit_active(s.unit)]
-
-
-def free_port(start: int, used: set[int]) -> int:
-    p = start
-    while p in used:
-        p += 1
-    used.add(p)
-    return p
 
 
 def _custom_fields(spec: dict, use_pool: bool) -> tuple[str, dict]:
@@ -290,7 +283,7 @@ def _register(key: str, kind: str, name: str, fields: dict, start: bool) -> str:
 def create(spec: dict) -> dict:
     """Create a gamedash-managed server: custom (kind='custom', caller gives the
     launch command) or a game template (kind in games, auto config+ports).
-    Clone-install games (Palworld) go through the async job path."""
+    Games that need their own copy of the install go through the background job."""
     key = (spec.get("key") or "").strip().lower()
     if not KEY_RE.match(key):
         raise ActionError("Key must be lowercase letters/digits/dashes (2-31 chars).")
@@ -401,8 +394,7 @@ def _run_clone_job(spec, key, game, src, dst, ports, siblings=()):
         r = subprocess.run(["cp", "-a", src, tmp], capture_output=True, text=True, timeout=3600)
         if r.returncode != 0:
             raise ActionError(f"clone failed: {(r.stderr or r.stdout).strip()[:200]}")
-        # Fresh world: drop the copied saves/crash dumps/logs (Palworld layout).
-        for sub in ("Pal/Saved/SaveGames", "Pal/Saved/Crashes", "Pal/Saved/Logs"):
+        for sub in game.clone_clear_dirs:   # start with a fresh world, not a copied one
             shutil.rmtree(os.path.join(tmp, sub), ignore_errors=True)
         os.replace(tmp, dst)
 

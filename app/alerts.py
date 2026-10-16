@@ -9,21 +9,19 @@ False-positive avoidance: when the dashboard itself stops/restarts a server it
 calls suppress(key, secs); a down inside that window is expected and skipped.
 Disabled (intentionally parked) servers don't alert unless alert_on_disabled.
 
-Delivery is pluggable via config: discord webhook, ntfy topic, generic webhook,
-or none. All sends are best-effort and never raise into the poller.
+Alerts go to every destination set up in Settings → Alerts (the services are in
+notifiers.py). Sending is best-effort and never raises into the poller.
 """
 from __future__ import annotations
 
 import threading
 import time
 
-
 import config
 import notifiers
 from applog import app_log
 
 UNREACHABLE_POLLS = 3   # consecutive running-but-unreachable polls before alerting
-SEND_TIMEOUT = 6.0
 
 # ---- suppression (set by controls.py on dashboard-initiated stop/restart) ----
 _suppress: dict[str, float] = {}
@@ -56,22 +54,24 @@ def destinations(cfg: dict | None = None) -> list[dict]:
     return dests
 
 
+def _send_one(dest: dict, title: str, message: str, level: str) -> dict:
+    """Send to one destination. Never raises (the poller calls this): returns
+    {"service", "ok", "error"} and logs a failure."""
+    label = notifiers.SERVICES.get(dest.get("type"), {}).get("label", dest.get("type"))
+    try:
+        notifiers.send(dest, title, message, level)
+        return {"service": label, "ok": True, "error": ""}
+    except notifiers.NotifyError as e:
+        app_log.warning("alert delivery to %s failed: %s", label, e)
+        return {"service": label, "ok": False, "error": str(e)}
+    except Exception as e:   # never let alerting break the poll loop
+        app_log.warning("alert delivery to %s failed: %r", label, e)
+        return {"service": label, "ok": False, "error": "unexpected error — see the GameDash log"}
+
+
 def _deliver(title: str, message: str, level: str) -> list[dict]:
-    """Send to every destination. Never raises (the poller calls this); failures are logged and
-    returned as [{"service", "ok", "error"}]."""
-    results = []
-    for d in destinations():
-        label = notifiers.SERVICES.get(d.get("type"), {}).get("label", d.get("type"))
-        try:
-            notifiers.send(d, title, message, level)
-            results.append({"service": label, "ok": True, "error": ""})
-        except notifiers.NotifyError as e:
-            app_log.warning("alert delivery to %s failed: %s", label, e)
-            results.append({"service": label, "ok": False, "error": str(e)})
-        except Exception as e:   # never let alerting break the poll loop
-            app_log.warning("alert delivery to %s failed: %r", label, e)
-            results.append({"service": label, "ok": False, "error": "unexpected error — see the GameDash log"})
-    return results
+    """Send to every destination; what happened for each, as _send_one reports it."""
+    return [_send_one(d, title, message, level) for d in destinations()]
 
 
 def notify(title: str, message: str, level: str = "warn") -> None:
@@ -86,12 +86,7 @@ def send_test(dest: dict | None = None) -> list[dict]:
     title, message = "🎮 GameDash test alert", "If you can read this, GameDash alerts reach you here."
     if dest is None:
         return _deliver(title, message, "good")
-    label = notifiers.SERVICES.get(dest.get("type"), {}).get("label", dest.get("type"))
-    try:
-        notifiers.send(dest, title, message, "good")
-        return [{"service": label, "ok": True, "error": ""}]
-    except Exception as e:
-        return [{"service": label, "ok": False, "error": str(e)}]
+    return [_send_one(dest, title, message, "good")]
 
 
 # ---- engine ----------------------------------------------------------------
@@ -115,8 +110,7 @@ class AlertEngine:
 
             # online -> offline
             if prev is not None and prev["online"] and not online:
-                parked = v.get("slot_group") and v.get("note")
-                if not _is_suppressed(key) and not parked and (v.get("enabled") or on_disabled):
+                if not _is_suppressed(key) and not v.get("parked") and (v.get("enabled") or on_disabled):
                     _deliver(f"🔴 {v['name']} is DOWN",
                              f"{v['name']} went offline at {_now()}.", "bad")
 

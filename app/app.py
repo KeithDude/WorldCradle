@@ -17,6 +17,7 @@ import time
 
 from flask import (Flask, g, jsonify, redirect, render_template, request,
                    send_file, session, url_for)
+from werkzeug.exceptions import HTTPException
 
 import alerts
 import backups
@@ -26,16 +27,22 @@ import controls
 import games
 import installs
 import monitor
+import notifiers
 import osupdates
 import ports
+import project
 import provision
 import reach
 import registry
 import updates
+import version
 from applog import access_log, app_log, audit_log
 from poller import poller
 
 cfg = config.load()
+
+# The footer's "support the developer" link; only ever a plain https address.
+_SUPPORT_URL = project.SUPPORT_URL if re.match(r"^https://[^\s\"'<>]+$", project.SUPPORT_URL or "") else ""
 
 app = Flask(__name__)
 app.secret_key = cfg["secret_key"]
@@ -63,24 +70,23 @@ def _csp_nonce():
     g.csp_nonce = secrets.token_urlsafe(16)
 
 
+_CERT_RECHECK_SECONDS = 300
 _cert_seen = {"ts": 0.0, "trusted": False}
 
 
 def _cert_trusted() -> bool:
     """Is a CA-issued certificate being served? (cached — it's read on every page)"""
-    if time.time() - _cert_seen["ts"] > 300:
+    if time.time() - _cert_seen["ts"] > _CERT_RECHECK_SECONDS:
         _cert_seen.update(ts=time.time(), trusted=certs.info()["trusted"])
     return _cert_seen["trusted"]
 
 
 @app.context_processor
-def _inject_nonce():
-    import project
-    support = project.SUPPORT_URL if re.match(r"^https://[^\s\"'<>]+$", project.SUPPORT_URL or "") else ""
+def _template_values():
     return {"csp_nonce": getattr(g, "csp_nonce", ""), "game_titles": games.titles(),
             "cert_trusted": _cert_trusted(), "project_url": project.PROJECT_URL,
-            "support_url": support, "support_label": project.SUPPORT_LABEL,
-            "gd_version": __import__("version").version()}
+            "support_url": _SUPPORT_URL, "support_label": project.SUPPORT_LABEL,
+            "gd_version": version.version()}
 
 
 @app.after_request
@@ -140,7 +146,13 @@ def _client_ip() -> str:
     return request.remote_addr or "unknown"
 
 
-def subprocess_ok(args) -> bool:
+def _dashboard_port() -> int:
+    """The port this page was opened on (set in gamedash.service, normally 8443)."""
+    _, _, port = request.host.rpartition(":")
+    return int(port) if port.isdigit() else 443
+
+
+def _command_succeeds(args) -> bool:
     try:
         return subprocess.run(args, capture_output=True, text=True, timeout=5).returncode == 0
     except Exception:
@@ -180,6 +192,12 @@ def _clear_fails(ip: str) -> None:
 
 # ---- auth ------------------------------------------------------------------
 
+# Admin routes a browser opens as a page (or a download link). Signed out, these go to the
+# login page; every other admin route is called by the page's script, which gets a 401 and
+# then goes to the login page itself — a redirect would just hand it a page it can't read.
+_PAGE_ENDPOINTS = {"admin", "admin_settings", "backups_page", "admin_backup_download"}
+
+
 def login_required(view):
     @functools.wraps(view)
     def wrapped(*a, **kw):
@@ -188,7 +206,9 @@ def login_required(view):
         if not session.get("admin") or not secrets.compare_digest(
                 str(session.get("av", "")), config.auth_version()):
             session.clear()
-            return redirect(url_for("login", next=request.path))
+            if request.method == "GET" and request.endpoint in _PAGE_ENDPOINTS:
+                return redirect(url_for("login", next=request.path))
+            return jsonify({"ok": False, "error": "Signed out — sign in again."}), 401
         return view(*a, **kw)
     return wrapped
 
@@ -205,6 +225,29 @@ def csrf_ok() -> bool:
     sent = request.headers.get("X-CSRF-Token", "")
     good = session.get("csrf", "")
     return bool(good) and secrets.compare_digest(sent, good)
+
+
+CSRF_STALE = "This page has been open a while and needs refreshing — reload it and try again."
+
+
+def csrf_required(view):
+    """Refuse a POST that doesn't carry this page's CSRF token. Goes under @login_required.
+    (tests/test_app_routes.py checks that every admin POST route has it.)"""
+    @functools.wraps(view)
+    def wrapped(*a, **kw):
+        if request.method == "POST" and not csrf_ok():
+            audit_log.warning("%s rejected (bad CSRF) ip=%s", request.path, _client_ip())
+            return jsonify({"ok": False, "error": CSRF_STALE}), 403
+        return view(*a, **kw)
+    return wrapped
+
+
+def _start_admin_session() -> None:
+    session.clear()   # start from a fresh session (drops any pre-login state)
+    session["admin"] = True
+    # "av" ties the session to the current password; see login_required
+    session["av"] = config.auth_version()
+    session.permanent = True
 
 
 # ---- data shaping ----------------------------------------------------------
@@ -263,17 +306,14 @@ def setup():
             _record_fail(ip)
             audit_log.warning("login FAILED ip=%s", ip)   # same line fail2ban watches
             error = "That setup code isn't right. Check it against what the installer printed."
-        elif len(pw) < 12:
-            error = "Please choose a password of at least 12 characters."
+        elif len(pw) < config.MIN_ADMIN_PASSWORD:
+            error = f"Please choose a password of at least {config.MIN_ADMIN_PASSWORD} characters."
         elif pw != pw2:
             error = "The two passwords don't match — type them again."
         else:
             config.set_password(pw)       # also retires the setup code
             _clear_fails(ip)
-            session.clear()
-            session["admin"] = True
-            session["av"] = config.auth_version()
-            session.permanent = True
+            _start_admin_session()
             audit_log.info("first-run setup completed ip=%s", ip)
             return redirect(url_for("admin"))
     return render_template("setup.html", error=error, has_code=has_code), (401 if error else 200)
@@ -281,10 +321,9 @@ def setup():
 
 @app.route("/admin/checklist", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_checklist():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         hide = bool((request.get_json(silent=True) or {}).get("hidden", True))
         config.update(lambda c: c.__setitem__("checklist_hidden", hide))
     cfg = config.load()
@@ -313,7 +352,7 @@ def admin_checklist():
          "help": "On a running server's card press “Can friends connect?” — it lists the router "
                  "ports to open and tests whether the server can be reached."},
         {"id": "alerts", "title": "Get told when something goes wrong (optional)",
-         "go": "/admin/settings#alerts", "done": cfg.get("alert_channel", "none") != "none",
+         "go": "/admin/settings#alerts", "done": bool(alerts.destinations(cfg)),
          "help": "Send a message to your phone or a Discord channel if a server goes down or a "
                  "backup fails."},
     ]
@@ -335,10 +374,7 @@ def login():
             error = f"Too many attempts. Try again in {wait}s."
         elif config.check_password(request.form.get("password", "")):
             _clear_fails(ip)
-            session.clear()   # start from a fresh session (drops any pre-login state)
-            session["admin"] = True
-            session["av"] = config.auth_version()
-            session.permanent = True
+            _start_admin_session()
             audit_log.info("login success ip=%s", ip)
             nxt = request.args.get("next") or url_for("admin")
             # open-redirect guard: must be a site-relative path, not "//host"
@@ -396,92 +432,96 @@ def backups_page():
     return render_template("backups.html", snap=snap, csrf=csrf_token())
 
 
+# What the settings forms accept. Paths and the name prefix end up in generated launch
+# scripts, so they are limited to characters that can't break out of them.
+_HOST_RE = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$")  # hostname or IP only
+_PATH_RE = re.compile(r"^(~|/)[A-Za-z0-9._/\-]{0,300}$")   # absolute or ~-relative, no shell metachars
+_CLUSTER_ID_RE = re.compile(r"^[A-Za-z0-9_]{1,40}$")
+_NAME_PREFIX_RE = re.compile(r"^[A-Za-z0-9 _.\-\[\]()]{0,30}$")
+_PW_RE = re.compile(r"^[A-Za-z0-9!@#%^&*()_+\-=:.,]{1,64}$")  # shell- & ARK-option-safe
+
+
+def _settings_changes(data: dict, current: dict) -> tuple[dict, list[str]]:
+    """The settings the form changed, checked. Returns (changes, errors)."""
+    changes, errors = {}, []
+    if "public_host" in data:
+        host = str(data["public_host"]).strip()
+        # shown to every visitor as the join address
+        if host and not _HOST_RE.match(host):
+            errors.append("public host: a hostname or IP address only (no scheme, port or path)")
+        else:
+            changes["public_host"] = host
+    if "secrets_conf" in data and str(data["secrets_conf"]).strip():
+        path = str(data["secrets_conf"]).strip()
+        if not _PATH_RE.match(path):
+            errors.append("secrets file: plain path characters only (letters, digits, / . _ - ~)")
+        else:
+            changes["secrets_conf"] = path
+    if "ark_cluster_id" in data:
+        cluster = str(data["ark_cluster_id"]).strip()
+        if cluster and not _CLUSTER_ID_RE.match(cluster):
+            errors.append("cluster ID: letters/digits/underscores only")
+        elif cluster:
+            changes["ark_cluster_id"] = cluster
+    if "satisfactory_api_token" in data:
+        changes["satisfactory_api_token"] = str(data["satisfactory_api_token"]).strip()
+    if "server_name_prefix" in data:
+        prefix = str(data["server_name_prefix"]).strip()
+        if not _NAME_PREFIX_RE.match(prefix):
+            errors.append("server name prefix: up to 30 letters, digits, spaces or _ . - [ ] ( )")
+        else:
+            changes["server_name_prefix"] = prefix
+    if "default_backup_keep" in data:
+        try:
+            changes["default_backup_keep"] = max(1, min(int(data["default_backup_keep"]), 100))
+        except (TypeError, ValueError):
+            errors.append("default backups-to-keep must be a number")
+    if isinstance(data.get("install_dirs"), dict):
+        dirs = dict(current.get("install_dirs", {}))
+        for kind in [t.kind for t in games.all_types() if t.install_marker]:
+            path = str(data["install_dirs"].get(kind, "")).strip()
+            if path and not _PATH_RE.match(path):
+                errors.append(f"{kind} install dir: plain path characters only")
+            elif path:
+                dirs[kind] = path
+        changes["install_dirs"] = dirs
+    return changes, errors
+
+
 @app.route("/admin/config", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_config():
-    cfg = config.load()
+    current = config.load()
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
-        data = request.get_json(silent=True) or {}
-        errors = []
-        base, cfg = cfg, {}   # collect only the changed keys; applied atomically below
-        if "public_host" in data:
-            host = str(data["public_host"]).strip()
-            # shown to every visitor as the join address — hostname/IP only
-            if host and not re.match(r"^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$", host):
-                errors.append("public host: a hostname or IP address only (no scheme, port or path)")
-            else:
-                cfg["public_host"] = host
-        # Paths and the name prefix are written into generated launch scripts,
-        # so they are restricted to characters that can't break out of them.
-        if "secrets_conf" in data and str(data["secrets_conf"]).strip():
-            v = str(data["secrets_conf"]).strip()
-            if not _PATH_RE.match(v):
-                errors.append("secrets file: plain path characters only (letters, digits, / . _ - ~)")
-            else:
-                cfg["secrets_conf"] = v
-        if "ark_cluster_id" in data:
-            v = str(data["ark_cluster_id"]).strip()
-            if v and not re.match(r"^[A-Za-z0-9_]{1,40}$", v):
-                errors.append("cluster ID: letters/digits/underscores only")
-            elif v:
-                cfg["ark_cluster_id"] = v
-        if "satisfactory_api_token" in data:
-            cfg["satisfactory_api_token"] = str(data["satisfactory_api_token"]).strip()
-        if "server_name_prefix" in data:
-            v = str(data["server_name_prefix"]).strip()
-            if not re.match(r"^[A-Za-z0-9 _.\-\[\]()]{0,30}$", v):
-                errors.append("server name prefix: up to 30 letters, digits, spaces or _ . - [ ] ( )")
-            else:
-                cfg["server_name_prefix"] = v
-        if "default_backup_keep" in data:
-            try:
-                cfg["default_backup_keep"] = max(1, min(int(data["default_backup_keep"]), 100))
-            except (TypeError, ValueError):
-                errors.append("default backups-to-keep must be a number")
-        if isinstance(data.get("install_dirs"), dict):
-            dirs = dict(base.get("install_dirs", {}))
-            for g in [x.kind for x in games.all_types() if x.install_marker]:
-                p = str(data["install_dirs"].get(g, "")).strip()
-                if p and not _PATH_RE.match(p):
-                    errors.append(f"{g} install dir: plain path characters only")
-                elif p:
-                    dirs[g] = p
-            cfg["install_dirs"] = dirs
+        changes, errors = _settings_changes(request.get_json(silent=True) or {}, current)
         if errors:
             return jsonify({"ok": False, "error": "; ".join(errors)}), 400
-        changed = cfg
-        cfg = config.update(lambda c: c.update(changed))
-        audit_log.info("settings changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changed)))
+        current = config.update(lambda c: c.update(changes))
+        audit_log.info("settings changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changes)))
     # report current editable values (admin-only page; token shown for editing)
-    timer_on = subprocess_ok(["systemctl", "--user", "is-enabled", "gamedash-backup.timer"])
+    timer_on = _command_succeeds(["systemctl", "--user", "is-enabled", "gamedash-backup.timer"])
     return jsonify({
         "ok": True,
-        "public_host": cfg.get("public_host", ""),
-        "secrets_conf": cfg.get("secrets_conf", ""),
-        "ark_cluster_id": cfg.get("ark_cluster_id", ""),
-        "server_name_prefix": cfg.get("server_name_prefix", ""),
-        "satisfactory_api_token": cfg.get("satisfactory_api_token", ""),
-        "default_backup_keep": cfg.get("default_backup_keep", 5),
-        "install_dirs": cfg.get("install_dirs", {}),
+        "public_host": current.get("public_host", ""),
+        "secrets_conf": current.get("secrets_conf", ""),
+        "ark_cluster_id": current.get("ark_cluster_id", ""),
+        "server_name_prefix": current.get("server_name_prefix", ""),
+        "satisfactory_api_token": current.get("satisfactory_api_token", ""),
+        "default_backup_keep": current.get("default_backup_keep", config.DEFAULT_BACKUP_KEEP),
+        "install_dirs": current.get("install_dirs", {}),
         "backup_schedule": "Daily at 05:00 local (gamedash-backup.timer)",
         "backup_timer_enabled": timer_on,
     })
 
 
-_PATH_RE = re.compile(r"^(~|/)[A-Za-z0-9._/\-]{0,300}$")   # absolute or ~-relative, no shell metachars
-_PW_RE = re.compile(r"^[A-Za-z0-9!@#%^&*()_+\-=:.,]{1,64}$")  # shell- & ARK-option-safe
-
-
 @app.route("/admin/passwords", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_passwords():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         data = request.get_json(silent=True) or {}
-        updates = {}
+        changes = {}
         for field, key in (("join_password", "GAME_SERVER_PASSWORD"),
                            ("admin_password", "GAME_ADMIN_PASSWORD")):
             val = (data.get(field) or "").strip()
@@ -490,32 +530,31 @@ def admin_passwords():
             if not _PW_RE.match(val):
                 return jsonify({"ok": False, "error": f"{field.replace('_', ' ')}: use 1-64 chars, "
                                 "letters/digits/!@#%^&*()_+-=:.,  (no spaces, quotes, $, ` or \\)."}), 400
-            updates[key] = val
-        if not updates:
+            changes[key] = val
+        if not changes:
             return jsonify({"ok": False, "error": "Nothing to change — both fields were blank."}), 400
         try:
-            registry.write_secrets(updates)
+            registry.write_secrets(changes)
         except Exception as e:
             app_log.exception("password write failed")
             return jsonify({"ok": False, "error": f"could not write secrets file: {e}"}), 500
         # audit WITHOUT values — only which keys changed
-        audit_log.info("game passwords changed ip=%s keys=%s", _client_ip(), ",".join(sorted(updates)))
+        audit_log.info("game passwords changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changes)))
         running = [s.name for s in registry.load_servers() if monitor.unit_active(s.unit)]
-        return jsonify({"ok": True, "changed": sorted(updates),
+        return jsonify({"ok": True, "changed": sorted(changes),
                         "message": "Saved. Restart servers to apply the new password(s).",
                         "restart": running})
-    secrets = registry.load_secrets()
+    stored = registry.load_secrets()
     return jsonify({"ok": True,
-                    "join_set": bool(secrets.get("GAME_SERVER_PASSWORD")),
-                    "admin_set": bool(secrets.get("GAME_ADMIN_PASSWORD")),
+                    "join_set": bool(stored.get("GAME_SERVER_PASSWORD")),
+                    "admin_set": bool(stored.get("GAME_ADMIN_PASSWORD")),
                     "secrets_path": config.secrets_path()})
 
 
 @app.route("/admin/backups/run-all", methods=["POST"])
 @login_required
+@csrf_required
 def admin_backups_run_all():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     threading.Thread(target=backups.backup_all, name="backup-all-manual", daemon=True).start()
     audit_log.info("backup run-all triggered ip=%s", _client_ip())
     return jsonify({"ok": True, "message": "Backing up all servers in the background — refresh in a moment."})
@@ -523,9 +562,8 @@ def admin_backups_run_all():
 
 @app.route("/admin/updates/check", methods=["POST"])
 @login_required
+@csrf_required
 def admin_updates_check():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     updates.checker.trigger()
     osupdates.checker.trigger()
     audit_log.info("update check triggered ip=%s", _client_ip())
@@ -534,11 +572,9 @@ def admin_updates_check():
 
 @app.route("/admin/updates/apply", methods=["POST"])
 @login_required
+@csrf_required
 def admin_updates_apply():
     ip = _client_ip()
-    if not csrf_ok():
-        audit_log.warning("update apply rejected (bad CSRF) ip=%s", ip)
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     data = request.get_json(silent=True) or {}
     app_id = data.get("app", "")
     confirm = bool(data.get("confirm", False))
@@ -546,9 +582,6 @@ def admin_updates_apply():
         result = controls.start_update(app_id, confirm=confirm)
         audit_log.info("update APPLY started: app=%s ip=%s", app_id, ip)
         return jsonify(result)
-    except controls.ConfirmRequired as c:
-        return jsonify({"ok": False, "confirm_required": True,
-                        "players": c.players, "names": c.names}), 409
     except controls.ActionError as e:
         audit_log.warning("update apply FAILED: app=%s ip=%s err=%s", app_id, ip, e)
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -556,11 +589,9 @@ def admin_updates_apply():
 
 @app.route("/admin/action", methods=["POST"])
 @login_required
+@csrf_required
 def admin_action():
     ip = _client_ip()
-    if not csrf_ok():
-        audit_log.warning("action rejected (bad CSRF) ip=%s", ip)
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     data = request.get_json(silent=True) or {}
     key = data.get("key", "")
     action = data.get("action", "")
@@ -575,8 +606,7 @@ def admin_action():
         return jsonify(result)
     except controls.ConfirmRequired as c:
         audit_log.info("action needs-confirm: %s %s ip=%s (%s players online)", action, key, ip, c.players)
-        return jsonify({"ok": False, "confirm_required": True,
-                        "players": c.players, "names": c.names}), 409
+        return _players_online(c)
     except controls.ActionError as e:
         audit_log.warning("action FAILED: %s %s%s ip=%s err=%s", action, key, tgt, ip, e)
         return jsonify({"ok": False, "error": str(e)}), 400
@@ -584,11 +614,9 @@ def admin_action():
 
 @app.route("/admin/alerts", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_alerts():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
-        import notifiers
         data = request.get_json(silent=True) or {}
         previous = alerts.destinations()
         raw = data.get("destinations")
@@ -618,21 +646,19 @@ def admin_alerts():
 
 
 def _alert_view() -> dict:
-    import notifiers
-    cfg = config.load()
+    current = config.load()
     return {"services": notifiers.describe(),
-            "destinations": [notifiers.public_view(d) for d in alerts.destinations(cfg)],
-            "alert_on_recovery": cfg.get("alert_on_recovery", True),
-            "alert_on_unreachable": cfg.get("alert_on_unreachable", True),
-            "alert_on_disabled": cfg.get("alert_on_disabled", False)}
+            "destinations": [notifiers.public_view(d) for d in alerts.destinations(current)],
+            "alert_on_recovery": current.get("alert_on_recovery", True),
+            "alert_on_unreachable": current.get("alert_on_unreachable", True),
+            "alert_on_disabled": current.get("alert_on_disabled", False)}
 
 
 @app.route("/admin/portpool", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_portpool():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         data = request.get_json(silent=True) or {}
         pool: dict = {}
         errors: list[str] = []
@@ -665,20 +691,13 @@ def admin_portpool():
 @app.route("/admin/logs/<key>")
 @login_required
 def admin_logs(key):
-    try:
-        text = controls.read_logs(key, request.args.get("lines", 300))
-        return jsonify({"ok": True, "text": text})
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify({"ok": True, "text": controls.read_logs(key, request.args.get("lines", 300))})
 
 
 @app.route("/admin/servers/reach")
 @login_required
 def admin_servers_reach():
-    try:
-        return jsonify(reach.check(request.args.get("key", "")))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(reach.check(request.args.get("key", "")))
 
 
 @app.route("/admin/servers/types")
@@ -687,32 +706,27 @@ def admin_server_types():
     # which game types can currently be provisioned via the dashboard
     types = [{"kind": "custom", "label": "Custom service (advanced)", "custom": True, "extra_fields": []}]
     # Custom stays first; the games follow in alphabetical order.
-    for g in sorted(games.all_types(), key=lambda g: g.label.lower()):
-        if getattr(g, "provisionable", False):
-            types.append({"kind": g.kind, "label": g.label, "custom": False,
-                          "installed": installs.is_installed(g) if g.install_marker else True,
-                          "extra_fields": list(g.extra_fields) + g.port_fields(),
-                          "needs_clone": getattr(g, "needs_install_clone", False),
-                          "note": getattr(g, "provision_note", ""),
-                          "eula": g.eula,
-                          "hint": getattr(g, "provision_hint", ""),
-                          "mod_profiles": getattr(g, "mod_profiles", [])})
+    for game in sorted(games.all_types(), key=lambda t: t.label.lower()):
+        if game.provisionable:
+            types.append({"kind": game.kind, "label": game.label, "custom": False,
+                          "installed": installs.is_installed(game) if game.install_marker else True,
+                          "extra_fields": list(game.extra_fields) + game.port_fields(),
+                          "needs_clone": game.needs_install_clone,
+                          "note": game.provision_note,
+                          "eula": game.eula,
+                          "hint": game.provision_hint,
+                          "mod_profiles": game.mod_profiles})
     return jsonify({"types": types})
 
 
 @app.route("/admin/cert", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_cert():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         data = request.get_json(silent=True) or {}
-        try:
-            return jsonify(certs.start(data.get("domain", ""), data.get("email", ""),
-                                       bool(data.get("agree"))))
-        except controls.ActionError as e:
-            return jsonify({"ok": False, "error": str(e)}), 400
-    import reach
+        return jsonify(certs.start(data.get("domain", ""), data.get("email", ""),
+                                   bool(data.get("agree")), dashboard_port=_dashboard_port()))
     return jsonify({"ok": True, "cert": certs.info(), "job": certs.status_job(),
                     "lan_ip": reach.lan_ip(), "suggest": config.load().get("public_host", ""),
                     "terms_url": certs.TERMS_URL, "available": bool(certs.certbot_path())})
@@ -727,50 +741,34 @@ def admin_games():
 
 @app.route("/admin/games/install", methods=["POST"])
 @login_required
+@csrf_required
 def admin_games_install():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     kind = (request.get_json(silent=True) or {}).get("kind", "")
-    try:
-        return jsonify(installs.start(kind))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(installs.start(kind))
 
 
 @app.route("/admin/games/uninstall", methods=["POST"])
 @login_required
+@csrf_required
 def admin_games_uninstall():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     kind = (request.get_json(silent=True) or {}).get("kind", "")
-    try:
-        return jsonify(installs.uninstall(kind))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(installs.uninstall(kind))
 
 
 @app.route("/admin/servers/script", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_servers_script():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         data = request.get_json(silent=True) or {}
-        try:
-            return jsonify(provision.write_script(data.get("key", ""), data.get("content", "")))
-        except controls.ActionError as e:
-            return jsonify({"ok": False, "error": str(e)}), 400
-    try:
-        return jsonify(provision.read_script(request.args.get("key", "")))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+        return jsonify(provision.write_script(data.get("key", ""), data.get("content", "")))
+    return jsonify(provision.read_script(request.args.get("key", "")))
 
 
 @app.route("/admin/servers/add", methods=["POST"])
 @login_required
+@csrf_required
 def admin_servers_add():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     spec = request.get_json(silent=True) or {}
     try:
         result = provision.create(spec)
@@ -790,75 +788,57 @@ def admin_servers_add():
             "ram_avail_gb": round(c.ram_avail / 2**30, 1),
             "dst": c.dst,
         }}), 409
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
 
 
 @app.route("/admin/servers/remove", methods=["POST"])
 @login_required
+@csrf_required
 def admin_servers_remove():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     key = (request.get_json(silent=True) or {}).get("key", "")
-    try:
-        return jsonify(provision.destroy(key))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(provision.destroy(key))
 
 
 @app.route("/admin/servers/backups", methods=["GET", "POST"])
 @login_required
+@csrf_required
 def admin_backups():
     if request.method == "POST":
-        if not csrf_ok():
-            return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
         data = request.get_json(silent=True) or {}
-        try:
-            return jsonify(backups.create_backup(data.get("key", ""), label=data.get("label", "")))
-        except controls.ActionError as e:
-            return jsonify({"ok": False, "error": str(e)}), 400
+        return jsonify(backups.create_backup(data.get("key", ""), label=data.get("label", "")))
     key = request.args.get("key", "")
     s = registry.by_key().get(key)
     if not s:
         return jsonify({"ok": False, "error": "unknown server"}), 400
-    paths = backups.save_paths(s)
+    saves = backups.save_paths(s)
     return jsonify({"ok": True, "backups": backups.list_backups(key),
                     "keep": s.backup_keep, "kind": s.kind,
-                    "save_paths": [p["path"] for p in paths],
-                    "has_cluster": any(p.get("role") == "cluster" for p in paths),
-                    "can_backup": bool(paths), "online": monitor.unit_active(s.unit)})
+                    "save_paths": [p["path"] for p in saves],
+                    "has_cluster": any(p.get("role") == "cluster" for p in saves),
+                    "can_backup": bool(saves), "online": monitor.unit_active(s.unit)})
 
 
 @app.route("/admin/servers/backups/delete", methods=["POST"])
 @login_required
+@csrf_required
 def admin_backups_delete():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     data = request.get_json(silent=True) or {}
-    try:
-        return jsonify(backups.delete_backup(data.get("key", ""), data.get("name", "")))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(backups.delete_backup(data.get("key", ""), data.get("name", "")))
 
 
 @app.route("/admin/servers/backupkeep", methods=["POST"])
 @login_required
+@csrf_required
 def admin_backups_keep():
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     data = request.get_json(silent=True) or {}
-    try:
-        return jsonify(backups.set_keep(data.get("key", ""), data.get("keep", 5)))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify(backups.set_keep(data.get("key", ""),
+                                    data.get("keep", config.DEFAULT_BACKUP_KEEP)))
 
 
 @app.route("/admin/servers/restore", methods=["POST"])
 @login_required
+@csrf_required
 def admin_restore():
     ip = _client_ip()
-    if not csrf_ok():
-        return jsonify({"ok": False, "error": "This page has been open a while and needs refreshing — reload it and try again."}), 403
     data = request.get_json(silent=True) or {}
     key, name = data.get("key", ""), data.get("name", "")
     include_cluster = bool(data.get("include_cluster", True))
@@ -867,27 +847,41 @@ def admin_restore():
                                         include_cluster=include_cluster)
         audit_log.info("backup RESTORE ok: %s %s ip=%s", key, name, ip)
         return jsonify(result)
-    except controls.ConfirmRequired as c:
-        return jsonify({"ok": False, "confirm_required": True,
-                        "players": c.players, "names": c.names}), 409
     except controls.ActionError as e:
         audit_log.warning("backup RESTORE failed: %s %s ip=%s err=%s", key, name, ip, e)
-        return jsonify({"ok": False, "error": str(e)}), 400
+        raise
 
 
 @app.route("/admin/servers/backup-download")
 @login_required
 def admin_backup_download():
-    try:
-        path = backups.backup_file(request.args.get("key", ""), request.args.get("name", ""))
-    except controls.ActionError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
+    path = backups.backup_file(request.args.get("key", ""), request.args.get("name", ""))
     return send_file(path, as_attachment=True, download_name=request.args.get("name", "backup.tar.gz"))
+
+
+# ---- errors ----------------------------------------------------------------
+# Routes just call into the modules; these turn their exceptions into the replies
+# the page expects.
+
+def _players_online(c: controls.ConfirmRequired):
+    """409: players are on — the page asks the owner, then resends with confirm."""
+    return jsonify({"ok": False, "confirm_required": True,
+                    "players": c.players, "names": c.names}), 409
+
+
+@app.errorhandler(controls.ConfirmRequired)
+def _handle_confirm(c):
+    return _players_online(c)
+
+
+@app.errorhandler(controls.ActionError)
+def _handle_action_error(e):
+    """A refused or failed action: the message is already written for the owner."""
+    return jsonify({"ok": False, "error": str(e)}), 400
 
 
 @app.errorhandler(Exception)
 def _handle_error(e):
-    from werkzeug.exceptions import HTTPException
     if isinstance(e, HTTPException):
         return e  # let normal 4xx/redirects pass through
     app_log.exception("unhandled error on %s %s", request.method, request.path)
@@ -895,7 +889,6 @@ def _handle_error(e):
 
 
 def main():
-    poller.start()
     app.run(host=cfg["bind_host"], port=cfg["bind_port"], threaded=True)
 
 

@@ -2,8 +2,8 @@
 
 Each supported game is a GameType subclass that encapsulates everything
 game-specific: how to read players/reachability, which control actions it
-supports and how to run them, its Steam app id / update script, and (later
-phases) how to provision a new instance. The rest of the app dispatches through
+supports and how to run them, its Steam app id / update script, and how to
+provision a new instance. The rest of the app dispatches through
 `games.get(kind)` instead of `if kind == ...` branches.
 
 Methods take a `server` object (the registry Server dataclass) for its ports,
@@ -11,8 +11,6 @@ passwords, paths, etc. Low-level probing/clients live in `monitor.py`; game
 types orchestrate them.
 """
 from __future__ import annotations
-
-import monitor
 
 
 class ActionError(Exception):
@@ -105,9 +103,8 @@ class GameType:
         from games.eulas import EULAS
         return EULAS.get(self.kind)
 
-    # ---- provisioning (Phase 3b) -----------------------------------------
+    # ---- provisioning -----------------------------------------------------
     provisionable: bool = False     # can the dashboard auto-create an instance?
-    base_port: int = 7100           # where to start hunting for a free game port
     # extra Add-form fields. Each is {name, label} plus, optionally:
     #   type: "text" (default) | "number" | "select" | "checkbox"
     #   placeholder, default, help (tooltip); number: min/max/step;
@@ -119,6 +116,9 @@ class GameType:
     # saves/config, no save-dir override) need their own install dir per
     # instance — provisioning clones the base install (with a disk pre-flight).
     needs_install_clone: bool = False
+    # Folders inside such a copy to empty so the new server starts fresh (a world, crash dumps
+    # or logs left in the base install by an earlier run).
+    clone_clear_dirs: tuple[str, ...] = ()
     provision_note: str = ""        # caveat shown in the Add form for this game
     # False for servers that crash when a client connects and hangs up straight away (Terraria):
     # GameDash then never tests them by connecting.
@@ -168,14 +168,6 @@ class GameType:
                                              use_pool=use_pool)
         return out
 
-    @staticmethod
-    def _next_free(start: int, used: set[int]) -> int:
-        p = start
-        while p in used:
-            p += 1
-        used.add(p)
-        return p
-
     def provision(self, spec: dict, ports: dict) -> dict:
         """Write any config/launch files for a new instance and return the
         unit/store fields: exec_start, working_dir, game_port, query_port,
@@ -202,8 +194,9 @@ class GameType:
         ``{"path": <abs path, dir or file>, "role": <"save"|"cluster"|...>}``.
         Backups archive these; restore puts them back (and can filter by role —
         e.g. restore the map save but not the shared ARK cluster). Empty → no
-        known save location (e.g. a custom service with no save folder set)."""
-        return []
+        known save location (e.g. a custom service with no save folder set).
+        Default: the server's save folder, recorded when it was created."""
+        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     # ---- monitoring -------------------------------------------------------
     def probe(self, s) -> dict:
@@ -227,9 +220,3 @@ class GameType:
 
     def chat(self, s) -> str:
         raise ActionError(f"{s.name} has no live chat feed.")
-
-    # ---- helpers shared by RCON games ------------------------------------
-    def _player_ids(self, s) -> tuple[int | None, list[str]]:
-        """Live (count, names) for the player-check before disruptive actions.
-        Default: use whatever probe() found. RCON games override for freshness."""
-        return None, []

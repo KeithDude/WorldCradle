@@ -2,12 +2,13 @@
 
 Runs a daemon thread that refreshes a snapshot of every server into an
 in-memory cache on a fixed interval. Web requests read the cache (cheap, never
-block on a slow/dead server). CPU% needs successive samples per process, so we
-keep persistent psutil.Process handles across polls.
+block on a slow/dead server). Each server's CPU and RAM come from its systemd
+service's control group (see service_usage); also here: crash detection.
 """
 from __future__ import annotations
 
 import os
+import subprocess
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +21,8 @@ import games
 import monitor
 from applog import app_log
 from registry import Server, load_servers
+
+POLL_INTERVAL = 5.0  # seconds between fleet refreshes
 
 # ---- per-server resource use, measured for the whole service ----------------------
 # A server is often several processes (Wine helpers, a launcher script, a second level),
@@ -38,7 +41,6 @@ _crash_seen: dict[str, dict] = {}   # unit -> {"count": last NRestarts, "events"
 
 def crash_warning(unit: str, name: str) -> str:
     """'' normally; a plain-language warning while this server keeps crashing."""
-    import subprocess
     try:
         out = subprocess.run(["systemctl", "--user", "show", unit, "-p", "NRestarts", "-p", "SubState"],
                              capture_output=True, text=True, timeout=5).stdout
@@ -83,10 +85,9 @@ def _cgroup_dir(unit: str, pid: int | None) -> str | None:
             with open(f"/proc/{pid}/cgroup", encoding="utf-8") as f:
                 rel = f.read().strip().split("::", 1)[-1]
         if not rel.endswith(f"/{unit}"):
-            import subprocess
             rel = subprocess.run(["systemctl", "--user", "show", "-p", "ControlGroup", "--value", unit],
                                  capture_output=True, text=True, timeout=5).stdout.strip()
-    except (OSError, ValueError, __import__("subprocess").SubprocessError):
+    except (OSError, ValueError, subprocess.SubprocessError):
         return None
     path = "/sys/fs/cgroup" + rel
     if rel and os.path.isdir(path):
@@ -128,15 +129,12 @@ def service_usage(unit: str, pid: int | None) -> tuple[float | None, int | None]
         pass
     return cpu, mem
 
-POLL_INTERVAL = 5.0  # seconds between fleet refreshes
-
 
 class Poller:
     def __init__(self, interval: float = POLL_INTERVAL):
         self.interval = interval
         self._lock = threading.Lock()
         self._snapshot: dict = {"servers": {}, "box": {}, "ts": 0.0}
-        self._procs: dict[str, psutil.Process] = {}  # key -> Process (CPU continuity)
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._alerts = alerts.AlertEngine()
@@ -173,40 +171,29 @@ class Poller:
                     self._snapshot = {**self._snapshot, "error": repr(e)}
             self._stop.wait(self.interval)
 
-    def _index_processes(self) -> list[tuple[psutil.Process, str]]:
-        """Snapshot (process, cmdline) pairs once per cycle for matching."""
+    @staticmethod
+    def _index_processes() -> list[tuple[int, str]]:
+        """(pid, command line) of every process, read once per cycle."""
         out = []
         for p in psutil.process_iter(["cmdline"]):
             try:
                 cmd = " ".join(p.info["cmdline"] or [])
                 if cmd:
-                    out.append((p, cmd))
+                    out.append((p.pid, cmd))
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return out
 
-    def _find_proc(self, key: str, match: str, procs) -> psutil.Process | None:
-        """Return a persistent Process handle for the server's process. Reuse
-        the cached handle when the pid is unchanged so cpu_percent() measures
-        over the full poll interval; the caller reads cpu_percent exactly once.
-        A freshly-seen process reads 0.0 for its first poll (no priming here —
-        priming + reading in one cycle is what produced bogus CPU spikes)."""
-        for p, cmd in procs:
-            if match and match in cmd:
-                cached = self._procs.get(key)
-                if cached is not None and cached.pid == p.pid:
-                    return cached
-                self._procs[key] = p
-                return p
-        self._procs.pop(key, None)
-        return None
+    @staticmethod
+    def _find_pid(match: str, procs) -> int | None:
+        """The server's main process, if running: a hint for finding its control group."""
+        return next((pid for pid, cmd in procs if match and match in cmd), None)
 
     def _poll_once(self) -> dict:
         procs = self._index_processes()
         defs = load_servers()
 
-        # Local probes (systemd + psutil) run sequentially in this thread so the
-        # CPU-handle cache (self._procs) isn't touched concurrently.
+        # Local probes (systemd + /proc) are quick: one after another in this thread.
         base = {s.key: self._poll_base(s, procs) for s in defs}
 
         # Network probes (RCON / A2S / TCP) are slow and independent — fan out so
@@ -259,7 +246,7 @@ class Poller:
         return ""
 
     def _poll_base(self, s: Server, procs) -> dict:
-        """Local-only probe: systemd state + psutil resources. Sets a private
+        """Local-only probe: systemd state + resource use. Sets a private
         '_probe' flag telling _poll_once whether network probes are warranted."""
         online = monitor.unit_active(s.unit)
         st: dict = {
@@ -268,29 +255,27 @@ class Poller:
             "steam_app": s.steam_app, "managed": s.managed,
             "game_port": s.game_port, "query_port": s.query_port,
             "rcon_port": s.rcon_port, "slot_group": s.slot_group,
-            "map_code": s.map_code,
             "online": online,
             "enabled": monitor.unit_enabled(s.unit),
-            "pid": None, "cpu_percent": None, "mem_mb": None,
+            "cpu_percent": None, "mem_mb": None,
             "players": None, "player_names": [], "player_detail": [], "max_players": None,
             "reachable": None, "note": "",  # reachable: True / False / None=unknown
+            "parked": False,  # shares its ports with another server, which has them now
             "sf": None,  # Satisfactory extra state (tick rate, phase, uptime, …)
             "backup_warn": self._backup_warn(s),
             "crash_warn": crash_warning(s.unit, s.name) if (online or s.managed == "gamedash") else "",
             "_probe": False,
         }
 
-        proc = self._find_proc(s.key, s.proc_match, procs)
-        if proc is not None:
-            st["pid"] = proc.pid
         if online:
             # share of the whole computer's processor, and RAM in binary MB, for all of
             # this server's processes together
-            st["cpu_percent"], st["mem_mb"] = service_usage(s.unit, proc.pid if proc else None)
+            st["cpu_percent"], st["mem_mb"] = service_usage(s.unit, self._find_pid(s.proc_match, procs))
 
         # A server sharing a slot but not active: its sibling owns the port, so
         # don't probe it (we'd attribute the sibling's data to the wrong map).
         if s.slot_group and not online:
+            st["parked"] = True
             st["note"] = "parked (shares ports with another server — only one runs at a time)"
         elif online:
             st["_probe"] = True

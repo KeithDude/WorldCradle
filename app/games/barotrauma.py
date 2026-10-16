@@ -38,7 +38,6 @@ class BarotraumaGame(GameType):
 
     provisionable = True
     needs_install_clone = True
-    base_port = 27600
     port_layout = [
         {"name": "game", "klass": "game", "start": 27600, "proto": "UDP", "forward": True,
          "label": "Game port (UDP)", "help": "The port players connect to. Forward it (UDP)."},
@@ -52,7 +51,9 @@ class BarotraumaGame(GameType):
          "default": False},
     ]
     provision_note = ("Barotrauma keeps its settings beside its program files, so each server gets its "
-                      "own copy of the game (under half a GB).")
+                      "own copy of the game (under half a GB). Campaign saves are different: the game "
+                      "keeps them in one folder for the whole computer, so if you run several Barotrauma "
+                      "servers, a backup or restore of one covers all of their campaigns.")
     provision_hint = ("Barotrauma — a new server with its own copy of the game. The join password is the "
                       "shared one. Round settings (submarine, mission, difficulty) are chosen in the "
                       "game's lobby by whoever has permission.")
@@ -79,11 +80,10 @@ class BarotraumaGame(GameType):
             "server_name": display, "join_port": ports["game"], "log_path": log,
             "install_dir": install, "steam_app": self.steam_app, "timeout_stop": 30,
             "world": key,
+            # The game saves every campaign here, whichever server played it; GameDash doesn't yet
+            # give each server its own folder (owners are told in provision_note; on the roadmap).
             "save_root": os.path.expanduser("~/.local/share/Daedalic Entertainment GmbH/Barotrauma/Multiplayer"),
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

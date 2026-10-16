@@ -9,6 +9,7 @@ import config
 import monitor
 from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_float,
                         opt_int, safe_name)
+from games.simple import RCON_PORT_HELP
 
 ARK_EXEC = "./ShooterGame/Binaries/Linux/ShooterGameServer"
 # Official maps: (map code for the launch line, display name, folder under
@@ -44,7 +45,6 @@ class ArkGame(GameType):
 
     # provisioning: a new cluster map from the shared install (own ports/savedir)
     provisionable = True
-    base_port = 7790  # leaves the conventional 7777-7783 range for existing maps
     provision_hint = ("ARK — adds a new map to your cluster (characters & dinos transfer between "
                       "maps in the same cluster). Ports, save folder and the cluster launch are "
                       "generated for you; the join/admin passwords are the shared ones. Rates, decay "
@@ -87,12 +87,13 @@ class ArkGame(GameType):
         ]
 
     port_layout = [
-        {"name": "game", "klass": "game", "start": base_port, "span": 2,
+        # leaves the conventional 7777-7783 range for existing maps
+        {"name": "game", "klass": "game", "start": 7790, "span": 2,
          "proto": "UDP", "forward": True, "label": "Game port (UDP)", "help": "ARK also uses the next port up (raw socket). Forward both."},
         {"name": "query", "klass": "query", "start": 27030, "proto": "UDP", "forward": True, "label": "Steam query port (UDP)",
          "help": "The port players add in Steam's server browser. Forward it."},
         {"name": "rcon", "klass": "rcon", "start": 27040, "proto": "TCP", "label": "RCON port (TCP)",
-         "help": "Lets the dashboard control the server (player list, messages, saving). Keep it closed: never forward it on your router — anyone who could reach it could take over the server."},
+         "help": RCON_PORT_HELP},
     ]
 
     def provision(self, spec: dict, ports: dict) -> dict:
@@ -101,7 +102,7 @@ class ArkGame(GameType):
         CLUSTER_ID = (spec.get("cluster_id") or "").strip() or cfg.get("ark_cluster_id") or "gamedash"
         if not re.match(r"^[A-Za-z0-9_]{1,40}$", CLUSTER_ID):
             raise ActionError("Cluster ID must be letters/digits/underscores.")
-        prefix = cfg.get("server_name_prefix", "")  # optional, configurable (was hardcoded)
+        prefix = cfg.get("server_name_prefix", "")  # optional (Settings → General)
         CLUSTER_DIR = os.path.join(ARK_DIR, "cluster")
         SECRETS = config.secrets_path()
         if not os.path.isdir(ARK_DIR):
@@ -186,7 +187,7 @@ class ArkGame(GameType):
         }
 
     def save_paths(self, s) -> list[dict]:
-        install = s.install_dir or config.install_dir("ark")
+        install = s.install_dir or config.install_dir(self.kind)   # (ASA reuses this)
         out = []
         if s.save_dir:  # the map's AltSaveDirectoryName under ShooterGame/Saved
             out.append({"path": os.path.join(install, "ShooterGame", "Saved", s.save_dir),

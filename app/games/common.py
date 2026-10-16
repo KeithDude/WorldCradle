@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import time
 
 # ---- a server console you can type into --------------------------------------
 # Many servers only take admin commands (save, say, quit) on their own console.

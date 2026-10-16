@@ -42,7 +42,6 @@ class NecesseGame(GameType):
     actions = {"save", "broadcast", "kick", "ban"}
 
     provisionable = True
-    base_port = 14159
     port_layout = [
         {"name": "game", "klass": "game", "start": 14159, "proto": "UDP", "forward": True,
          "label": "Game port (UDP)", "help": "The port players connect to. Forward it (UDP)."},
@@ -88,9 +87,6 @@ class NecesseGame(GameType):
             "install_dir": install, "steam_app": self.steam_app, "timeout_stop": 60,
             "world": world, "save_root": server_dir,
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

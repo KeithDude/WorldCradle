@@ -1,6 +1,7 @@
-"""monitor.py — stateless probes used by the poller.
+"""monitor.py — probes used by the poller (and the RCON clients the games use).
 
-Everything here is best-effort and fails soft: a probe that errors or times out
+A few keep small caches between polls: which address answers Steam queries, and how
+far each server log has been read. Everything here is best-effort and fails soft: a probe that errors or times out
 returns None / [] rather than raising, so one dead server never blocks the rest.
 """
 from __future__ import annotations
@@ -54,11 +55,16 @@ def unit_enabled(unit: str) -> bool:
 _a2s_host: dict[int, str] = {}
 
 
-def _lan_ip() -> str:
+_ROUTE_PROBE = ("192.0.2.1", 9)   # a documentation-only address: nothing is ever sent to it
+
+
+def lan_ip() -> str:
+    """This computer's address on the home network (what the router forwards to). Connecting
+    a UDP socket sends nothing; it only makes the system pick the outgoing interface."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
-            s.connect(("192.0.2.1", 9))
+            s.connect(_ROUTE_PROBE)
             return s.getsockname()[0]
         finally:
             s.close()
@@ -70,7 +76,7 @@ def _a2s_hosts(port: int, host: str | None) -> list[str]:
     if host:
         return [host]
     first = _a2s_host.get(port, HOST)
-    return [first] + [h for h in (HOST, _lan_ip()) if h and h != first]
+    return [first] + [h for h in (HOST, lan_ip()) if h and h != first]
 
 
 def a2s_info(port: int, host: str | None = None) -> dict | None:
@@ -165,11 +171,15 @@ def rcon_run(port: int, password: str, command: str) -> str | None:
     return source_rcon(port, password, command)
 
 
+_RCON_MAX_REPLY = 1 << 20   # stop reading a reply after 1 MB
+
+
 def palworld_rcon(port: int, password: str, command: str,
                   timeout: float = RCON_TIMEOUT) -> str | None:
-    """Palworld's RCON is non-standard (it breaks strict clients with a
-    'packet ID mismatch'). This minimal client tolerates the quirks: it does
-    not enforce response IDs and drains whatever packets come back."""
+    """A lenient RCON client for servers whose RCON only resembles Valve's — Palworld,
+    Conan Exiles, HumanitZ, Squad: a strict client fails on them with a 'packet ID
+    mismatch'. This one doesn't check response IDs and reads whatever packets come back.
+    (Its name is kept because servers' generated stop scripts call it.)"""
     def pkt(pid: int, ptype: int, body: str) -> bytes:
         payload = struct.pack("<ii", pid, ptype) + body.encode("utf-8") + b"\x00\x00"
         return struct.pack("<i", len(payload)) + payload
@@ -186,7 +196,7 @@ def palworld_rcon(port: int, password: str, command: str,
         chunks = b""
         s.settimeout(1.5)
         try:
-            while True:
+            while len(chunks) < _RCON_MAX_REPLY:
                 d = s.recv(4096)
                 if not d:
                     break
@@ -196,6 +206,8 @@ def palworld_rcon(port: int, password: str, command: str,
         out, i = [], 0
         while i + 12 <= len(chunks):
             (length,) = struct.unpack("<i", chunks[i:i + 4])
+            if length < 10:   # smallest real packet (id + type + two NULs); anything less is garbage
+                break
             body = chunks[i + 12:i + 4 + length - 2]
             out.append(body.decode("utf-8", "replace"))
             i += 4 + length

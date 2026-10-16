@@ -6,6 +6,10 @@
   manage.py setup-code                print a one-time code for choosing the admin
                                       password in the browser (first-run setup)
   manage.py show                      print non-secret config
+  manage.py install-cert              put a renewed certificate in place
+                                      (run by the renewal timer)
+
+Everyday jobs have friendlier versions in the `gamedash` command (cli.py).
 """
 import getpass
 import sys
@@ -26,8 +30,8 @@ def main() -> int:
             if pw != getpass.getpass("Confirm: "):
                 print("Passwords do not match.", file=sys.stderr)
                 return 1
-        if len(pw) < 12:
-            print("Password must be at least 12 characters — this login is the only thing "
+        if len(pw) < config.MIN_ADMIN_PASSWORD:
+            print(f"Password must be at least {config.MIN_ADMIN_PASSWORD} characters — this login is the only thing "
                   "between the internet and full control of the servers.", file=sys.stderr)
             return 1
         config.set_password(pw)

@@ -32,17 +32,7 @@ _cache: dict = {"ip": "", "ts": 0.0}
 _cache_lock = threading.Lock()
 
 
-def lan_ip() -> str:
-    """This computer's address on the home network (what the router forwards to)."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            s.connect(("192.0.2.1", 9))   # no packet is sent; just picks the outgoing interface
-            return s.getsockname()[0]
-        finally:
-            s.close()
-    except OSError:
-        return ""
+lan_ip = monitor.lan_ip
 
 
 def router_ip() -> str:

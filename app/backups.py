@@ -1,12 +1,12 @@
 """backups.py — per-server save backup & restore.
 
-A backup is a `.tar.gz` under `~/gamedash-backups/<key>/` plus a JSON manifest
+A backup is a `.tar.gz` under `<backup folder>/<key>/` plus a JSON manifest
 (stored inside the archive) recording each archived path's original absolute
 location, so restore puts everything back exactly where it came from. The save
 locations are game-specific and come from `GameType.save_paths(server)`.
 
 Robustness:
-  * backup optionally triggers an in-game save first (ARK/Palworld/Satisfactory)
+  * backup first asks the game to save (for games that have a save command)
     so the on-disk copy is current;
   * restore is disruptive — it re-checks live players (ConfirmRequired), takes an
     automatic pre-restore snapshot of the CURRENT save, stops the server, swaps
@@ -26,7 +26,7 @@ import threading
 import time
 
 import alerts
-import config  # noqa: F401  (kept for parity / future config-driven root)
+import config
 import controls
 import games
 import monitor
@@ -64,7 +64,6 @@ def _human(n: int) -> str:
         if size < 1024 or unit == "TB":
             return f"{int(size)} {unit}" if unit == "B" else f"{size:.1f} {unit}"
         size /= 1024
-    return f"{size:.1f} TB"
 
 
 def _slug(text: str) -> str:
@@ -199,8 +198,8 @@ def _prune(key: str, keep: int, cls: str) -> None:
 
 def create_backup(key: str, label: str = "", flush: bool = True) -> dict:
     s = _server(key)
-    paths = [it for it in save_paths(s) if os.path.exists(it["path"])]
-    if not paths:
+    existing = [it for it in save_paths(s) if os.path.exists(it["path"])]
+    if not existing:
         raise ActionError(f"No save files found to back up for {s.name}. "
                           f"(For a custom service, set its save folder first.)")
     game = games.get(s.kind)
@@ -214,7 +213,7 @@ def create_backup(key: str, label: str = "", flush: bool = True) -> dict:
     ts = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     fname = f"{ts}{('_' + _slug(label)) if label else ''}.tar.gz"
     out = os.path.join(_dir(key), fname)
-    _archive(paths, out, {"created": time.time(), "key": key, "kind": s.kind,
+    _archive(existing, out, {"created": time.time(), "key": key, "kind": s.kind,
                           "server_name": s.name, "label": label})
     _prune(key, s.backup_keep, _backup_class(fname))
     size = os.path.getsize(out)

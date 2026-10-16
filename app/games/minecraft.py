@@ -19,6 +19,7 @@ import config
 import monitor
 from games import common
 from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name)
+from games.simple import RCON_PORT_HELP
 
 MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 EULA_URL = "https://aka.ms/MinecraftEULA"
@@ -37,7 +38,7 @@ _RUN_TEMPLATE = """#!/bin/sh
 #   {server_dir}
 . {secrets}
 cd "{server_dir}" || exit 1
-# Keep the admin-console (RCON) password in step with the central registry.
+# Keep the admin-console (RCON) password in step with the ones set in GameDash.
 python3 - "$GAME_ADMIN_PASSWORD" <<'SYNC'
 import re, sys
 p = "server.properties"
@@ -74,12 +75,11 @@ class MinecraftGame(GameType):
     actions = {"save", "broadcast", "kick", "ban"}
 
     provisionable = True
-    base_port = 25565
     port_layout = [
         {"name": "game", "klass": "game", "start": 25565, "proto": "TCP", "forward": True, "label": "Game port (TCP)",
          "help": "The port players connect to. Forward it (TCP)."},
         {"name": "rcon", "klass": "rcon", "start": 25585, "label": "Admin console port (TCP)",
-         "help": "Lets the dashboard control the server (player list, messages, saving). Keep it closed: never forward it on your router — anyone who could reach it could take over the server."},
+         "help": RCON_PORT_HELP},
     ]
     extra_fields = [
         {"name": "memory", "label": "Memory for this server, in GB (1-32)", "type": "number",
@@ -225,9 +225,6 @@ class MinecraftGame(GameType):
             "timeout_stop": 60,   # on stop the server saves the world before exiting
             "world": key, "save_root": server_dir,
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     # ---- monitoring + controls (RCON) --------------------------------------
     def _rcon(self, s, cmd: str) -> str | None:

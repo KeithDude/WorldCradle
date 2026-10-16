@@ -3,15 +3,10 @@
 steamcmd is slow (~10-30s/app), so this runs on its own thread on a long
 interval (default 6h) and caches results; the dashboard reads the cache. An
 admin "Check now" can trigger an immediate refresh. Each game's installed
-build id (from steamapps/appmanifest_<app>.acf) is compared to the latest
-public build id from `steamcmd +app_info_print` (the first "buildid" in the
-output is the public branch).
+build id is compared to the latest public one; steam.py reads both.
 """
 from __future__ import annotations
 
-import os
-import re
-import subprocess
 import threading
 import time
 
@@ -20,7 +15,7 @@ from applog import app_log
 from registry import load_servers
 
 CHECK_INTERVAL = 6 * 3600  # seconds between automatic checks
-_BUILDID = re.compile(r'"buildid"\s*"(\d+)"')
+FIRST_CHECK_DELAY = 45     # let the app settle before the first (slow) check
 
 
 def _games() -> list[dict]:
@@ -32,14 +27,6 @@ def _games() -> list[dict]:
             seen[s.steam_app] = {"app": s.steam_app, "dir": s.install_dir,
                                  "game": s.name.split(" · ", 1)[0]}
     return list(seen.values())
-
-
-def _installed_build(install_dir: str, app: int) -> str | None:
-    return steam.installed_build(install_dir, app)
-
-
-def _latest_build(app: int) -> str | None:
-    return steam.latest_build(app)
 
 
 class UpdateChecker:
@@ -67,7 +54,7 @@ class UpdateChecker:
             return dict(self._data)
 
     def _loop(self):
-        self._stop.wait(45)  # let the app settle before the first (slow) check
+        self._stop.wait(FIRST_CHECK_DELAY)
         while not self._stop.is_set():
             self.refresh()
             self._wake.wait(self.interval)
@@ -78,8 +65,8 @@ class UpdateChecker:
             return  # one already running
         try:
             for g in _games():
-                installed = _installed_build(g["dir"], g["app"])
-                latest = _latest_build(g["app"])
+                installed = steam.installed_build(g["dir"], g["app"])
+                latest = steam.latest_build(g["app"])
                 rec = {
                     "game": g["game"], "app": g["app"],
                     "installed": installed, "latest": latest,
@@ -89,6 +76,8 @@ class UpdateChecker:
                 }
                 with self._lock:
                     self._data[g["app"]] = rec
+        except Exception:   # never let the checker thread die
+            app_log.exception("update check failed")
         finally:
             self._refresh_lock.release()
 

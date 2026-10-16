@@ -71,3 +71,20 @@ def test_port_listening_never_connects():
     finally:
         s.close()
     assert monitor.port_listening(port) is False
+
+
+def _serve_raw(sock, raw):
+    conn, _ = sock.accept()
+    with conn:
+        _read(conn)
+        conn.sendall(_packet(1, 2, ""))
+        _read(conn)
+        conn.sendall(raw)
+
+
+def test_lenient_client_reads_replies_and_survives_garbage():
+    for raw, want in ((_packet(2, 0, "3 players"), "3 players"),
+                      (struct.pack("<i", -4) + b"\x00" * 12, "")):     # a nonsense length must not hang
+        sock = socket.socket(); sock.bind(("127.0.0.1", 0)); sock.listen(1)
+        threading.Thread(target=_serve_raw, args=(sock, raw), daemon=True).start()
+        assert monitor.palworld_rcon(sock.getsockname()[1], PASSWORD, "ShowPlayers", timeout=3) == want

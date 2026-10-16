@@ -4,15 +4,16 @@ arguments" kind, run through Wine.
 Builds on games/simple.py: each server gets its own Wine environment (see
 common.wine_prefix) and its own data folder, handed to the game as a Windows
 path. Wine can't pass a "please save and quit" signal on to these servers, so
-stopping one ends it at once; they all save on their own as they run.
+stopping one ends it at once (unless the game has a console that can shut it
+down, like Astroneer); they all save on their own as they run.
 """
 from __future__ import annotations
 
 import os
 
 from games import common
-from games.base import ActionError, opt_bool, opt_choice, opt_int, safe_name
-from games.simple import GAME_PORT_HELP, QUERY_PORT_HELP, SimpleGame, port
+from games.base import ActionError, opt_choice, opt_int, safe_name
+from games.simple import GAME_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 
 def win(path: str) -> str:
@@ -38,7 +39,6 @@ def kv_password_sync(path: str, pairs: list[tuple[str, str]]) -> str:
 class WineGame(SimpleGame):
     steam_platform = "windows"
     requires = ["wine"]
-    kill_signal = "SIGINT"
     stop_seconds = 30
 
     def sync_lines(self, spec, ports, name, server_dir, install) -> str:
@@ -64,7 +64,6 @@ class ScumGame(WineGame):
     ram_note = "about 10-16 GB of memory"
     about = "Hardcore open-world prison-island survival. Runs through Wine; slow to start."
     has_query = False
-    base_port = 7042
     port_layout = [port("game", 7042, "Game port (UDP, plus the next two)", span=3,
                         help="The port players connect to. Forward it and the two after it (UDP).")]
     extra_fields = [
@@ -161,10 +160,9 @@ class AstroneerGame(WineGame):
     has_query = False
     actions = {"save"}
     stop_seconds = 45
-    base_port = 8777
     port_layout = [port("game", 8777, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("rcon", 8778, "Admin console port (TCP)", proto="TCP", forward=False,
-                        help="Lets the dashboard control the server (player list, messages, saving). Keep it closed: never forward it on your router — anyone who could reach it could take over the server.")]
+                        help=RCON_PORT_HELP)]
     extra_fields = [
         {"name": "owner", "label": "Owner — your Steam display name (optional)", "placeholder": "",
          "help": "The player with this exact name becomes the server's owner in the game and can "
@@ -273,7 +271,6 @@ class NeraGame(WineGame):
     ram_note = "about 4-8 GB of memory"
     about = "Co-op ocean survival and sailing adventure for up to 10 players. Runs through Wine."
     has_query = False
-    base_port = 7777
     port_layout = [port("game", 7777, "Game port (UDP, plus the next one)", span=2,
                         help="The port players connect to. Forward it and the one after it (UDP).")]
     extra_fields = [
@@ -349,7 +346,6 @@ class WindroseGame(WineGame):
     ram_note = "about 8 GB of memory for 2 players, 16 GB for 10"
     about = "Co-op pirate survival and sailing adventure. Runs through Wine."
     has_query = False
-    base_port = 7777
     port_layout = [port("game", 7777, "Direct-connection port (TCP and UDP)", proto="UDP and TCP",
                         help="Only used with the “direct address” connection: forward it for both TCP and UDP.")]
     CONNECT = [["code", "Invite code — friends type a code; no router setup needed"],
@@ -448,7 +444,6 @@ class StarRuptureGame(WineGame):
     ram_note = "about 8-16 GB of memory"
     about = "Co-op base building and survival on a hostile planet (early access). Runs through Wine."
     has_query = False
-    base_port = 7777
     port_layout = [port("game", 7777, "Game port (UDP)",
                         help="The port players connect to. Forward it for UDP only — never TCP.")]
     extra_fields = [

@@ -1,6 +1,6 @@
 """Abiotic Factor game type. The dedicated server is Windows-only and runs
-under Wine. No RCON — player count comes from Steam A2S, names from A2S or
-(fallback) the server log. Options follow the official dedicated-server wiki
+under Wine. No RCON — who is online is read from the server log (Steam's
+query always reports 0 players for this game). Options follow the official dedicated-server wiki
 (launch parameters + SandboxSettings.ini)."""
 from __future__ import annotations
 
@@ -99,7 +99,6 @@ class AbioticGame(GameType):
     # provisioning: another world from the shared install (own ports, world save
     # folder, sandbox settings, log file and Wine prefix)
     provisionable = True
-    base_port = 7784
     extra_fields = [
         {"name": "world", "label": "World save name (blank = the key)", "placeholder": "Cascade",
          "help": "Letters/digits/underscores. An existing world of this name is loaded as-is."},
@@ -138,7 +137,7 @@ class AbioticGame(GameType):
                       "Wine environment (~1 GB) is created.")
 
     port_layout = [
-        {"name": "game", "klass": "game", "start": base_port, "proto": "UDP", "forward": True, "label": "Game port (UDP)",
+        {"name": "game", "klass": "game", "start": 7784, "proto": "UDP", "forward": True, "label": "Game port (UDP)",
          "help": "The port players connect to. Forward it."},
         {"name": "query", "klass": "query", "start": 27030, "proto": "UDP", "forward": True, "label": "Steam query port (UDP)",
          "help": "Lists the server in the browser. Forward it."},
@@ -207,9 +206,6 @@ class AbioticGame(GameType):
             "world": world,
             "save_root": os.path.join(saved, "SaveGames", "Server", "Worlds", world),
         }
-
-    def save_paths(self, s) -> list[dict]:
-        return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],

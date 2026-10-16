@@ -35,7 +35,6 @@ class InsurgencyGame(SimpleGame):
     ram_note = "about 2-4 GB of memory"
     about = "Tactical team shooter with co-op and versus modes."
     actions = {"broadcast"}
-    base_port = 27102
     port_layout = [port("game", 27102, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27131, "Steam query port (UDP)", help=QUERY_PORT_HELP),
                    port("rcon", 27140, "Admin console port (TCP)", proto="TCP", forward=False,
@@ -86,7 +85,6 @@ class Kf2Game(SimpleGame):
     install_gb = 25
     ram_note = "about 2-3 GB of memory"
     about = "Co-op wave shooter against monsters, up to 6 players."
-    base_port = 7790
     port_layout = [port("game", 7790, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27170, "Steam query port (UDP)", help=QUERY_PORT_HELP),
                    port("web", 8090, "Web admin port (TCP)", proto="TCP", forward=False, klass="rcon",
@@ -144,7 +142,6 @@ class ArmaReforgerGame(SimpleGame):
     ram_note = "about 4-8 GB of memory"
     about = "Military sandbox with large-scale Conflict battles and a Game Master mode."
     kill_signal = "SIGTERM"
-    base_port = 2001
     port_layout = [port("game", 2001, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 17777, "Steam query port (UDP)", help=QUERY_PORT_HELP)]
     SCENARIOS = [["{ECC61978EDCC2B5A}Missions/23_Campaign.conf", "Conflict — Everon"],
@@ -209,7 +206,6 @@ class EcoGame(SimpleGame):
     has_query = False
     kill_signal = "SIGTERM"      # the documented safe shutdown: saves the world, then exits
     stop_seconds = 90
-    base_port = 3000
     port_layout = [port("game", 3000, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("web", 3001, "Web page port (TCP)", proto="TCP",
                         help="The server's own web page (map, graphs, laws). Forward it (TCP) if friends should see it."),
@@ -321,7 +317,6 @@ class HumanitzGame(SimpleGame):
     about = "Top-down zombie survival with vehicles and base building."
     actions = {"broadcast"}      # no "save" console command is documented; the game autosaves
     stop_seconds = 120           # the makers' own service example allows it up to 5 minutes to save and exit
-    base_port = 7790
     port_layout = [port("game", 7790, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27180, "Steam query port (UDP)", help=QUERY_PORT_HELP),
                    port("rcon", 8890, "Admin console port (TCP)", proto="TCP", forward=False,
@@ -405,9 +400,6 @@ class HumanitzGame(SimpleGame):
                        player_detail=[{"name": n, "id": ""} for n in names])
         return out
 
-    def save(self, s) -> str:
-        return self._rcon(s, "save", "Save")
-
     def broadcast(self, s, message: str) -> str:
         self._rcon(s, "admin " + message.replace("\n", " ")[:200], "Message")
         return "sent"
@@ -436,7 +428,6 @@ class SoulmaskGame(SimpleGame):
     ram_note = "about 8-16 GB of memory"
     about = "Tribal survival and base building with recruitable followers."
     stop_seconds = 260   # saving and closing its database takes a few minutes
-    base_port = 8777
     port_layout = [port("game", 8777, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27190, "Steam query port (UDP)", help=QUERY_PORT_HELP),
                    port("echo", 18888, "Local console port (TCP)", proto="TCP", forward=False, klass="rcon",
@@ -485,7 +476,6 @@ class VeinGame(SimpleGame):
     ram_note = "about 6-10 GB of memory"
     about = "Post-apocalyptic survival sandbox with deep scavenging and crafting."
     kill_signal = "SIGTERM"
-    base_port = 7790
     port_layout = [port("game", 7790, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27200, "Steam query port (UDP)", help=QUERY_PORT_HELP)]
     extra_fields = [
@@ -568,7 +558,6 @@ class DragonwildsGame(SimpleGame):
     about = "Co-op survival crafting in the RuneScape universe, for up to 6 players."
     has_query = False
     kill_signal = "SIGTERM"
-    base_port = 7790
     port_layout = [port("game", 7790, "Game port (UDP)", help=GAME_PORT_HELP)]
     POLICIES = [["Crossplay", "Everyone (crossplay)"], ["SteamOnly", "Steam players only"]]
     extra_fields = [
@@ -648,7 +637,6 @@ class StationeersGame(SimpleGame):
     about = "Hardcore space-station building and survival with detailed physics and atmospherics."
     has_query = False        # doesn't answer the Steam query, so no player count
     stop_seconds = 45
-    base_port = 27510
     port_layout = [port("game", 27510, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("update", 27511, "Update port (UDP)", klass="query",
                         help="The game's second port. Forward it (UDP) alongside the game port.")]
@@ -726,7 +714,7 @@ class SquadGame(SimpleGame):
     steam_app = 403240
     exe = "SquadGame/Binaries/Linux/SquadGameServer"
     project = "SquadGame"
-    has_password_key = False     # no join-password setting in its files: it is set over the admin console
+    join_password_in_server_cfg = False     # no join-password setting in its files: it is set over the admin console
     needs_install_clone = True   # its settings folder sits beside the program files
     install_gb = 14
     ram_note = "about 6-10 GB of memory"
@@ -734,7 +722,6 @@ class SquadGame(SimpleGame):
     kill_signal = "SIGINT"
     stop_seconds = 30            # matches, not worlds: nothing to save
     actions = {"broadcast"}
-    base_port = 7787
     port_layout = [port("game", 7787, "Game port (UDP, plus the next one)", span=2,
                         help="The port players connect to. Forward it and the one after it (UDP)."),
                    port("query", 27165, "Steam query port (UDP and TCP, plus the next one)", span=2,
@@ -757,9 +744,10 @@ class SquadGame(SimpleGame):
 
     @property
     def provision_hint(self) -> str:
+        join = ("so is the join password" if self.join_password_in_server_cfg
+                else "the shared join password is applied a minute or two after the first map loads")
         return (f"{self.label} — a match server with its own copy of the game. The admin password is the "
-                "shared one; the join password is applied a minute or two after the first map loads. "
-                "Map rotation and admins are the files in its ServerConfig folder.")
+                f"shared one; {join}. Map rotation and admins are the files in its ServerConfig folder.")
 
     def _cfg(self, install, name):
         return os.path.join(install, self.project, "ServerConfig", name)
@@ -789,7 +777,7 @@ class SquadGame(SimpleGame):
     def pre(self, spec, ports, name, server_dir, install):
         locked = opt_bool(spec, "locked", True)
         out = squad_password_lines(self._cfg(install, "Rcon.cfg"), ports["rcon"], locked)
-        if self.has_password_key:
+        if self.join_password_in_server_cfg:
             # keep Server.cfg's own password line in step too (empty = no password)
             out += (f'python3 - "{self._cfg(install, "Server.cfg")}" "{"$GAME_SERVER_PASSWORD" if locked else ""}" <<\'SYNC\'\n'
                     "import re, sys\n"
@@ -850,8 +838,7 @@ class Squad44Game(SquadGame):
     project = "PostScriptum"
     install_gb = 35
     about = "World War II 40-vs-40 tactical shooter (formerly Post Scriptum)."
-    base_port = 10027
-    has_password_key = True      # Server.cfg has ServerPassword= (Squad's does not)
+    join_password_in_server_cfg = True      # Server.cfg has ServerPassword= (Squad's does not)
     port_layout = [port("game", 10027, "Game port (UDP, plus the next one)", span=2,
                         help="The port players connect to. Forward it and the one after it (UDP)."),
                    port("query", 10037, "Steam query port (UDP and TCP, plus the next one)", span=2,
@@ -868,7 +855,6 @@ class Squad44Game(SquadGame):
     ]
 
 
-SCPSL_EULA_URL = "https://link.scpslgame.com/eula"
 
 
 class ScpslGame(SimpleGame):
@@ -884,7 +870,6 @@ class ScpslGame(SimpleGame):
     kill_signal = "SIGTERM"
     stop_seconds = 30            # rounds, not worlds: nothing to save
     actions = {"broadcast"}
-    base_port = 7777
     port_layout = [port("game", 7777, "Game port (UDP)", help=GAME_PORT_HELP)]
     extra_fields = [
         {"name": "maxplayers", "label": "Max players (1-100)", "type": "number", "min": 1, "max": 100,

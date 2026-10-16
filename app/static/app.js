@@ -157,6 +157,23 @@ const gamedash = (() => {
 
   const csrf = () => (document.querySelector('meta[name="csrf"]') || {}).content || "";
 
+  // ---- talking to the dashboard ----
+  // Every request goes through here. A change (POST) carries this page's CSRF token; a 401
+  // means the session ended, so it goes to the login page and returns null. Otherwise it
+  // returns {status, ok, data}. A network failure throws, for the caller's own message.
+  async function request(url, body) {
+    const opts = { credentials: "same-origin" };
+    if (body !== undefined) {
+      opts.method = "POST";
+      opts.headers = { "Content-Type": "application/json", "X-CSRF-Token": csrf() };
+      opts.body = JSON.stringify(body);
+    }
+    const r = await fetch(url, opts);
+    if (r.status === 401) { location.href = "/login"; return null; }
+    return { status: r.status, ok: r.ok, data: await r.json() };
+  }
+  const api = { get: (url) => request(url), post: (url, body = {}) => request(url, body) };
+
   function fmtDur(s) {
     if (s == null) return "—";
     s = Math.floor(s);
@@ -213,15 +230,7 @@ const gamedash = (() => {
     return `<div class="controls">${life.join("")}${divider}${acts.join("")}</div>`;
   }
 
-  async function postAction(body) {
-    const r = await fetch("/admin/action", {
-      method: "POST", credentials: "same-origin",
-      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-      body: JSON.stringify(body),
-    });
-    if (r.status === 401) { location.href = "/login"; return null; }
-    return { status: r.status, data: await r.json() };
-  }
+  const postAction = (body) => api.post("/admin/action", body);
 
   async function doAction(key, action, btn) {
     // player-targeted actions
@@ -240,15 +249,7 @@ const gamedash = (() => {
       const appId = btn.dataset.app;
       const gname = btn.dataset.gname || "this game";
       if (!confirm(`Update ${gname}?\n\nThis STOPS the server(s), runs the Steam update, then restarts — a few minutes of downtime (ARK can take longer).`)) return;
-      const postUpd = async (body) => {
-        const r = await fetch("/admin/updates/apply", {
-          method: "POST", credentials: "same-origin",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-          body: JSON.stringify(body),
-        });
-        if (r.status === 401) { location.href = "/login"; return null; }
-        return { status: r.status, data: await r.json() };
-      };
+      const postUpd = (body) => api.post("/admin/updates/apply", body);
       let res = await postUpd({ app: appId, confirm: false });
       if (!res) return;
       if (res.status === 409 && res.data.confirm_required) {
@@ -267,13 +268,9 @@ const gamedash = (() => {
       const c = btn && btn.closest(".card");
       const nm = c && c.querySelector("h2") ? c.querySelector("h2").textContent.trim() : key;
       if (!confirm(`Remove server "${nm}"?\n\nStops it and deletes its gamedash unit. Save data on disk is left alone.`)) return;
-      const r = await fetch("/admin/servers/remove", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify({ key }),
-      });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.post("/admin/servers/remove", { key });
+      if (!r) return;
+      const d = r.data;
       toast(d.ok ? (d.message || "Removed.") : (d.error || "Remove failed."), !d.ok);
       setTimeout(refreshAdminNow, 800);
       return;
@@ -290,15 +287,15 @@ const gamedash = (() => {
     if (action === "kill") {
       const card = btn && btn.closest(".card");
       const nm = (card && card.querySelector("h2")) ? card.querySelector("h2").textContent.trim() : key;
-      if (!confirm(`⚠ KILL "${nm}" — NO SAVE\n\n` +
-        `This force-kills the server process IMMEDIATELY. Everything since the last ` +
-        `autosave is LOST, and the server stops. Use this only to intentionally ` +
-        `discard recent changes (e.g. to roll back).\n\nForce-kill without saving?`)) return;
+      if (!confirm(`⚠ FORCE STOP "${nm}" — NO SAVE\n\n` +
+        `This stops the server IMMEDIATELY. Everything since the last ` +
+        `autosave is LOST. Use this only if the server is frozen, or to intentionally ` +
+        `discard recent changes (e.g. to roll back).\n\nForce stop without saving?`)) return;
       let res = await postAction({ key, action: "kill", confirm: false });
       if (!res) return;
       if (res.status === 409 && res.data.confirm_required) {
         const who = res.data.names && res.data.names.length ? "\n\nOnline: " + res.data.names.join(", ") : "";
-        if (!confirm(`⚠ ${res.data.players} player(s) ONLINE — they'll be disconnected with NO SAVE. Kill anyway?${who}`)) {
+        if (!confirm(`⚠ ${res.data.players} player(s) ONLINE — they'll be disconnected with NO SAVE. Force stop anyway?${who}`)) {
           toast("Cancelled — players online.", true); return;
         }
         res = await postAction({ key, action: "kill", confirm: true });
@@ -421,9 +418,9 @@ const gamedash = (() => {
     m.addEventListener("click", (e) => { if (e.target === m) close(); });
     let d = null;
     try {
-      const r = await fetch(`/admin/servers/reach?key=${encodeURIComponent(key)}`, { credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login"; return; }
-      d = await r.json();
+      const r = await api.get(`/admin/servers/reach?key=${encodeURIComponent(key)}`);
+      if (!r) return;
+      d = r.data;
     } catch (e) { /* handled below */ }
     const body = document.getElementById("reach-body");
     if (!body) return;
@@ -484,10 +481,9 @@ const gamedash = (() => {
     const body = document.getElementById("logs-body");
     if (!body) return;
     try {
-      const r = await fetch(`/admin/logs/${encodeURIComponent(logsState.key)}?lines=400`,
-                            { credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.get(`/admin/logs/${encodeURIComponent(logsState.key)}?lines=400`);
+      if (!r) return;
+      const d = r.data;
       body.textContent = d.ok ? (d.text || "(empty)") : ("Error: " + (d.error || "failed"));
       body.scrollTop = body.scrollHeight;
     } catch (e) { body.textContent = "Failed to load logs."; }
@@ -537,10 +533,9 @@ const gamedash = (() => {
     body.value = "Loading…"; body.disabled = true;
     m.hidden = false;
     try {
-      const r = await fetch(`/admin/servers/script?key=${encodeURIComponent(key)}`,
-                            { credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.get(`/admin/servers/script?key=${encodeURIComponent(key)}`);
+      if (!r) return;
+      const d = r.data;
       if (d.ok) {
         body.value = d.content; body.disabled = false;
         document.getElementById("script-path").textContent = d.path;
@@ -556,25 +551,12 @@ const gamedash = (() => {
     const body = document.getElementById("script-body");
     if (!scriptState.key || body.disabled) return;
     try {
-      const r = await fetch("/admin/servers/script", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify({ key: scriptState.key, content: body.value }),
-      });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.post("/admin/servers/script", { key: scriptState.key, content: body.value });
+      if (!r) return;
+      const d = r.data;
       toast(d.ok ? (d.message || "Saved.") : (d.error || "Save failed."), !d.ok);
       if (d.ok) document.getElementById("script-modal").hidden = true;
     } catch (e) { toast("Save failed.", true); }
-  }
-
-  // ---- shared POST helper ----
-  async function postJSON(url, body) {
-    const r = await fetch(url, { method: "POST", credentials: "same-origin",
-      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-      body: JSON.stringify(body) });
-    if (r.status === 401) { location.href = "/login"; return null; }
-    return { status: r.status, data: await r.json() };
   }
 
   // ---- backups page (one section per server) ----
@@ -604,28 +586,28 @@ const gamedash = (() => {
   }
 
   async function bkLoad(section) {
-    const r = await fetch(`/admin/servers/backups?key=${encodeURIComponent(section.dataset.key)}`,
-                          { credentials: "same-origin" });
-    if (r.status === 401) { location.href = "/login"; return; }
-    bkRender(section, await r.json());
+    let r;
+    try { r = await api.get(`/admin/servers/backups?key=${encodeURIComponent(section.dataset.key)}`); }
+    catch (e) { bkRender(section, { ok: false, error: "Couldn't reach the dashboard — try again in a moment." }); return; }
+    if (r) bkRender(section, r.data);
   }
 
   async function bkCreate(section) {
     const btn = section.querySelector('[data-bkact="create"]'); btn.disabled = true;
-    const r = await postJSON("/admin/servers/backups", { key: section.dataset.key });
+    const r = await api.post("/admin/servers/backups", { key: section.dataset.key });
     if (r) toast(r.data.ok ? (r.data.message || "Backup created.") : (r.data.error || "Backup failed."), !r.data.ok);
     bkLoad(section);
   }
 
   async function bkSetKeep(section) {
-    const r = await postJSON("/admin/servers/backupkeep",
+    const r = await api.post("/admin/servers/backupkeep",
       { key: section.dataset.key, keep: Number(section.querySelector(".bk-keep").value) });
     if (r) { toast(r.data.ok ? (r.data.message || "Saved.") : (r.data.error || "Failed."), !r.data.ok); bkLoad(section); }
   }
 
   async function bkDelete(section, name) {
     if (!confirm(`Delete backup "${name}"? This can't be undone.`)) return;
-    const r = await postJSON("/admin/servers/backups/delete", { key: section.dataset.key, name });
+    const r = await api.post("/admin/servers/backups/delete", { key: section.dataset.key, name });
     if (r) { toast(r.data.ok ? (r.data.message || "Deleted.") : (r.data.error || "Failed."), !r.data.ok); bkLoad(section); }
   }
 
@@ -637,14 +619,14 @@ const gamedash = (() => {
       : "\n\n(Map save only — the shared cluster is left untouched.)");
     if (!confirm(`Restore "${name}"?\n\nThis STOPS the server, snapshots the current save, then overwrites it with this backup, and restarts. Progress since this backup will be replaced.${scope}`)) return;
     const body = { key: section.dataset.key, name, include_cluster: incl };
-    let r = await postJSON("/admin/servers/restore", { ...body, confirm: false });
+    let r = await api.post("/admin/servers/restore", { ...body, confirm: false });
     if (!r) return;
     if (r.status === 409 && r.data.confirm_required) {
       const who = r.data.names && r.data.names.length ? "\n\nOnline: " + r.data.names.join(", ") : "";
       if (!confirm(`⚠ ${r.data.players} player(s) ONLINE — they'll be disconnected by the restore. Proceed?${who}`)) {
         toast("Cancelled — players online.", true); return;
       }
-      r = await postJSON("/admin/servers/restore", { ...body, confirm: true });
+      r = await api.post("/admin/servers/restore", { ...body, confirm: true });
       if (!r) return;
     }
     toast(r.data.ok ? (r.data.message || "Restored.") : (r.data.error || "Restore failed."), !r.data.ok);
@@ -656,7 +638,7 @@ const gamedash = (() => {
     if (runAll) runAll.onclick = async () => {
       if (!confirm("Back up ALL servers now? This snapshots every server's save.")) return;
       runAll.disabled = true;
-      const r = await postJSON("/admin/backups/run-all", {});
+      const r = await api.post("/admin/backups/run-all", {});
       if (r) toast(r.data.ok ? (r.data.message || "Started.") : (r.data.error || "Failed."), !r.data.ok);
       setTimeout(() => { runAll.disabled = false; document.querySelectorAll(".bk-server").forEach(bkLoad); }, 8000);
     };
@@ -675,7 +657,7 @@ const gamedash = (() => {
   async function loadGeneral() {
     if (!document.getElementById("gen-public-host")) return;
     let cfg = {};
-    try { const r = await fetch("/admin/config", { credentials: "same-origin" }); if (r.ok) cfg = await r.json(); } catch (e) { /* ignore */ }
+    try { const r = await api.get("/admin/config"); if (r && r.ok) cfg = r.data; } catch (e) { /* ignore */ }
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v == null ? "" : v; };
     set("gen-public-host", cfg.public_host); set("gen-cluster", cfg.ark_cluster_id);
     set("gen-prefix", cfg.server_name_prefix);
@@ -690,7 +672,7 @@ const gamedash = (() => {
     const val = (id) => { const e = document.getElementById(id); return e ? e.value.trim() : ""; };
     const gs = document.getElementById("gen-save");
     if (gs) gs.onclick = async () => {
-      const r = await postJSON("/admin/config", {
+      const r = await api.post("/admin/config", {
         public_host: val("gen-public-host"), ark_cluster_id: val("gen-cluster"),
         server_name_prefix: val("gen-prefix"),
         secrets_conf: val("gen-secrets"), satisfactory_api_token: val("gen-sf-token"),
@@ -702,13 +684,13 @@ const gamedash = (() => {
     };
     const bs = document.getElementById("bk-default-save");
     if (bs) bs.onclick = async () => {
-      const r = await postJSON("/admin/config", { default_backup_keep: Number(val("bk-default-keep")) });
+      const r = await api.post("/admin/config", { default_backup_keep: Number(val("bk-default-keep")) });
       if (r) toast(r.data.ok ? "Saved." : (r.data.error || "Failed."), !r.data.ok);
     };
     const ra = document.getElementById("bk-run-all");
     if (ra) ra.onclick = async () => {
       if (!confirm("Back up ALL servers now?")) return;
-      const r = await postJSON("/admin/backups/run-all", {});
+      const r = await api.post("/admin/backups/run-all", {});
       if (r) toast(r.data.ok ? (r.data.message || "Started.") : (r.data.error || "Failed."), !r.data.ok);
     };
   }
@@ -717,9 +699,9 @@ const gamedash = (() => {
     const status = document.getElementById("pw-status");
     if (!status) return;
     try {
-      const r = await fetch("/admin/passwords", { credentials: "same-origin" });
-      if (r.ok) {
-        const d = await r.json();
+      const r = await api.get("/admin/passwords");
+      if (r && r.ok) {
+        const d = r.data;
         status.innerHTML = `Join password: <b>${d.join_set ? "set" : "not set"}</b> · ` +
           `Admin/RCON password: <b>${d.admin_set ? "set" : "not set"}</b> · ` +
           `<span class="muted">stored in ${esc(d.secrets_path)}</span>`;
@@ -730,7 +712,7 @@ const gamedash = (() => {
       const join = document.getElementById("pw-join").value;
       const admin = document.getElementById("pw-admin").value;
       if (!join && !admin) { toast("Enter a new password in at least one field.", true); return; }
-      const r = await postJSON("/admin/passwords", { join_password: join, admin_password: admin });
+      const r = await api.post("/admin/passwords", { join_password: join, admin_password: admin });
       if (!r) return;
       if (r.data.ok) {
         document.getElementById("pw-join").value = "";
@@ -744,12 +726,12 @@ const gamedash = (() => {
 
   function initSettings() { loadGeneral(); loadPasswords(); loadAlerts(); loadPortPool(); initCert(); }
 
-  let adminUrl = "/api/admin.json";
+  const ADMIN_FEED = "/api/admin.json";
   async function refreshAdminNow() {
     try {
-      const r = await fetch(adminUrl, { credentials: "same-origin" });
-      if (r.ok) renderAdmin(await r.json());
-    } catch (e) { /* ignore */ }
+      const r = await api.get(ADMIN_FEED);
+      if (r && r.ok) renderAdmin(r.data);
+    } catch (e) { /* the next poll will catch up */ }
   }
 
   function renderAdmin(snap) {
@@ -762,7 +744,7 @@ const gamedash = (() => {
       const game = v.name.split(" · ")[0];
       const head = game !== lastGame ? `<h3 class="group-head">${esc(gameTitle(game))}</h3>` : "";
       lastGame = game;
-      const kind = `<div class="kind-tag">${esc(v.kind)}${v.map_code ? " · " + esc(v.map_code) : ""}</div>`
+      const kind = `<div class="kind-tag">${esc(v.kind)}</div>`
         + (v.server_name ? `<div class="srvname">🎮 ${esc(v.server_name)}</div>` : "");
       const detail = v.player_detail || [];
       const names = detail.length ? `<div class="names">${detail.map((p) => `
@@ -843,9 +825,9 @@ const gamedash = (() => {
 
   async function poll(url, render) {
     try {
-      const r = await fetch(url, { credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login"; return; }
-      render(await r.json());
+      const r = await api.get(url);
+      if (!r) return;   // signed out: on the way to the login page
+      render(r.data);
     } catch (e) { /* keep last good render */ }
     setTimeout(() => poll(url, render), POLL_MS);
   }
@@ -895,9 +877,9 @@ const gamedash = (() => {
       document.getElementById(target).innerHTML = html;
     };
     try {
-      const r = await fetch("/admin/alerts", { credentials: "same-origin" });
-      if (!r.ok) return;
-      const a = await r.json();
+      const r = await api.get("/admin/alerts");
+      if (!r || !r.ok) return;
+      const a = r.data;
       services = a.services || []; dests = a.destinations || [];
       document.getElementById("al-recovery").checked = !!a.alert_on_recovery;
       document.getElementById("al-unreachable").checked = !!a.alert_on_unreachable;
@@ -912,12 +894,11 @@ const gamedash = (() => {
         alert_on_unreachable: document.getElementById("al-unreachable").checked,
         alert_on_disabled: document.getElementById("al-disabled").checked,
       };
-      const r = await fetch("/admin/alerts", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify(body),
-      });
-      const d = await r.json();
+      let r;
+      try { r = await api.post("/admin/alerts", body); }
+      catch (e) { toast("Couldn't reach the dashboard — nothing was saved.", true); return; }
+      if (!r) return;
+      const d = r.data;
       if (!d.ok) { toast(d.error || "Save failed.", true); return; }
       dests = d.destinations || []; render();
       if (test === "all") showResults(d.test_results, "al-results");
@@ -949,9 +930,9 @@ const gamedash = (() => {
       document.getElementById(`pp-${c}-hi`).value = rng ? rng[1] : "";
     };
     try {
-      const r = await fetch("/admin/portpool", { credentials: "same-origin" });
-      if (r.ok) {
-        const pool = (await r.json()).port_pool || {};
+      const r = await api.get("/admin/portpool");
+      if (r && r.ok) {
+        const pool = r.data.port_pool || {};
         CLASSES.forEach((c) => setRange(c, pool[c]));
       }
     } catch (e) { /* ignore */ }
@@ -964,13 +945,9 @@ const gamedash = (() => {
     document.getElementById("pp-save").onclick = async () => {
       const body = {};
       CLASSES.forEach((c) => { body[c] = rangeOf(c); });
-      const r = await fetch("/admin/portpool", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify(body),
-      });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.post("/admin/portpool", body);
+      if (!r) return;
+      const d = r.data;
       toast(d.ok ? "Port pool saved." : (d.error || "Save failed."), !d.ok);
     };
   }
@@ -1036,11 +1013,9 @@ const gamedash = (() => {
     const btn = document.getElementById("check-updates");
     if (btn) btn.disabled = true;
     try {
-      const r = await fetch("/admin/updates/check", {
-        method: "POST", credentials: "same-origin", headers: { "X-CSRF-Token": csrf() },
-      });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.post("/admin/updates/check");
+      if (!r) return;
+      const d = r.data;
       toast(d.ok ? "Checking for updates… (~30-60s; cards refresh when done)"
                  : (d.error || "Update check failed."), !d.ok);
     } catch (e) { toast("Update check failed.", true); }
@@ -1058,8 +1033,8 @@ const gamedash = (() => {
     if (!status) return;
     const get = async () => {
       try {
-        const r = await fetch("/admin/cert", { credentials: "same-origin" });
-        return r.ok ? await r.json() : null;
+        const r = await api.get("/admin/cert");
+        return r && r.ok ? r.data : null;
       } catch (e) { return null; }   // expected for a moment while the dashboard restarts
     };
     const show = (d) => {
@@ -1085,15 +1060,11 @@ const gamedash = (() => {
     const watch = async () => { if (show(await get())) setTimeout(watch, 2500); };
     watch();
     document.getElementById("cert-go").onclick = async () => {
-      const r = await fetch("/admin/cert", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify({ domain: document.getElementById("cert-domain").value,
-                               email: document.getElementById("cert-email").value,
-                               agree: document.getElementById("cert-agree").checked }),
-      });
-      if (r.status === 401) { location.href = "/login"; return; }
-      const d = await r.json();
+      const r = await api.post("/admin/cert", { domain: document.getElementById("cert-domain").value,
+                                                email: document.getElementById("cert-email").value,
+                                                agree: document.getElementById("cert-agree").checked });
+      if (!r) return;
+      const d = r.data;
       toast(d.ok ? d.message : (d.error || "Couldn't start the request."), !d.ok);
       if (d.ok) watch();
     };
@@ -1105,8 +1076,8 @@ const gamedash = (() => {
     if (!panel) return;
     let d = null;
     try {
-      const r = await fetch("/admin/checklist", { credentials: "same-origin" });
-      if (r.ok) d = await r.json();
+      const r = await api.get("/admin/checklist");
+      if (r && r.ok) d = r.data;
     } catch (e) { /* ignore */ }
     if (!d || !d.ok || d.hidden) { panel.hidden = true; return; }
     panel.hidden = false;
@@ -1129,11 +1100,9 @@ const gamedash = (() => {
         if (target) { target.open = true; target.scrollIntoView({ behavior: "smooth", block: "start" }); }
       });
       document.getElementById("checklist-hide").onclick = async () => {
-        await fetch("/admin/checklist", {
-          method: "POST", credentials: "same-origin",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-          body: JSON.stringify({ hidden: true }),
-        });
+        let r;
+        try { r = await api.post("/admin/checklist", { hidden: true }); } catch (e) { r = null; }
+        if (!r || !r.ok) { toast("Couldn't hide the checklist — try again.", true); return; }
         panel.hidden = true;
         toast("Checklist hidden.");
       };
@@ -1148,9 +1117,9 @@ const gamedash = (() => {
     if (!list) return;
     let d = null;
     try {
-      const r = await fetch("/admin/games", { credentials: "same-origin" });
-      if (r.status === 401) { location.href = "/login"; return; }
-      d = await r.json();
+      const r = await api.get("/admin/games");
+      if (!r) return;
+      d = r.data;
     } catch (e) { /* ignore */ }
     if (!d || !d.ok) { list.textContent = "Couldn't load the games list."; return; }
     const busy = d.job && d.job.state === "running";
@@ -1182,13 +1151,9 @@ const gamedash = (() => {
         if (u) {
           if (!confirm(`Uninstall ${u.dataset.label}?\n\nThis deletes the game's server files from this computer. ` +
                        `You can install it again later. Servers you created for it must be removed first.`)) return;
-          const r = await fetch("/admin/games/uninstall", {
-            method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-            body: JSON.stringify({ kind: u.dataset.uninstall }),
-          });
-          if (r.status === 401) { location.href = "/login"; return; }
-          const res = await r.json();
+          const r = await api.post("/admin/games/uninstall", { kind: u.dataset.uninstall });
+          if (!r) return;
+          const res = r.data;
           toast(res.ok ? res.message : (res.error || "Couldn't uninstall."), !res.ok);
           loadGames(); loadChecklist();
           const add = document.getElementById("as-submit");
@@ -1202,13 +1167,9 @@ const gamedash = (() => {
                      `It can take a while on a slow connection — you can keep using the dashboard meanwhile.`)) return;
         b.disabled = true;
         try {
-          const r = await fetch("/admin/games/install", {
-            method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-            body: JSON.stringify({ kind: b.dataset.install }),
-          });
-          if (r.status === 401) { location.href = "/login"; return; }
-          const res = await r.json();
+          const r = await api.post("/admin/games/install", { kind: b.dataset.install });
+          if (!r) return;
+          const res = r.data;
           toast(res.ok ? res.message : (res.error || "Couldn't start the install."), !res.ok);
           if (res.ok) { refreshAdminNow(); loadGames(); } else { b.disabled = false; }
         } catch (err) { toast("Couldn't start the install.", true); b.disabled = false; }
@@ -1250,8 +1211,8 @@ const gamedash = (() => {
     const kindSel = document.getElementById("as-kind");
     let types = [];
     try {
-      const r = await fetch("/admin/servers/types", { credentials: "same-origin" });
-      if (r.ok) types = (await r.json()).types || [];
+      const r = await api.get("/admin/servers/types");
+      if (r && r.ok) types = r.data.types || [];
     } catch (e) { /* ignore */ }
     const keep = kindSel.value;   // re-wired after an install finishes: keep the selection
     kindSel.innerHTML = types.map((t) => `<option value="${esc(t.kind)}">${esc(t.label)}${t.installed === false ? " — not installed yet" : ""}</option>`).join("");
@@ -1260,8 +1221,8 @@ const gamedash = (() => {
     // Is a port pool configured? Gate the "use port pool" checkbox on it.
     let poolReady = false;
     try {
-      const pr = await fetch("/admin/portpool", { credentials: "same-origin" });
-      if (pr.ok) poolReady = Object.keys((await pr.json()).port_pool || {}).length > 0;
+      const pr = await api.get("/admin/portpool");
+      if (pr && pr.ok) poolReady = Object.keys(pr.data.port_pool || {}).length > 0;
     } catch (e) { /* ignore */ }
     const poolCk = document.getElementById("as-pool");
     const poolNote = document.getElementById("as-pool-note");
@@ -1393,15 +1354,7 @@ const gamedash = (() => {
       m.querySelector("#ports-back").focus();   // the safe choice is the default
     });
 
-    const postAdd = async (spec) => {
-      const r = await fetch("/admin/servers/add", {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-        body: JSON.stringify(spec),
-      });
-      if (r.status === 401) { location.href = "/login"; return null; }
-      return { status: r.status, data: await r.json() };
-    };
+    const postAdd = (spec) => api.post("/admin/servers/add", spec);
     b.onclick = async () => {
       const t = types.find((x) => x.kind === kindSel.value) || { custom: true };
       const usePool = poolCk.checked && !poolCk.disabled;
@@ -1469,7 +1422,7 @@ const gamedash = (() => {
 
   return {
     pollPublic: () => { wireJoin(); poll("/api/public.json", renderPublic); },
-    pollAdmin: () => { wireControls(); wireJoin(); wireUpdates(); wireAddServer(); loadGames(); loadChecklist(); poll("/api/admin.json", renderAdmin); },
+    pollAdmin: () => { wireControls(); wireJoin(); wireUpdates(); wireAddServer(); loadGames(); loadChecklist(); poll(ADMIN_FEED, renderAdmin); },
     initSettings,
     initBackupsPage,
   };

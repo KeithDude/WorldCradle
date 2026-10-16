@@ -65,7 +65,7 @@
       {% if game != ns.last %}<h3 class="group-head">{{ game_titles.get(game, game) }}</h3>{% set ns.last = game %}{% endif %}
       <div class="card {{ '' if v.online else 'off' }}">
         <h2><span class="dot {{ 'on' if v.online else 'off' }}"></span>{{ v.name }}</h2>
-        <div class="kind-tag">{{ v.kind }}{% if v.map_code %} · {{ v.map_code }}{% endif %}</div>
+        <div class="kind-tag">{{ v.kind }}</div>
         {% if v.players is not none %}
           <div class="players">{{ v.players }}<span class="max">{% if v.max_players %} / {{ v.max_players }}{% endif %} players</span></div>
         {% elif v.online %}

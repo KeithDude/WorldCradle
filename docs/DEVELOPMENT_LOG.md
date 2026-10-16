@@ -9,6 +9,54 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Alerts checked against each service's documentation; code clean-up
+
+Every alert service was compared with its own developer documentation, and the whole codebase was
+reviewed for dead code, duplication and comments that no longer matched the code. Fixed:
+
+- **Alerts, per the services' documentation:**
+  - Matrix: new rooms couldn't be saved. Their IDs have no `:server` part since room version 12.
+  - Email: "SSL" with the port left empty connected on 587 instead of 465. Messages also lacked the
+    Date and Message-ID headers.
+  - Telegram: "bot was kicked" and "chat not found" were reported as a bad token; the message now
+    says what Telegram said. A group upgraded to a supergroup gives its new chat ID.
+  - Discord: alerts can no longer ping @everyone.
+  - Slack: `&`, `<` and `>` are escaped.
+  - Teams: the card's `contentUrl`, the current template name, and a note that Teams accepts a
+    message before posting it.
+  - Pushover: keys are exactly 30 characters.
+  - ntfy: titles with accents or emoji survive.
+  - All services: a "too many messages" answer is retried once if the wait is short. Matrix,
+    Pushover and Slack now show the service's own reason when they refuse something.
+- **Real bugs found by the review:**
+  - The Getting-started "alerts" step could never be ticked.
+  - A signed-out dashboard froze on stale data instead of returning to the login page.
+  - `gamedash uninstall` stopped a server the owner had chosen to leave running, and ignored a
+    custom backup folder.
+  - Don't Starve Together never picked up a changed join password.
+  - The lenient RCON client could hang on a malformed reply.
+  - The update checker's thread could die silently.
+  - The pre-push check's "shell scripts parse" line depended on earlier failures, and
+    `install.sh --help` printed a line of code.
+  - The OS-maintenance dry run waited 5 minutes for servers it hadn't stopped.
+  - Clone-install games all ran Palworld's folder clean-up.
+  - Barotrauma servers share one campaign-save folder. It isn't fixed yet, but the Add form now says so.
+- **Clean-up (no change in behaviour):**
+  - One CSRF check and one error handler instead of about 17 copies each in `app.py`.
+  - One request helper in `app.js` instead of about 30 hand-written ones.
+  - One LAN-address lookup instead of three.
+  - Game types share the default save location (21 copies removed) and the "never forward the
+    admin console" text (10 copies).
+  - Dead code removed: unused helpers, constants and imports, and a field that was never filled in.
+  - Outdated docstrings and comments corrected.
+  - `pyflakes` added to the pre-push check so unused code can't creep back.
+- Tested: 176 automated tests (new: every admin route refuses a missing or wrong CSRF token and a
+  signed-out caller; the alert fixes; uninstall; DST password sync; RCON garbage). The dashboard
+  was clicked through in a real browser on the test VM. **Alerts are still not tested with real
+  accounts.**
+- **Still to do (roadmap, *Code clean-up, part 2*):** the larger restructuring the review proposed.
+  It touches how servers are launched, so each step needs testing on real servers.
+
 ## 2026-10-16 — Alerts: ten services, several destinations, an honest Test button
 
 - **Bug: the "send test" button always reported success.** Delivery errors were swallowed and an

@@ -2,8 +2,8 @@
 
 Stored as JSON in the data root (see paths.py), mode 0600. The admin password
 is stored only as a bcrypt hash. On first run the file is created with a fresh
-secret key and no admin password (login disabled until one is set via
-manage.py).
+secret key and no admin password: the installer prints a one-time setup code
+(see new_setup_code), and whoever has it chooses the password in the browser.
 
 Writes are serialised and atomic. Changing settings must go through `update()`
 so two requests can't overwrite each other's change, and an unreadable config
@@ -27,6 +27,10 @@ import paths
 paths.ensure_home()
 CONFIG_PATH = paths.CONFIG_FILE
 
+# The dashboard password is the only thing between the internet and full control.
+MIN_ADMIN_PASSWORD = 12
+DEFAULT_BACKUP_KEEP = 5
+
 DEFAULTS = {
     "secret_key": "",
     "admin_password_hash": "",
@@ -40,7 +44,9 @@ DEFAULTS = {
     "bind_port": 8770,
     "satisfactory_api_token": "",       # optional static Bearer token override; otherwise the
                                         # Satisfactory password comes from the secrets file
-    "alert_channel": "none",       # (older single-destination setting; see alert_destinations)
+    # Settings from before several destinations were possible: alerts.destinations() reads
+    # them once to carry an old setup over; saving alerts always blanks them.
+    "alert_channel": "none",
     "alert_target": "",
     "alert_destinations": [],      # [{"type": <notifiers.SERVICES key>, <field>: <value>, ...}]
     "alert_on_recovery": True,
@@ -55,7 +61,7 @@ DEFAULTS = {
     "port_pool": {},                         # optional {game/query/rcon: [low, high]} ranges
                                              # for NEW instances; empty → use each game
                                              # template's built-in default ports (see ports.py)
-    "default_backup_keep": 5,                # default retention for a new server's backups
+    "default_backup_keep": DEFAULT_BACKUP_KEEP,  # default retention for a new server's backups
     "install_dirs": {                        # per-game install dirs (provisioning templates)
         "ark": "~/arkserver",
         "valheim": "~/valheimserver",
@@ -70,7 +76,6 @@ DEFAULTS = {
 
 def install_dir(kind: str) -> str:
     """Expanded install dir for a game kind (from config, with a sane default)."""
-    import os
     # games added later don't need a DEFAULTS entry: they live in ~/<kind>server
     d = (load().get("install_dirs", {}).get(kind) or DEFAULTS["install_dirs"].get(kind)
          or f"~/{kind}server")
@@ -78,12 +83,7 @@ def install_dir(kind: str) -> str:
 
 
 def secrets_path() -> str:
-    import os
     return os.path.expanduser(load().get("secrets_conf") or paths.SECRETS_FILE)
-
-# Keys that are safe to expose/edit from the admin UI (no secret_key / hash).
-ALERT_KEYS = ("alert_channel", "alert_target", "alert_on_recovery",
-              "alert_on_unreachable", "alert_on_disabled")
 
 
 _lock = threading.RLock()

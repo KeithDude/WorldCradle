@@ -129,6 +129,7 @@ else
   # Confirm they are actually down before patching — ARK's graceful stop is slow
   # and patching mid-save is how worlds get corrupted.
   deadline=$(( SECONDS + STOP_TIMEOUT ))
+  [ "$DRY_RUN" = 1 ] && deadline=$SECONDS     # nothing was stopped, so don't wait for it
   while [ "$SECONDS" -lt "$deadline" ]; do
     still="$(as_user systemctl --user is-active "${UNITS[@]}" 2>/dev/null | grep -c '^active$')"
     [ "$still" -eq 0 ] && break
@@ -152,8 +153,11 @@ if run apt-get -y \
 else
   log "WARNING: dist-upgrade returned non-zero — check $LOG"
 fi
-run apt-get -y autoremove >>"$LOG" 2>&1
-log "autoremove: done"
+if run apt-get -y autoremove >>"$LOG" 2>&1; then
+  log "autoremove: ok"
+else
+  log "WARNING: autoremove returned non-zero — check $LOG"
+fi
 
 # --- 6. reboot if required, else bring the fleet back ------------------------
 if [ -f /var/run/reboot-required ] || { [ "$DRY_RUN" = 1 ] && [ "$kernel_update" = 1 ]; }; then
