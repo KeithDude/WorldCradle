@@ -1,0 +1,29 @@
+# The automated checks on every push and pull request: the tests, unused code, and that the
+# package builds. (The full pre-push check, tools/prepush-check.sh, also runs locally.)
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the package version includes the last commit's date
+      - name: Python libraries (pinned, checksum-verified) and test tools
+        run: |
+          python3 -m venv venv
+          venv/bin/pip install -q --require-hashes -r requirements.lock
+          venv/bin/pip install -q -r requirements-dev.txt
+      - name: Tests
+        run: venv/bin/python -m pytest -q tests
+      - name: No unused imports or variables
+        run: venv/bin/python -m pyflakes app tests
+      - name: Shell scripts parse
+        run: for f in *.sh tools/*.sh deploy/maintenance/*.sh bin/*; do bash -n "$f"; done
+      - name: The package builds
+        run: bash tools/build-deb.sh

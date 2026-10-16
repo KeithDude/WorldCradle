@@ -89,8 +89,9 @@ Last updated: 2026-10-15
 - [x] Version number (`VERSION`, now 0.2.0-dev) shown by `gamedash version` and in the dashboard
       footer for signed-in admins (hidden from the public page); release notes in `CHANGELOG.md`.
       *(2026-10-16)*
-- [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, tag `v0.2.0` and
-      publish a GitHub Release with those notes.
+- [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, commit, then
+      `git tag v0.2.0 && git push origin v0.2.0` — the release workflow builds and publishes the
+      package. Then check the one-line installer and `gamedash update` against the real release.
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44
@@ -213,8 +214,11 @@ right before the repository is made public.
    - [ ] **Tested with apt for real** on a fresh VM: install, `gamedash setup`, upgrade to a newer
          package (dashboard restarts, new libraries installed), `gamedash update` with rollback,
          `apt remove`, reinstall keeps the data. *(Needs sudo on the test VM.)*
-   - [ ] Build the package and create the GitHub release automatically when a version is tagged
-         (GitHub Actions), and add the release steps to *Public-release preparation*.
+   - [x] GitHub Actions: tests, unused-code check and a package build on every push
+         (`.github/workflows/tests.yml`); pushing a tag `v<version>` checks VERSION and CHANGELOG
+         agree, builds the package and creates the release with it, its checksum and the
+         CHANGELOG notes (`release.yml`). The same steps pass on a clean Ubuntu 26.04 VM; not yet
+         run on GitHub itself. *(2026-10-16)*
    - [ ] **Sign releases** (beyond the checksum, which only proves the download is complete): sign
          the package / checksum file so `gamedash update` and `get.sh` can tell it came from the
          maintainer even if GitHub were compromised.
