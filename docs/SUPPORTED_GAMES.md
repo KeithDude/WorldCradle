@@ -62,8 +62,10 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 ## How to help test
 
 1. Install the game in GameDash (Games → Install) and add a server with the default settings.
-2. Join it from the game — ideally once from your own home network and once from outside it
-   (a friend, or a phone on mobile data).
+2. Join it from the game — ideally once from your own home network and once from outside it.
+   To test "outside" yourself: turn on your phone's **Mobile Hotspot**, connect the computer you
+   play on to that hotspot (not to your home Wi-Fi), and join using the server's public address
+   (shown under *Can friends connect?*). Or ask a friend to join from their home.
 3. Check the points listed for that game above, plus these for every game:
    - you can join with the join password, and a wrong password is refused;
    - the server card shows you as a player (where the game supports a player list);

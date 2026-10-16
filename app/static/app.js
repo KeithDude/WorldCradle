@@ -436,7 +436,7 @@ const gamedash = (() => {
       stopped: `<p class="reach-v warn">⏸ <b>The server is stopped</b>, so there's nothing to test. Start it, give it a few minutes to finish loading, then check again.</p>`,
       unknown: d.evidence === "no-internet"
         ? `<p class="reach-v warn">❓ <b>Couldn't check.</b> This computer couldn't reach the internet to find your public address. Check its connection and try again.</p>`
-        : `<p class="reach-v warn">❓ <b>We couldn't confirm it from here — that doesn't mean it's broken.</b> Most home routers won't let a computer test its own public address, and not every game appears in Steam's server list. The sure test: ask a friend to try joining, or try yourself from a phone on mobile data (Wi-Fi off).</p>`,
+        : `<p class="reach-v warn">❓ <b>We couldn't confirm it from here — that doesn't mean it's broken.</b> Most home routers won't let a computer test its own public address, and not every game appears in Steam's server list. The sure test: ask a friend to try joining, or test it yourself with your phone's <b>Mobile Hotspot</b> as described at the bottom.</p>`,
     }[d.verdict] || "";
     const rows = d.rules.map((r) =>
       `<tr><td><code>${esc(r.port)}</code></td><td>${esc(r.proto)}</td><td>${esc(r.what)}</td></tr>`).join("");
@@ -452,6 +452,7 @@ const gamedash = (() => {
         <li>Add one rule for each row above: the same port number for “external” and “internal”, the type shown, and ${d.lan_ip ? `<code>${esc(d.lan_ip)}</code>` : "this computer's address"} as the device to send it to.</li>
         <li>Save, then press “Can friends connect?” again.</li>
       </ol>
+      <p class="muted" style="font-size:.8rem">📱 <b>Test it yourself from outside your home:</b> turn on your phone's <b>Mobile Hotspot</b>, connect a computer that has the game to that hotspot (not to your home Wi-Fi), and join using the “Friends connect to” address. That's exactly how a friend outside your home connects.</p>
       <p class="muted" style="font-size:.8rem">If friends are only ever on your own home network, you don't need any of this — they can join using this computer's home address${d.lan_ip ? ` (<code>${esc(d.lan_ip)}</code>)` : ""}.</p>`;
   }
 

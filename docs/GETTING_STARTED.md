@@ -87,6 +87,10 @@ forward, with step-by-step instructions, and checks whether it worked.
 > GameDash marks them "keep closed" everywhere. They control the server, and they're never meant to
 > be reachable from the internet.
 
+**Test it yourself before telling friends:** turn on your phone's **Mobile Hotspot**, connect the
+computer you play on to that hotspot (not to your home Wi-Fi), and join the game using the address
+shown next to *Friends connect to*. If that works, it works for your friends too.
+
 Give your friends the address and the **join password** (type `gamedash passwords` in a terminal to
 see it again, or change it in **Settings → Game passwords**).
 

@@ -26,6 +26,10 @@ The list of games and their test status is kept separately in
 - **Phone layout:** the top menu ran off the right edge (Settings and Log out unreachable without
   sideways scrolling) — it now wraps onto a second line.
 - "Ark: Survival Evolved" → "ARK: Survival Evolved".
+- **Testing from outside the home, made concrete:** "try from a phone on mobile data" didn't say how to
+  test a game. *Can friends connect?*, the Getting started guide, the testing steps and the test-report
+  form now say: turn on the phone's **Mobile Hotspot**, connect the computer you play on to it (not
+  to the home Wi-Fi), and join with the public address — exactly how a friend outside connects.
 
 ## 2026-10-16 — Version number and release notes
 

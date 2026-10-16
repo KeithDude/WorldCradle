@@ -24,7 +24,7 @@ body:
       label: What did you check?
       options:
         - label: Joined from my own home network
-        - label: Joined from outside my home (a friend, or a phone on mobile data)
+        - label: Joined from outside my home (a friend, or my computer connected to my phone's Mobile Hotspot)
         - label: The join password was needed, and a wrong one was refused
         - label: The server card showed the players
         - label: My progress was still there after Stop then Start
