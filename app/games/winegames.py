@@ -431,7 +431,7 @@ class WindroseGame(WineGame):
         out["max_players"] = d.get("MaxPlayerCount")
         if d.get("UseDirectConnection"):
             import monitor
-            out["reachable"] = monitor.tcp_open(s.game_port) or None
+            out["reachable"] = monitor.port_listening(s.game_port) or None
         elif d.get("InviteCode"):
             out["note"] = f"Friends join with invite code: {d['InviteCode']}"
         return out

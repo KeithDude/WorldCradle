@@ -217,7 +217,7 @@ class BedrockGame(GameType):
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": monitor.tcp_open(s.game_port)}
+               "max_players": None, "reachable": monitor.port_listening(s.game_port)}
         names = monitor.roster_from_log(s.log_path, _EVENTS) if s.log_path else None
         if names is not None:
             out.update(players=len(names), player_names=names,

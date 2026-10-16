@@ -262,7 +262,7 @@ class MinecraftGame(GameType):
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": monitor.tcp_open(s.game_port)}
+               "max_players": None, "reachable": monitor.port_listening(s.game_port)}
         parsed = self.parse_list(self._rcon(s, "list") or "")
         if parsed:
             count, limit, names = parsed

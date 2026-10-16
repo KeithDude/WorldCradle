@@ -33,7 +33,7 @@ GAMEDASH_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class ArkGame(GameType):
     kind = "ark"
     label = "ARK"
-    title = "Ark: Survival Evolved"
+    title = "ARK: Survival Evolved"
     install_marker = "ShooterGame/Binaries/Linux/ShooterGameServer"
     install_gb = 26
     ram_note = "about 6-8 GB of memory per running map"

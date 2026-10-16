@@ -9,6 +9,24 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Getting started guide; GameDash was crashing Terraria servers
+
+- **`docs/GETTING_STARTED.md`** with six screenshots taken on the test VM's GameDash (public page,
+  dashboard, Games, Add a server, Can friends connect?, phone). The VM was given a placeholder public
+  address first so no real address appears.
+- **Bug found while taking them: GameDash crashed Terraria servers.** The dashboard's "answering?"
+  check opened a TCP connection to the game and closed it straight away; Terraria's server dies on
+  that (`ObjectDisposedException` in `Netplay.UpdateConnectedClients`), so a GameDash-managed
+  Terraria server crashed and restarted every minute or two (19 times in the test). The short tests
+  done earlier ended before it showed. Fix: local checks now ask the operating system whether the
+  port is listening (`monitor.port_listening`, no contact with the game) — used for Terraria,
+  Minecraft Java, Bedrock and Windrose; *Can friends connect?* no longer tests Terraria by connecting
+  (`survives_connect_test = False`). Verified: 5 minutes of polling plus a *Can friends connect?*
+  check, no crash. The card had said "running" throughout — recorded in the roadmap.
+- **Phone layout:** the top menu ran off the right edge (Settings and Log out unreachable without
+  sideways scrolling) — it now wraps onto a second line.
+- "Ark: Survival Evolved" → "ARK: Survival Evolved".
+
 ## 2026-10-16 — Version number and release notes
 
 - `VERSION` (0.2.0-dev) read by `app/version.py`; `gamedash version` shows it with the git build,

@@ -13,6 +13,7 @@ import subprocess
 import threading
 
 import a2s
+import psutil
 
 HOST = "127.0.0.1"
 A2S_TIMEOUT = 2.5
@@ -240,6 +241,17 @@ def parse_palworld_players(text: str) -> list[dict]:
 
 
 # ---- raw TCP reachability (for servers without A2S, e.g. Satisfactory) -----
+
+def port_listening(port: int) -> bool:
+    """Is a program on this computer listening on this TCP port? Asks the operating system, so the
+    game itself is never contacted — some servers (Terraria) crash when a client connects and
+    immediately hangs up, which is what a connection test does."""
+    try:
+        return any(c.status == psutil.CONN_LISTEN and c.laddr and c.laddr.port == int(port)
+                   for c in psutil.net_connections(kind="tcp"))
+    except (psutil.Error, OSError, ValueError):
+        return False
+
 
 def tcp_open(port: int, host: str = HOST, timeout: float = 2.0) -> bool:
     try:

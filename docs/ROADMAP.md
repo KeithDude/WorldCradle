@@ -56,7 +56,7 @@ Last updated: 2026-10-15
       *(2026-10-15)*
 - [x] The installer's last screen: the address to open, the setup code, and a QR code for opening it
       on a phone (also `gamedash qr`). *(2026-10-15)*
-- [ ] A short **Getting started** guide with screenshots (install → first server → friends join).
+- [x] **Getting started** guide with screenshots: `docs/GETTING_STARTED.md`. *(2026-10-16)*
 
 ### Command line (`gamedash …`)
 - [x] `gamedash` command installed for the owner: `status`, `address`, `reset-password`,
@@ -115,8 +115,9 @@ loading its save after a restart.
       all of its processes together; storage used; binary units throughout. *(2026-10-14/15)*
 - [ ] Small history graphs per server: players, CPU and RAM over the last day.
 - [ ] A clear "this server needs attention" banner (crashed, not answering, backups stale, update
-      waiting) with one button to fix the common cases.
-- [ ] Phone-friendly layout check on small screens.
+      waiting) with one button to fix the common cases. **Seen in testing:** a server that crashed
+      and restarted itself 19 times still showed "running" — the card should say it keeps crashing.
+- [x] Phone layout check: the top menu ran off the screen — now wraps. *(2026-10-16)*
 - [ ] Optional second dashboard account with limited rights (start/stop only, no settings).
 
 ### Servers and games

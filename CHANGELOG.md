@@ -35,6 +35,9 @@ footer of the dashboard when signed in.
   including two that could lose a world (Space Engineers reloaded its starting world on every
   restart; 7 Days to Die saved outside the backed-up folder) and one that left a server open to
   takeover (StarRupture).
+- **Terraria servers no longer crash every few minutes** — GameDash's "is it answering?" check used
+  to connect to the game in a way Terraria's server can't handle. It now asks the computer instead.
+- The dashboard works properly on phones (the top menu used to run off the screen).
 
 ### Good to know
 - Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.

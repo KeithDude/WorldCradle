@@ -16,7 +16,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | 7 Days to Die | Not Tested | Linux native | Steam app 294420 | Joining; Saves landing in the server's own folder after play |
 | Abiotic Factor | **Tested** | Windows server via Wine | Steam app 2857200 | — |
 | ARK: Survival Ascended | Not Tested | Windows server via Wine | Steam app 2430930 · EULA tick required | Joining; Crossplay off really keeps consoles out; Stopping takes about 2½ minutes under Wine (the world is saved first, then it is closed) |
-| Ark: Survival Evolved | **Tested** | Linux native | Steam app 376030 | Crossplay with Epic players (new servers now pass the public address); Automatic mod downloads |
+| ARK: Survival Evolved | **Tested** | Linux native | Steam app 376030 | Crossplay with Epic players (new servers now pass the public address); Automatic mod downloads |
 | Arma Reforger | Not Tested | Linux native | Steam app 1874900 · EULA tick required | Joining; Progress kept after a restart; Xbox crossplay |
 | Astroneer | Not Tested | Windows server via Wine | Steam app 728470 | Joining at all — may need a newer Wine (10.6+) for the game's encryption |
 | Barotrauma | Not Tested | Linux native | Steam app 1026340 | Joining; Who can start rounds |

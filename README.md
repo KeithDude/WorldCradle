@@ -48,7 +48,8 @@ folder, open a terminal in it and run
 ```
 bash install.sh       # no questions; it only asks for your computer's password
 ```
-It prints the address to open and a one-time setup code. Open
+It prints the address to open and a one-time setup code. A step-by-step walk-through with
+screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
 your password, then follow the *Getting started* checklist. Details and
 prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
@@ -58,7 +59,7 @@ prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
 gamedash/
 ├── app/          all application code (Flask app, games/, templates/, static/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
-├── docs/         SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
+├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
 ├── get.sh        one-line download + install
 ├── install.sh    one-step installer (calls setup.sh)
 ├── bin/gamedash  the `gamedash` command

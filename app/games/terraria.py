@@ -50,6 +50,7 @@ exec ./{exe} -config "{server_dir}/serverconfig.txt" > "{log}" 2>&1 < <(tail -n0
 class TerrariaGame(GameType):
     kind = "terraria"
     label = "Terraria"
+    survives_connect_test = False   # connecting and hanging up crashes its server
     install_marker = EXE
     install_gb = 0.2
     ram_note = "about 1-2 GB of memory"
@@ -172,7 +173,7 @@ class TerrariaGame(GameType):
 
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": monitor.tcp_open(s.game_port)}
+               "max_players": None, "reachable": monitor.port_listening(s.game_port)}
         names = monitor.roster_from_log(s.log_path, _EVENTS) if s.log_path else None
         if names is not None:
             out.update(players=len(names), player_names=names,

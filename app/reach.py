@@ -129,6 +129,9 @@ def _answers_publicly(s, ip: str, rules: list[dict]) -> bool:
             return True
         except Exception:
             pass
+    game = games.get(s.kind)
+    if game is not None and not getattr(game, "survives_connect_test", True):
+        return False      # don't test by connecting: this game's server crashes on it
     for r in rules:
         if "TCP" in r["proto"] and monitor.tcp_open(r["first"], host=ip, timeout=3):
             return True

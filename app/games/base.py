@@ -120,6 +120,9 @@ class GameType:
     # instance — provisioning clones the base install (with a disk pre-flight).
     needs_install_clone: bool = False
     provision_note: str = ""        # caveat shown in the Add form for this game
+    # False for servers that crash when a client connects and hangs up straight away (Terraria):
+    # GameDash then never tests them by connecting.
+    survives_connect_test: bool = True
     # launch profiles offered at provision time (e.g. vanilla vs modded). The
     # first is the default. Empty/one entry → no profile picker shown.
     mod_profiles: list[str] = []
