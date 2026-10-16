@@ -1,0 +1,2 @@
+# Only for working on GameDash (not needed to run it): venv/bin/pip install -r requirements-dev.txt
+pytest>=8

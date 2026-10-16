@@ -35,8 +35,10 @@ lot, and so does being able to test it.
 - It's expected to be reachable from the internet: never forward or expose an admin console (RCON)
   or other control port, validate everything that comes from the browser, and keep secrets out of
   logs.
-- Before sending a change, run `tools/prepush-check.sh` (the same checks the maintainer runs before
-  every push) and say what you tested — on a real server if the change touches one.
+- Before sending a change, install the test tools once (`venv/bin/pip install -r requirements-dev.txt`),
+  run `tools/prepush-check.sh` (the same checks the maintainer runs before every push — it includes
+  the automated tests in `tests/`), and say what you tested — on a real server if the change touches
+  one. A bug fix should come with a test that fails without the fix.
 - Don't add dependencies with a GPL or AGPL licence (they can't be combined with GameDash's licence).
 
 ## Licence of contributions

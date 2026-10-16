@@ -34,6 +34,14 @@ print(f"{len(ts)} game types")
 T
 ); then ok "app, game types and templates load; no control port marked for forwarding"; else bad "app / game types / templates failed to load"; fi
 
+# 3b. Automated tests (tests/; needs: venv/bin/pip install -r requirements-dev.txt)
+if "$PY" -c "import pytest" 2>/dev/null; then
+  out=$(cd "$REPO" && "$PY" -m pytest -q tests 2>&1 | tail -1)
+  case "$out" in *failed*|*error*) bad "tests: $out" ;; *passed*) ok "tests: $out" ;; *) bad "tests didn't run: $out" ;; esac
+else
+  bad "pytest isn't installed — run: venv/bin/pip install -r requirements-dev.txt"
+fi
+
 # 4. JavaScript syntax (needs gjs or node)
 JS="$REPO/app/static/app.js"
 if command -v node >/dev/null; then node --check "$JS" && ok "app.js syntax" || bad "app.js syntax"

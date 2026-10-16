@@ -103,9 +103,12 @@ loading its save after a restart.
 ## Next — for 0.3
 
 ### Quality and testing
-- [ ] **Automated tests** (there are none yet): port allocation, settings-file editing, player-list
-      parsing, the RCON client, EULA enforcement, the never-forward rule. Run them in the pre-push
-      check.
+- [x] **Automated tests** (`tests/`, 113 so far): port allocation, the RCON client against a fake
+      server, the never-forward rule and form for every game, EULA enforcement, player-list parsers,
+      the 7 Days to Die settings fix, Terraria's no-connect rule, command names. Run by the pre-push
+      check. *(2026-10-16)*
+- [ ] More tests: settings-file writers for each game, backup/restore, the update rollback, the
+      dashboard's pages and sign-in.
 - [ ] A test run that installs, starts and stops every supported game on a spare machine, reporting
       what changed since the last run (games update and break things).
 - [ ] Watch for game updates that change a server's settings or launch options.

@@ -9,6 +9,18 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Automated tests
+
+- `tests/` (pytest, a development-only dependency in `requirements-dev.txt`): 113 tests in half a
+  second — port allocation, GameDash's RCON client against a fake RCON server (multi-packet replies,
+  wrong password, nothing listening), `port_listening` never connecting to the game, the
+  never-forward rule and form for all 45 game types, EULA enforcement for every game that requires
+  it, player-list parsers (Minecraft, ARK, Squad), the 7 Days to Die commented-setting fix, Terraria's
+  no-connect rule, command names. Tests run against a throwaway data folder.
+- Checked that they catch real bugs: with the 7 Days to Die and Terraria fixes undone in a scratch
+  copy, exactly those two tests failed.
+- `tools/prepush-check.sh` now runs the tests; CONTRIBUTING asks for a test with every bug fix.
+
 ## 2026-10-16 — "Keeps crashing" warning
 
 - systemd restarts a crashed server by itself, so a crash-looping server showed "running" most of
