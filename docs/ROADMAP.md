@@ -115,8 +115,9 @@ loading its save after a restart.
       all of its processes together; storage used; binary units throughout. *(2026-10-14/15)*
 - [ ] Small history graphs per server: players, CPU and RAM over the last day.
 - [ ] A clear "this server needs attention" banner (crashed, not answering, backups stale, update
-      waiting) with one button to fix the common cases. **Seen in testing:** a server that crashed
-      and restarted itself 19 times still showed "running" — the card should say it keeps crashing.
+      waiting) with one button to fix the common cases.
+- [x] **"Keeps crashing" warning** on a server's card (and one alert) when it restarts itself twice
+      within 15 minutes — a crash-looping server used to show plain "running". *(2026-10-16)*
 - [x] Phone layout check: the top menu ran off the screen — now wraps. *(2026-10-16)*
 - [ ] Optional second dashboard account with limited rights (start/stop only, no settings).
 

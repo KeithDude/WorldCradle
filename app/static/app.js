@@ -772,7 +772,8 @@ const gamedash = (() => {
             <button class="ctl danger" data-action="ban" data-target="${esc(p.id)}" data-name="${esc(p.name)}" title="Ban ${esc(p.name)} from the server">Ban</button>
           </span>` : ""}</div>`).join("")}</div>` : "";
       const note = (v.note ? `<div class="note">⚠ ${esc(v.note)}</div>` : "")
-        + (v.backup_warn ? `<div class="note">⚠ ${esc(v.backup_warn)}</div>` : "");
+        + (v.backup_warn ? `<div class="note">⚠ ${esc(v.backup_warn)}</div>` : "")
+        + (v.crash_warn ? `<div class="note bad">🔥 ${esc(v.crash_warn)}</div>` : "");
       const ports = esc(`game ${v.game_port}${v.query_port ? " · query " + v.query_port : ""}${v.rcon_port ? " · admin console " + v.rcon_port : ""}`);
       const live = v.online ? `
         <dt title="Is the server answering on its port? “n/a” means this game can't be asked that way — it doesn't mean anything is wrong">answering</dt><dd>${reachPill(v)}</dd>

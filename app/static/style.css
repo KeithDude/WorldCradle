@@ -346,3 +346,4 @@ label.ck.eula a, .eula-note a, .game-row .g-need a, #games-terms a { color: var(
   .topbar nav .navlink { padding: .25rem .45rem; }
   html, body { overflow-x: hidden; }
 }
+.note.bad { color: #f85149; font-weight: 600; }

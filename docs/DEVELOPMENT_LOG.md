@@ -9,6 +9,16 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — "Keeps crashing" warning
+
+- systemd restarts a crashed server by itself, so a crash-looping server showed "running" most of
+  the time (19 restarts went unnoticed in testing). The poller now watches each server's automatic
+  restart counter (`NRestarts`): two or more automatic restarts within 15 minutes, or a server waiting
+  to be restarted, puts a red "Keeps crashing — … Open Logs to see why." on its card and sends one
+  alert through the configured channel. A normal restart by the owner resets it. Tested on the VM by
+  killing a Terraria server twice: no warning after one crash, warning after the second, cleared by
+  a normal restart. ARK's crash on a requested stop is not an automatic restart, so it doesn't count.
+
 ## 2026-10-16 — Getting started guide; GameDash was crashing Terraria servers
 
 - **`docs/GETTING_STARTED.md`** with six screenshots taken on the test VM's GameDash (public page,

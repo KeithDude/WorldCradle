@@ -29,6 +29,50 @@ _cg_last: dict[str, tuple[int, float]] = {}      # unit -> (cpu usage µs, time)
 _cg_lock = threading.Lock()
 
 
+# ---- crash detection --------------------------------------------------------------
+# systemd restarts a crashed server by itself and counts it (NRestarts). A server that keeps
+# crashing therefore looks "running" most of the time; watch the counter instead.
+CRASH_WINDOW = 15 * 60          # seconds
+_crash_seen: dict[str, dict] = {}   # unit -> {"count": last NRestarts, "events": [times], "alerted": bool}
+
+
+def crash_warning(unit: str, name: str) -> str:
+    """'' normally; a plain-language warning while this server keeps crashing."""
+    import subprocess
+    try:
+        out = subprocess.run(["systemctl", "--user", "show", unit, "-p", "NRestarts", "-p", "SubState"],
+                             capture_output=True, text=True, timeout=5).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    vals = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
+    try:
+        count = int(vals.get("NRestarts", "0") or 0)
+    except ValueError:
+        return ""
+    now = time.monotonic()
+    seen = _crash_seen.setdefault(unit, {"count": count, "events": [], "alerted": False})
+    if count < seen["count"]:            # the counter starts again when someone restarts the server
+        seen.update(count=count, events=[])
+    elif count > seen["count"]:
+        seen["events"] += [now] * (count - seen["count"])
+        seen["count"] = count
+    seen["events"] = [t for t in seen["events"] if now - t < CRASH_WINDOW]
+    n = len(seen["events"])
+    if n >= 2 or vals.get("SubState") == "auto-restart":
+        if not seen["alerted"]:
+            seen["alerted"] = True
+            try:
+                alerts.notify(f"⚠️ gamedash: {name} keeps crashing",
+                              f"{name} has crashed and restarted itself {max(n, 1)} time(s) in the last "
+                              f"{CRASH_WINDOW // 60} minutes. Check its Logs on the dashboard.", "bad")
+            except Exception:
+                app_log.exception("crash alert failed for %s", unit)
+        return (f"Keeps crashing — it restarted itself {max(n, 1)} time(s) in the last "
+                f"{CRASH_WINDOW // 60} minutes. Open Logs to see why.")
+    seen["alerted"] = False
+    return ""
+
+
 def _cgroup_dir(unit: str, pid: int | None) -> str | None:
     path = _cg_path.get(unit)
     if path and os.path.isdir(path):
@@ -232,6 +276,7 @@ class Poller:
             "reachable": None, "note": "",  # reachable: True / False / None=unknown
             "sf": None,  # Satisfactory extra state (tick rate, phase, uptime, …)
             "backup_warn": self._backup_warn(s),
+            "crash_warn": crash_warning(s.unit, s.name) if (online or s.managed == "gamedash") else "",
             "_probe": False,
         }
 

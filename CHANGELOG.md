@@ -38,6 +38,8 @@ footer of the dashboard when signed in.
 - **Terraria servers no longer crash every few minutes** — GameDash's "is it answering?" check used
   to connect to the game in a way Terraria's server can't handle. It now asks the computer instead.
 - The dashboard works properly on phones (the top menu used to run off the screen).
+- A server that **keeps crashing** now says so on its card (and sends an alert), instead of looking
+  "running" between crashes.
 
 ### Good to know
 - Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.
