@@ -49,11 +49,20 @@ say "Settings: $DATA"
 mkdir -p "$DATA/certs" "$DATA/logs" "$BACKUPS"
 chmod 700 "$DATA" "$DATA/certs" "$DATA/logs"
 [ -f "$DATA/servers.json" ] || cp "$CODE/deploy/examples/servers.json.example" "$DATA/servers.json"
-if [ ! -f "$DATA/secrets.conf" ]; then
+# where the game passwords are kept: secrets.conf here, unless the settings name another file
+SECRETS="$(python3 - "$DATA/config.json" "$DATA/secrets.conf" <<'WHERE'
+import json, os, sys
+try:
+    print(os.path.expanduser(json.load(open(sys.argv[1])).get("secrets_conf") or sys.argv[2]))
+except (OSError, ValueError):
+    print(sys.argv[2])
+WHERE
+)"
+if [ ! -f "$SECRETS" ]; then
     # Never start with the example's well-known placeholders: pick random passwords (letters and
     # digits only, which every game accepts). The owner can change them in Settings at any time.
     umask 077
-    python3 - "$CODE/deploy/examples/secrets.conf.example" "$DATA/secrets.conf" <<'PW'
+    python3 - "$CODE/deploy/examples/secrets.conf.example" "$SECRETS" <<'PW'
 import re, secrets, sys
 src, dst = sys.argv[1:3]
 abc = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"     # no look-alike characters
@@ -64,7 +73,7 @@ t = re.sub(r'(?m)^GAME_ADMIN_PASSWORD=.*$', f'GAME_ADMIN_PASSWORD="{pick(20)}"',
 open(dst, "w", encoding="utf-8").write(t)
 PW
     umask 022
-    chmod 600 "$DATA/secrets.conf"
+    chmod 600 "$SECRETS"
     note "Picked random game passwords — see or change them in the dashboard (Settings → Game passwords)."
 fi
 
@@ -125,8 +134,10 @@ if [ "$FAIL2BAN" = auto ]; then
 fi
 if [ "$FAIL2BAN" = yes ]; then
     jail="$(sed -e "s#__GAMEDASH_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/gamedash-jail.conf")"
-    if [ "$jail" = "$(cat /etc/fail2ban/jail.d/gamedash.conf 2>/dev/null)" ] \
-       && cmp -s "$CODE/deploy/fail2ban/gamedash-filter.conf" /etc/fail2ban/filter.d/gamedash.conf; then
+    settings() { grep -v '^[[:space:]]*\(#\|$\)'; }    # compare what fail2ban reads, not the comments
+    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/gamedash.conf 2>/dev/null)" ] \
+       && [ "$(settings < "$CODE/deploy/fail2ban/gamedash-filter.conf")" = \
+            "$(settings < /etc/fail2ban/filter.d/gamedash.conf 2>/dev/null)" ]; then
         :   # already set up
     else
         note "Setting up protection against password guessing (fail2ban) — this asks for your password."
