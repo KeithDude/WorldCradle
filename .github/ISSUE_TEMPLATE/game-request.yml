@@ -1,0 +1,16 @@
+name: Game request
+description: Ask for a game server that GameDash doesn't support yet
+labels: ["game request"]
+body:
+  - type: input
+    id: game
+    attributes: {label: Game}
+    validations: {required: true}
+  - type: input
+    id: docs
+    attributes: {label: Link to the game's official dedicated-server instructions (if you know it)}
+  - type: dropdown
+    id: own
+    attributes:
+      label: Could you test it?
+      options: ["Yes, I own the game and can test", "No"]

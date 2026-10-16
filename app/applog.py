@@ -38,9 +38,10 @@ def _logger(name: str, filename: str, level: int = logging.INFO) -> logging.Logg
             os.chmod(path, 0o600)
         except OSError:
             pass
-        sh = logging.StreamHandler()  # → stderr → journald (journalctl --user -u gamedash)
-        sh.setFormatter(logging.Formatter("%(name)s %(levelname)s %(message)s"))
-        lg.addHandler(sh)
+        if not os.environ.get("GAMEDASH_QUIET_LOG"):   # the `gamedash` command keeps its screen clean
+            sh = logging.StreamHandler()  # → stderr → journald (journalctl --user -u gamedash)
+            sh.setFormatter(logging.Formatter("%(name)s %(levelname)s %(message)s"))
+            lg.addHandler(sh)
     return lg
 
 

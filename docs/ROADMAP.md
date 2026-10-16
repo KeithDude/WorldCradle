@@ -66,9 +66,9 @@ Last updated: 2026-10-15
 - [x] `gamedash update` — update GameDash itself safely: shows what's new, downloads it, installs
       libraries, checks the new version loads, restarts, and puts the old version back if anything
       fails. *(2026-10-15)*
-- [ ] `gamedash backup list|restore <server> <backup>` from the terminal.
-- [ ] `gamedash unban <address>` — lift a fail2ban block after someone mistypes the password
-      (needs the admin password, like any system change).
+- [x] `gamedash backup list|restore <server> <backup>` from the terminal. *(2026-10-16)*
+- [x] `gamedash unban <address>` — lifts a fail2ban block (asks for the admin password) and the
+      dashboard's own short lock-out. *(2026-10-16)*
 - [x] `gamedash uninstall` — removes GameDash step by step; stops and unregisters the game servers
       after asking (checking for players), asks separately about settings and backups, never
       deletes games or saves, and lists what's left. *(2026-10-16)*
@@ -77,10 +77,12 @@ Last updated: 2026-10-15
 - [ ] Tab completion for commands and server names.
 
 ### Public-release preparation
-- [ ] **Community testing call:** publish the "How to help test" steps from SUPPORTED_GAMES.md and add
-      GitHub issue templates (test report, bug report, game request).
-- [ ] `CONTRIBUTING.md` (how to report tests and send changes, what the licence means for
-      contributors), `SECURITY.md` (how to report a vulnerability privately).
+- [x] GitHub issue forms: game test report, bug report, game request; security reports routed to
+      private reporting. *(2026-10-16)*
+- [x] `CONTRIBUTING.md` and `SECURITY.md`. *(2026-10-16)*
+- [ ] Turn on GitHub's *private vulnerability reporting* (repository Settings → Security) so the
+      link in SECURITY.md works.
+- [ ] **Community testing call** once the repository is public.
 - [ ] Screenshots in the README.
 - [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
       section in the README, and a GitHub *Sponsor* button (`.github/FUNDING.yml`). *(2026-10-15)*

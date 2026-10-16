@@ -18,6 +18,9 @@ Usage: gamedash <command> [options]
   server restart <server>    Restart a game server (asks first if players are online)
   server logs    <server> [N]  A game server's last N log lines (default 50)
   backup <server|all>        Back up a server's saves now ("all" = every server)
+  backup list <server>       A server's backups, newest first
+  backup restore <server> <number>   Put a backup back (a safety copy is made first)
+  unban <address>            Let an address that mistyped the password too often sign in again
 
   update                     Update GameDash itself (puts the old version back if the new one fails)
   uninstall                  Remove GameDash (asks before each step; never deletes games or saves)
@@ -37,6 +40,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+os.environ.setdefault("GAMEDASH_QUIET_LOG", "1")   # log lines still go to the log files, not the screen
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UNIT = os.environ.get("GAMEDASH_UNIT", "gamedash.service")   # overridable for testing
@@ -239,8 +243,51 @@ def cmd_server(args) -> int:
 
 def cmd_backup(args) -> int:
     if not args:
-        return _err("usage: gamedash backup <server|all>")
+        return _err("usage: gamedash backup <server|all> | backup list <server> | backup restore <server> <backup>")
     import backups
+    if args[0] == "list":
+        if len(args) < 2:
+            return _err("usage: gamedash backup list <server>")
+        if _server(args[1]) is None:
+            return 1
+        items = backups.list_backups(args[1])
+        if not items:
+            _say("No backups yet for that server.")
+            return 0
+        import time
+        for n, b in enumerate(items, 1):
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(b["mtime"]))
+            _say(f"  {n:>2}. {when}  {b['size_h']:>8}  {b['name']}")
+        _say("Restore one with: gamedash backup restore <server> <number>")
+        return 0
+    if args[0] == "restore":
+        if len(args) < 3:
+            return _err("usage: gamedash backup restore <server> <number or file name>")
+        if _server(args[1]) is None:
+            return 1
+        key, which = args[1], args[2]
+        items = backups.list_backups(key)
+        name = items[int(which) - 1]["name"] if which.isdigit() and 0 < int(which) <= len(items) else which
+        if not any(b["name"] == name for b in items):
+            return _err(f"no backup '{which}' for that server — see: gamedash backup list {key}")
+        s = _server(key)
+        _say(f"This puts {s.name}'s saved world back to: {name}")
+        _say("A safety copy of the current save is made first. If the server is running it is stopped,")
+        _say("restored and started again.")
+        if not _yes("Restore it?"):
+            return _err("cancelled — nothing changed")
+        import controls
+        try:
+            r = backups.restore_backup(key, name)
+        except controls.ConfirmRequired as c:
+            _say(f"{c.players} player(s) are on {s.name}" + (f": {', '.join(c.names)}" if c.names else "") + ".")
+            if not _yes("Restore anyway? They will be disconnected."):
+                return _err("cancelled — nothing changed")
+            r = backups.restore_backup(key, name, confirm=True)
+        except controls.ActionError as e:
+            return _err(str(e))
+        _say(r.get("message", "Restored."))
+        return 0
     if args[0] == "all":
         results = backups.backup_all()
         for key, result in results.items():
@@ -492,6 +539,27 @@ def cmd_uninstall(args) -> int:
     return 0
 
 
+def cmd_unban(args) -> int:
+    """Lift a block on an address that mistyped the dashboard password too often."""
+    import ipaddress
+    if not args:
+        return _err("usage: gamedash unban <address>   (the address shown in: gamedash logs)")
+    try:
+        ip = str(ipaddress.ip_address(args[0]))
+    except ValueError:
+        return _err(f"'{args[0]}' isn't an address like 203.0.113.7")
+    done = False
+    if shutil.which("fail2ban-client") and os.path.isfile("/etc/fail2ban/jail.d/gamedash.conf"):
+        _say("Removing the block in fail2ban (this needs your computer's admin password)…")
+        r = subprocess.run(["sudo", "fail2ban-client", "set", "gamedash", "unbanip", ip])
+        done = r.returncode == 0
+    # the dashboard's own short lock-out after wrong passwords is kept in memory: a restart clears it
+    _systemctl("restart", UNIT)
+    _say(f"{ip} can try to sign in again." if done or not shutil.which("fail2ban-client")
+         else f"The dashboard's own lock-out is cleared; fail2ban may still be blocking {ip}.")
+    return 0
+
+
 def cmd_version(_args) -> int:
     r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
                        capture_output=True, text=True)
@@ -514,7 +582,7 @@ COMMANDS = {
     "servers": cmd_servers, "list": cmd_servers, "server": cmd_server,
     "backup": cmd_backup,
     "check": cmd_check, "doctor": cmd_check, "update": cmd_update, "upgrade": cmd_update,
-    "uninstall": cmd_uninstall, "remove": cmd_uninstall,
+    "uninstall": cmd_uninstall, "remove": cmd_uninstall, "unban": cmd_unban,
     "version": cmd_version, "help": cmd_help,
 }
 

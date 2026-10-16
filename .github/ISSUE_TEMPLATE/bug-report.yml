@@ -1,0 +1,25 @@
+name: Bug report
+description: Something in GameDash doesn't work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security problem?** Please don't report it here — see SECURITY.md for how to report it privately.
+        **Never paste passwords** (dashboard, join or admin) anywhere in this form.
+  - type: textarea
+    id: what
+    attributes: {label: What happened, description: "What you did, what you expected, and what happened instead."}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Steps to make it happen again}
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: "From a terminal: gamedash logs  (or the server card → Logs). Check for passwords first."
+      render: text
+  - type: input
+    id: system
+    attributes: {label: Your system, placeholder: "Output of: gamedash version — and your Linux version"}

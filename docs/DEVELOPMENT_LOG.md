@@ -9,6 +9,20 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-16 — Contributor files, backups and unban from the terminal
+
+- GitHub issue forms (`.github/ISSUE_TEMPLATE/`): a **game test report** that asks exactly what was
+  checked, a bug report, a game request; blank issues allowed; a link sends security reports to
+  GitHub's private reporting. `CONTRIBUTING.md` (testing first, plain-language and internet-facing
+  rules for code, no GPL dependencies, licence of contributions) and `SECURITY.md`.
+- `gamedash backup list <server>` and `gamedash backup restore <server> <number>`: on the test VM a
+  Terraria world was deliberately damaged (7 bytes), then restored byte-for-byte (same checksum);
+  a safety copy of the damaged state was made first and the server restarted.
+- `gamedash unban <address>`: on the VM a test address was blocked in fail2ban and the command
+  lifted it after one password prompt; it also clears the dashboard's own short lock-out.
+- The `gamedash` command no longer prints internal log lines on screen (they still go to the log
+  files).
+
 ## 2026-10-16 — Ubuntu 26.04, uninstall, passwords on screen
 
 - **Upgrade 24.04 → 26.04** on the test VM with GameDash installed (Python 3.12 → 3.14): on the
