@@ -9,4 +9,6 @@ if [ -z "${GAMEDASH_HOME:-}" ]; then
                      | tr ' ' '\n' | sed -n 's/^GAMEDASH_HOME=//p')"
     [ -n "$GAMEDASH_HOME" ] && export GAMEDASH_HOME
 fi
+# repair the Python environment first if a system upgrade broke it
+"$REPO/bin/gamedash-ensure-venv" || exit 1
 exec "$REPO/venv/bin/python" "$REPO/app/cli.py" "$@"

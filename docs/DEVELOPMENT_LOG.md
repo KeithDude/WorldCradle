@@ -9,6 +9,26 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-15 — Ubuntu 24.04: upgrade survival and clean install
+
+- **Upgrade test:** the test VM (GameDash installed) was upgraded 22.04 → 24.04.5 with
+  `do-release-upgrade`. Afterwards the dashboard was stuck in a restart loop (`No module named
+  'gunicorn'`) and the `gamedash` command crashed: the Python environment was tied to Python 3.10,
+  which the upgrade replaced with 3.12. (The same had happened once on the maintainer's server.)
+- **Fix — self-repair:** `bin/gamedash-ensure-venv` checks the environment and rebuilds it with the
+  current Python (falling back to fetching pip when the venv module is missing). It runs before the
+  dashboard starts (`ExecStartPre`, with a 15-minute start allowance) and from the `gamedash`
+  command, and setup.sh uses it too. On the upgraded VM, a restart rebuilt the environment and the
+  dashboard was answering within 17 s.
+- **Clean install on 24.04** (GameDash and every package it installed removed first): 82 s; setup
+  code, sign-in, Terraria and V Rising (Wine 9) installed, run, removed, uninstalled; no Wine
+  environment left behind.
+- **Random game passwords:** a new install used to start with the example file's placeholder
+  passwords — known to anyone who reads the repository. setup.sh now picks random ones (10-character
+  join password, 20-character admin password, letters and digits only so every game accepts them).
+- Quieter install: no certificate-generation noise; first-install wording for the environment step.
+- The maintainer's own dashboard service got the same self-repair step.
+
 ## 2026-10-15 — First fresh-machine test (Ubuntu 22.04 desktop VM)
 
 Installed from a downloaded copy on a clean Ubuntu 22.04.5 desktop VM (8 cores, 16 GB, 40 GB disk).

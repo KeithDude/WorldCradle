@@ -1,0 +1,36 @@
+#!/bin/sh
+# Make sure GameDash's Python environment works; rebuild it if it doesn't.
+#
+# An operating-system upgrade that changes the Python version (e.g. Ubuntu 22.04 -> 24.04,
+# Python 3.10 -> 3.12) leaves the old environment pointing at a Python that no longer exists,
+# and GameDash can't start. This runs before the dashboard starts (ExecStartPre) and from the
+# `gamedash` command, so GameDash repairs itself. Settings, servers and saves are not touched.
+REAL="$(readlink -f "$0")"
+REPO="$(dirname "$(dirname "$REAL")")"
+VENV="$REPO/venv"
+if "$VENV/bin/python" -c "import flask, gunicorn, gevent" >/dev/null 2>&1; then
+    exit 0
+fi
+if [ -e "$VENV/bin/python" ] || [ -L "$VENV/bin/python" ]; then
+    echo "GameDash: its Python environment doesn't work (probably a system upgrade changed Python) — rebuilding it…"
+else
+    echo "GameDash: setting up its Python environment…"
+fi
+python3 -m venv --clear "$VENV" >/dev/null 2>&1 || python3 -m venv --clear --without-pip "$VENV" || {
+    echo "GameDash: couldn't create a Python environment. Install the system package python3-venv"
+    echo "          (sudo apt install python3-venv), then run: gamedash restart"
+    exit 1
+}
+if [ ! -x "$VENV/bin/pip" ]; then
+    # this Python came without pip for environments (python3-venv not installed) — fetch it
+    "$VENV/bin/python" -c "import urllib.request; urllib.request.urlretrieve('https://bootstrap.pypa.io/get-pip.py', '$VENV/get-pip.py')" \
+        && "$VENV/bin/python" "$VENV/get-pip.py" -q >/dev/null 2>&1; rm -f "$VENV/get-pip.py"
+    [ -x "$VENV/bin/pip" ] || { echo "GameDash: couldn't set up pip — install python3-venv (sudo apt install python3-venv), then run: gamedash restart"; exit 1; }
+fi
+"$VENV/bin/python" -m pip install -q --upgrade pip >/dev/null 2>&1
+if "$VENV/bin/pip" install -q -r "$REPO/requirements.txt"; then
+    echo "GameDash: Python environment ready."
+else
+    echo "GameDash: installing the Python libraries failed — check the internet connection, then run: gamedash restart"
+    exit 1
+fi

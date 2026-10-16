@@ -21,15 +21,8 @@ say() { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 
 # --- 1. Python venv -----------------------------------------------------------
 say "Python venv"
-if [ ! -x "$VENV/bin/python" ]; then
-    python3 -m venv "$VENV" 2>/dev/null || python3 -m venv --without-pip "$VENV"
-    if [ ! -x "$VENV/bin/pip" ]; then
-        # some distros ship python without ensurepip (PEP-668). Bootstrap pip.
-        echo "pip missing in venv — bootstrapping via get-pip.py"
-        curl -fsSL https://bootstrap.pypa.io/get-pip.py | "$VENV/bin/python" - \
-            || { echo "Could not bootstrap pip. Install your distro's python3-venv/python3-pip and re-run."; exit 1; }
-    fi
-fi
+# creates the environment, or rebuilds it if it's missing or broken (e.g. after a Python upgrade)
+"$REPO/bin/gamedash-ensure-venv" || exit 1
 "$VENV/bin/python" -m pip install --upgrade pip >/dev/null
 "$VENV/bin/pip" install -q -r "$REPO/requirements.txt" && echo "Python libraries ready."
 
@@ -39,9 +32,22 @@ mkdir -p "$DATA/certs" "$DATA/logs" "$BACKUPS"
 chmod 700 "$DATA" "$DATA/certs" "$DATA/logs"
 [ -f "$DATA/servers.json" ] || cp "$REPO/deploy/examples/servers.json.example" "$DATA/servers.json"
 if [ ! -f "$DATA/secrets.conf" ]; then
-    cp "$REPO/deploy/examples/secrets.conf.example" "$DATA/secrets.conf"
+    # Never start with the example's well-known placeholders: pick random passwords (letters and
+    # digits only, which every game accepts). The owner can change them in Settings at any time.
+    umask 077
+    python3 - "$REPO/deploy/examples/secrets.conf.example" "$DATA/secrets.conf" <<'PW'
+import re, secrets, sys
+src, dst = sys.argv[1:3]
+abc = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"     # no look-alike characters
+pick = lambda n: "".join(secrets.choice(abc) for _ in range(n))
+t = open(src, encoding="utf-8").read()
+t = re.sub(r'(?m)^GAME_SERVER_PASSWORD=.*$', f'GAME_SERVER_PASSWORD="{pick(10)}"', t)
+t = re.sub(r'(?m)^GAME_ADMIN_PASSWORD=.*$', f'GAME_ADMIN_PASSWORD="{pick(20)}"', t)
+open(dst, "w", encoding="utf-8").write(t)
+PW
+    umask 022
     chmod 600 "$DATA/secrets.conf"
-    echo "Created $DATA/secrets.conf with placeholder passwords — change them in the dashboard (Settings)."
+    echo "Picked random game passwords — see or change them in the dashboard (Settings → Game passwords)."
 fi
 
 # --- 3. Self-signed TLS cert --------------------------------------------------
@@ -51,7 +57,7 @@ if [ ! -f "$DATA/certs/cert.pem" ]; then
     openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
         -keyout "$DATA/certs/key.pem" -out "$DATA/certs/cert.pem" \
         -subj "/CN=$HOSTN" \
-        -addext "subjectAltName=DNS:$HOSTN,DNS:localhost,IP:127.0.0.1"
+        -addext "subjectAltName=DNS:$HOSTN,DNS:localhost,IP:127.0.0.1" 2>/dev/null
     chmod 600 "$DATA/certs/"*.pem
     echo "Self-signed cert generated (CN=$HOSTN, 10y). Browsers will warn once — expected."
 fi
