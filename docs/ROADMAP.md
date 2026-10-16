@@ -80,8 +80,8 @@ Last updated: 2026-10-15
 - [x] GitHub issue forms: game test report, bug report, game request; security reports routed to
       private reporting. *(2026-10-16)*
 - [x] `CONTRIBUTING.md` and `SECURITY.md`. *(2026-10-16)*
-- [ ] Turn on GitHub's *private vulnerability reporting* (repository Settings → Security) so the
-      link in SECURITY.md works.
+- [x] GitHub's *private vulnerability reporting* turned on, so the link in SECURITY.md works.
+      *(2026-10-16)*
 - [ ] **Community testing call** once the repository is public.
 - [ ] Screenshots in the README.
 - [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
