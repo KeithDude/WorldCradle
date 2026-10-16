@@ -145,6 +145,16 @@ loading its save after a restart.
       players are online.
 - [ ] Mod support beyond Valheim and ARK where games have an official mod system.
 
+### Alerts and notifications
+- [ ] **Test the alerts end to end — they have never been tried for real.** For every channel:
+      the Settings "send a test" button, a server going down and recovering, a server that keeps
+      crashing, a failed backup. Confirm each message arrives, reads clearly, and isn't sent twice.
+- [ ] **All the popular notification services**, each with a simple form (no technical addresses
+      to type): Discord, Telegram, email, Slack, Microsoft Teams, Pushover, ntfy, Gotify, Matrix,
+      plus a generic webhook and an "other service" option for anything else.
+- [ ] Send to more than one service at once (e.g. Discord for the group, a phone push for the owner).
+- [ ] `gamedash test-alert` to send a test from the terminal.
+
 ### Security
 - [x] Idle or slow connections can no longer lock everyone out of the dashboard (event-based web
       worker). *(2026-10-15)*
