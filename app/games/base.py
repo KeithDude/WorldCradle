@@ -199,6 +199,16 @@ class GameType:
         return [{"path": s.save_root, "role": "save"}] if s.save_root else []
 
     # ---- monitoring -------------------------------------------------------
+    # What a server card shows for this game. The rows depend only on the game, never on
+    # whether the server is running (a stopped server shows "—" in them).
+    reports_players: bool = True     # its probe can tell how many players are on
+    reports_answering: bool = True   # its probe can tell whether it answers on its port
+    server_stats: bool = False       # extra live stats (Satisfactory: tick rate, progress, game time)
+
+    def card_rows(self, s) -> dict:
+        return {"players": self.reports_players, "answering": self.reports_answering,
+                "server_stats": self.server_stats}
+
     def probe(self, s) -> dict:
         """Return a partial snapshot dict: any of players, player_names,
         player_detail, max_players, reachable, sf. Called only when the server

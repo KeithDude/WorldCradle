@@ -34,6 +34,7 @@ def _choices(values: list[str], blank: str) -> list[list[str]]:
 
 
 class ValheimGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "valheim"
     label = "Valheim"
     install_marker = "valheim_server.x86_64"

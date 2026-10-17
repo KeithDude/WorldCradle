@@ -262,6 +262,7 @@ class AstroneerGame(WineGame):
 
 
 class NeraGame(WineGame):
+    reports_players = False     # it has no way to list who is on
     kind = "nera"
     label = "Voyagers of Nera"
     steam_app = 3937860

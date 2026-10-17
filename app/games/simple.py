@@ -112,6 +112,10 @@ class SimpleGame(GameType):
             out["log_path"] = log
         return out
 
+    def card_rows(self, s) -> dict:
+        asks = bool(self.has_query and s.query_port)     # everything comes from Steam's query
+        return {**super().card_rows(s), "players": asks, "answering": asks}
+
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
                "max_players": None, "reachable": None}

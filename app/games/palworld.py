@@ -79,6 +79,7 @@ def set_ini_options(ini: str, quoted: dict, bare: dict) -> None:
 
 
 class PalworldGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "palworld"
     label = "Palworld"
     install_marker = "PalServer.sh"

@@ -27,6 +27,7 @@ exec ./{exe} -name "{name}" -port {gp} -queryport {qp} -maxplayers {maxp} \\
 
 
 class BarotraumaGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "barotrauma"
     label = "Barotrauma"
     steam_app = 1026340

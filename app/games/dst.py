@@ -46,6 +46,7 @@ cd "{install}/bin64" || exit 1
 
 
 class DstGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "dst"
     label = "Don't Starve Together"
     steam_app = 343050

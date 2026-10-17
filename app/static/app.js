@@ -123,11 +123,14 @@ const gamedash = (() => {
   const cardHead = (v) => `<h2 title="The server's name, as players see it">🎮 ${esc(serverName(v))}</h2>
     <div class="state"><span class="dot ${v.online ? "on" : "off"}"></span>${v.online ? "Online" : "Offline"}</div>`;
 
-  // only for games that report who is on
+  // Rows depend only on the game (v.rows), never on whether it's running; a stopped server
+  // (or a number not known yet) shows a dash.
+  const DASH = "—";
+  const rows = (v) => v.rows || {};
   const playersBlock = (v) => {
-    if (v.players == null) return "";
+    if (!rows(v).players) return "";
     const max = v.max_players ? ` / ${esc(v.max_players)}` : "";
-    return `<div class="players">${esc(v.players)}<span class="max">${max} players</span></div>`;
+    return `<div class="players">${v.players == null ? DASH : esc(v.players)}<span class="max">${max} players</span></div>`;
   };
 
   // ---- public (limited) ----
@@ -758,14 +761,17 @@ const gamedash = (() => {
         + (v.backup_warn ? `<div class="note">⚠ ${esc(v.backup_warn)}</div>` : "")
         + (v.crash_warn ? `<div class="note bad">🔥 ${esc(v.crash_warn)}</div>` : "");
       const ports = esc(`game ${v.game_port}${v.query_port ? " · query " + v.query_port : ""}${v.rcon_port ? " · admin console " + v.rcon_port : ""}`);
-      // "answering" only for games that can be asked (reachable is null for the rest)
-      const live = v.online ? (v.reachable == null ? "" : `
-        <dt title="Is the server answering on its port?">answering</dt><dd>${reachPill(v)}</dd>`) + `
-        <dt title="This server's share of the whole computer's processor (the same scale as Total CPU usage at the top), and the memory (RAM) used by all of its processes">CPU / RAM</dt><dd>${v.cpu_percent == null ? "…" : esc(v.cpu_percent) + "%"} · ${v.mem_mb == null ? "…" : esc(v.mem_mb >= 1024 ? (v.mem_mb / 1024).toFixed(1) + " GB" : v.mem_mb + " MB")}</dd>` : "";
-      const sf = v.sf ? `
-        <dt title="Server simulation rate — 30 is healthy; consistently lower means it's struggling">tick rate</dt><dd>${esc(v.sf.tick)}/30 ${v.sf.paused ? pill("warn", "paused") : ""}</dd>
-        <dt title="Game progression (tech tier / project assembly phase)">progress</dt><dd>${v.sf.tier != null ? "Tier " + esc(v.sf.tier) : ""}${v.sf.phase != null ? " · Phase " + esc(v.sf.phase) : ""}</dd>
-        <dt title="Total in-game time elapsed in this save">game time</dt><dd>${fmtDur(v.sf.uptime_s)}</dd>` : "";
+      const answering = rows(v).answering ? `
+        <dt title="Is the server answering on its port?">answering</dt><dd>${v.online && v.reachable != null ? reachPill(v) : DASH}</dd>` : "";
+      const usage = !v.online ? DASH
+        : `${v.cpu_percent == null ? "…" : esc(v.cpu_percent) + "%"} · ${v.mem_mb == null ? "…" : esc(v.mem_mb >= 1024 ? (v.mem_mb / 1024).toFixed(1) + " GB" : v.mem_mb + " MB")}`;
+      const live = answering + `
+        <dt title="This server's share of the whole computer's processor (the same scale as Total CPU usage at the top), and the memory (RAM) used by all of its processes">CPU / RAM</dt><dd>${usage}</dd>`;
+      const s = v.sf || {};
+      const sf = rows(v).server_stats ? `
+        <dt title="Server simulation rate — 30 is healthy; consistently lower means it's struggling">tick rate</dt><dd>${v.sf ? `${esc(s.tick)}/30 ${s.paused ? pill("warn", "paused") : ""}` : DASH}</dd>
+        <dt title="Game progression (tech tier / project assembly phase)">progress</dt><dd>${v.sf ? `${s.tier != null ? "Tier " + esc(s.tier) : ""}${s.phase != null ? " · Phase " + esc(s.phase) : ""}` : DASH}</dd>
+        <dt title="Total in-game time elapsed in this save">game time</dt><dd>${v.sf ? fmtDur(s.uptime_s) : DASH}</dd>` : "";
       const u = (v.steam_app != null && snap.updates) ? snap.updates[String(v.steam_app)] : null;
       const job = snap.update_job;
       const updatingThis = job && job.state === "running" && job.app === v.steam_app;

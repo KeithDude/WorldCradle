@@ -88,3 +88,14 @@ def test_dst_picks_up_a_changed_join_password_at_start(tmp_path, monkeypatch):
     secrets.write_text('GAME_SERVER_PASSWORD="changed-pw"\n')   # changed in Settings after creation
     subprocess.run(["sh", fields["exec_start"]], check=True, timeout=30)
     assert "cluster_password = changed-pw\n" in open(ini).read()
+
+
+@pytest.mark.parametrize("g", ALL, ids=lambda g: g.kind)
+def test_card_rows_depend_on_the_game_not_on_running(g):
+    """A server card's rows come from the game (and its ports), so starting or stopping a server
+    never changes the card's layout."""
+    from registry import Server
+    s = Server(key="t", name="T", kind=g.kind, unit="gamedash-t.service", game_port=7000, query_port=7001)
+    rows = g.card_rows(s)
+    assert set(rows) == {"players", "answering", "server_stats"}
+    assert all(isinstance(v, bool) for v in rows.values())

@@ -263,6 +263,7 @@ def _public_servers(snap: dict) -> list[dict]:
             "join_port": v["join_port"],       # how to connect (host:port)
             "online": v["online"],
             "players": v["players"],          # int or null (unknown)
+            "rows": {"players": v.get("rows", {}).get("players", False)},
             "max_players": v["max_players"],
         })
     return out

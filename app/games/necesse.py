@@ -32,6 +32,7 @@ exec ./jre/bin/java -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -jar Server.jar -nogui 
 
 
 class NecesseGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "necesse"
     label = "Necesse"
     steam_app = 1169370

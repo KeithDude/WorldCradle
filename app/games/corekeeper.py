@@ -38,6 +38,7 @@ exec xvfb-run -a -s "-screen 0 1x1x24 -nolisten tcp" "{install}/{exe}" -batchmod
 
 
 class CoreKeeperGame(GameType):
+    reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "corekeeper"
     label = "Core Keeper"
     steam_app = 1963720

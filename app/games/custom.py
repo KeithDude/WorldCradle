@@ -13,6 +13,10 @@ class CustomGame(GameType):
     label = "Custom service"
     actions: set[str] = set()  # no game-specific RCON controls by default
 
+    def card_rows(self, s) -> dict:
+        asks = bool(s.query_port)     # only if the owner gave a Steam query port
+        return {**super().card_rows(s), "players": asks, "answering": asks}
+
     def probe(self, s) -> dict:
         out = {"players": None, "player_names": [], "player_detail": [],
                "max_players": None, "reachable": None}

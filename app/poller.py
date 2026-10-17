@@ -7,6 +7,7 @@ service's control group (see service_usage); also here: crash detection.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import threading
@@ -19,10 +20,33 @@ import alerts
 import backups
 import games
 import monitor
+import paths
 from applog import app_log
 from registry import Server, load_servers
 
 POLL_INTERVAL = 5.0  # seconds between fleet refreshes
+# Each server's player limit, as last reported while it ran — so a stopped server's card still
+# says "— / 10 players", even after the dashboard restarts.
+PLAYER_LIMITS_FILE = paths.data("player-limits.json")
+
+
+def _load_player_limits() -> dict[str, int]:
+    try:
+        with open(PLAYER_LIMITS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _save_player_limits(limits: dict[str, int]) -> None:
+    tmp = PLAYER_LIMITS_FILE + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(limits, f)
+        os.replace(tmp, PLAYER_LIMITS_FILE)
+    except OSError:
+        app_log.warning("couldn't save %s", PLAYER_LIMITS_FILE)
 
 # ---- per-server resource use, measured for the whole service ----------------------
 # A server is often several processes (Wine helpers, a launcher script, a second level),
@@ -135,6 +159,7 @@ class Poller:
         self.interval = interval
         self._lock = threading.Lock()
         self._snapshot: dict = {"servers": {}, "box": {}, "ts": 0.0}
+        self._max_players = _load_player_limits()   # key -> last known player limit
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._alerts = alerts.AlertEngine()
@@ -204,6 +229,15 @@ class Poller:
                 results = ex.map(self._probe_network, to_probe)
             for s, net in zip(to_probe, results):
                 base[s.key].update(net)
+        changed = False
+        for key, st in base.items():
+            if st.get("max_players"):
+                changed |= self._max_players.get(key) != st["max_players"]
+                self._max_players[key] = st["max_players"]
+            else:
+                st["max_players"] = self._max_players.get(key)
+        if changed:
+            _save_player_limits(self._max_players)
 
         servers = base
         vm = psutil.virtual_memory()
@@ -249,6 +283,7 @@ class Poller:
         """Local-only probe: systemd state + resource use. Sets a private
         '_probe' flag telling _poll_once whether network probes are warranted."""
         online = monitor.unit_active(s.unit)
+        game = games.get(s.kind)
         st: dict = {
             "key": s.key, "name": s.name, "kind": s.kind, "unit": s.unit,
             "server_name": s.server_name, "join_port": s.join_port,
@@ -262,6 +297,8 @@ class Poller:
             "reachable": None, "note": "",  # reachable: True / False / None=unknown
             "parked": False,  # shares its ports with another server, which has them now
             "sf": None,  # Satisfactory extra state (tick rate, phase, uptime, …)
+            # which rows the card shows: they depend on the game, not on whether it's running
+            "rows": game.card_rows(s) if game else {"players": False, "answering": False, "server_stats": False},
             "backup_warn": self._backup_warn(s),
             "crash_warn": crash_warning(s.unit, s.name) if (online or s.managed == "gamedash") else "",
             "_probe": False,
@@ -302,5 +339,4 @@ poller = Poller()
 if __name__ == "__main__":
     poller.start()
     time.sleep(POLL_INTERVAL + 6)  # let it prime CPU then take a real sample
-    import json
     print(json.dumps(poller.snapshot(), indent=2, default=str))

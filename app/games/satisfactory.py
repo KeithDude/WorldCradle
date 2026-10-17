@@ -11,6 +11,7 @@ from games.base import ActionError, GameType, opt_bool, opt_int
 
 
 class SatisfactoryGame(GameType):
+    server_stats = True     # tick rate, progress and game time from its HTTPS API
     kind = "satisfactory"
     label = "Satisfactory"
     install_marker = "FactoryServer.sh"
