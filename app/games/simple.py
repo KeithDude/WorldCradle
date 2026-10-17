@@ -25,6 +25,7 @@ class SimpleGame(GameType):
     has_query = True         # answers Steam's A2S query on its "query" port
     pre_lines = ""           # extra shell lines before the launch (exports and the like)
     shell = "/bin/sh"        # what runs the launch script ("/bin/bash" when it needs bash features)
+    servers_folder = "gamedash-servers"   # each server's own folder: <install>/<this>/<key>
 
     # ---- games whose admin commands go to their own console -------------------------------
     # With `console_commands`, the launch script feeds the server's console from a file and
@@ -84,7 +85,7 @@ class SimpleGame(GameType):
         if not os.path.exists(os.path.join(install, self.exe)):
             raise ActionError(f"{self.label} isn't installed ({install}).")
         key = spec["key"]
-        server_dir = os.path.join(install, "gamedash-servers", key)
+        server_dir = os.path.join(install, self.servers_folder, key)
         if os.path.isdir(server_dir):
             raise ActionError(f"A {self.label} server folder for this key already exists ({server_dir}).")
         name = safe_name((spec.get("name") or key).strip()) or key
