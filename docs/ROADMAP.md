@@ -119,17 +119,26 @@ loading its save after a restart.
 
 ### Code clean-up, part 2
 Part 1 (dead code, duplicated checks, outdated comments, bugs found on the way) is done — see the
-development log, 2026-10-16. Part 2 changes how launch scripts are built, so each step must be tried
-on real servers before it ships:
-- [ ] One shared "put the passwords into the settings file at start" helper instead of ~20
-      hand-written ones (key=value, JSON and INI variants); Palworld's two INI rewriters become one.
-- [ ] Game form limits written once (today "Max players 1-32" is typed in the form, the check and
-      the settings writer).
-- [ ] Shared helpers for an empty probe result, player lists, "send an admin command or say why
-      not", private settings files and downloads.
+development log, 2026-10-16. Part 2 is checked by **recordings of what every game writes when a
+server is created** (`tests/provision_snapshots.py`): launch scripts, settings files, their
+permissions, and the settings after a password change. A step that leaves them identical changes
+nothing for any game; a step that changes them needs trying on real servers.
+- [x] **Safety net:** the recordings above, run by the tests. *(2026-10-17)*
+- [x] One way to put the shared passwords into a game's settings at start
+      (`common.password_sync` / `common.json_password_sync`) instead of ~20 hand-written snippets
+      and three half-shared helpers — every game's settings come out the same. *(2026-10-17)*
+- [x] Game form limits written once, in the form field (`GameType.option`), instead of being
+      repeated in the check and the settings writer (139 copies). *(2026-10-17)*
+- [x] One helper for private settings files (`common.write_private`, 21 copies) — which also made
+      Squad's and Squad 44's password files private; one `empty_probe()` (33 copies). *(2026-10-17)*
+- [x] One game per file: `more.py` (12 games) and `winegames.py` (5) split; `winegames.py` keeps only
+      the shared Wine base; the game registry lists one game per line. *(2026-10-17)*
+- [ ] Smaller shared helpers still to do: player lists, "send an admin command or say why not",
+      downloads (Terraria, Factorio, Bedrock, Minecraft each have their own); Palworld's two
+      settings rewriters become one.
 - [ ] Move the older game types onto the shared `SimpleGame` / `WineGame` bases where they fit.
-- [ ] One game per file (split `more.py` and `winegames.py`); shared script pieces in their own
-      module.
+      This **changes their launch scripts** (stop timing, folders), so each one needs a real
+      create-start-join-stop test — do it game by game, alongside testing those games.
 - [ ] One `systemd` helper instead of six ways of calling `systemctl`; one background-job helper
       instead of three.
 - [x] `app.js`: one window helper instead of six hand-built ones (every window now closes on

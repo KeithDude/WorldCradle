@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 # ---- the shared passwords, written into a game's settings at every start ---------------------
 # The join and admin passwords are set once in GameDash (the secrets file). A game's launch
@@ -68,6 +69,13 @@ def json_password_sync(path: str, entries: list[tuple[tuple[str, ...], str]], *,
             + sets + (extra.rstrip("\n") + "\n" if extra else "") +
             f'json.dump(d, open(p, "w", encoding="utf-8"), indent={indent!r})\n'
             "SYNC\n")
+
+
+def ini_set(text: str, key: str, value) -> str:
+    """Replace `key=...` in an ini-style text (first match), keeping everything else."""
+    pat = re.compile(r"(?m)^%s=.*$" % re.escape(key))
+    line = f"{key}={value}"
+    return pat.sub(lambda m: line, text, count=1) if pat.search(text) else text + line + "\n"
 
 
 # ---- a server console you can type into --------------------------------------
