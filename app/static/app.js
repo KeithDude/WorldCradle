@@ -113,28 +113,21 @@ const gamedash = (() => {
     });
   }
 
-  // ---- card heading: each thing said once ----
-  // Cards sit under their game's heading, so the title drops the "Game · " part of the name;
-  // a server named just after its game is titled with its in-game name instead.
-  const cardTitle = (v) => {
+  // ---- card heading: Online / Offline, then the server's name ----
+  // (cards sit under their game's heading, so the game isn't repeated here)
+  const serverName = (v) => {
+    if (v.server_name) return v.server_name;          // the name players see in the server list
     const i = v.name.indexOf(" · ");
-    return i >= 0 ? v.name.slice(i + 3) : (v.server_name || v.name);
+    return i >= 0 ? v.name.slice(i + 3) : v.name;
   };
-  const plain = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  // The name players see in the game's server list, only when it isn't just the card title again.
-  const inGameName = (v) => v.server_name && plain(v.server_name) !== plain(cardTitle(v))
-    && plain(v.server_name) !== plain(v.name)
-    ? `<div class="srvname" title="The name players see in the game's server list">🎮 ${esc(v.server_name)}</div>` : "";
-  const cardHead = (v) => `<h2><span class="dot ${v.online ? "on" : "off"}" title="${v.online ? "running" : "stopped"}"></span>${esc(cardTitle(v))}</h2>`
-    + inGameName(v);
+  const cardHead = (v) => `<h2><span class="dot ${v.online ? "on" : "off"}"></span>${v.online ? "Online" : "Offline"}</h2>
+    <div class="srvname" title="The server's name, as players see it">🎮 ${esc(serverName(v))}</div>`;
 
+  // only for games that report who is on
   const playersBlock = (v) => {
-    if (v.players != null) {
-      const max = v.max_players ? ` / ${esc(v.max_players)}` : "";
-      return `<div class="players">${esc(v.players)}<span class="max">${max} players</span></div>`;
-    }
-    if (v.online) return `<div class="players unknown">online</div>`;
-    return `<div class="statusline">offline</div>`;
+    if (v.players == null) return "";
+    const max = v.max_players ? ` / ${esc(v.max_players)}` : "";
+    return `<div class="players">${esc(v.players)}<span class="max">${max} players</span></div>`;
   };
 
   // ---- public (limited) ----
@@ -163,11 +156,7 @@ const gamedash = (() => {
   // ---- admin (full) ----
   const pill = (cls, txt) => `<span class="pill ${cls}">${txt}</span>`;
 
-  function reachPill(v) {
-    // null = no query protocol to probe (Palworld/Valheim) → neutral, not alarming
-    if (v.reachable == null) return `<span class="muted" title="no public query support; online status is via RCON/log">n/a</span>`;
-    return v.reachable ? pill("on", "yes") : pill("bad", "no");
-  }
+  const reachPill = (v) => (v.reachable ? pill("on", "yes") : pill("bad", "no"));
 
   const csrf = () => (document.querySelector('meta[name="csrf"]') || {}).content || "";
 
@@ -769,8 +758,9 @@ const gamedash = (() => {
         + (v.backup_warn ? `<div class="note">⚠ ${esc(v.backup_warn)}</div>` : "")
         + (v.crash_warn ? `<div class="note bad">🔥 ${esc(v.crash_warn)}</div>` : "");
       const ports = esc(`game ${v.game_port}${v.query_port ? " · query " + v.query_port : ""}${v.rcon_port ? " · admin console " + v.rcon_port : ""}`);
-      const live = v.online ? `
-        <dt title="Is the server answering on its port? “n/a” means this game can't be asked that way — it doesn't mean anything is wrong">answering</dt><dd>${reachPill(v)}</dd>
+      // "answering" only for games that can be asked (reachable is null for the rest)
+      const live = v.online ? (v.reachable == null ? "" : `
+        <dt title="Is the server answering on its port?">answering</dt><dd>${reachPill(v)}</dd>`) + `
         <dt title="This server's share of the whole computer's processor (the same scale as Total CPU usage at the top), and the memory (RAM) used by all of its processes">CPU / RAM</dt><dd>${v.cpu_percent == null ? "…" : esc(v.cpu_percent) + "%"} · ${v.mem_mb == null ? "…" : esc(v.mem_mb >= 1024 ? (v.mem_mb / 1024).toFixed(1) + " GB" : v.mem_mb + " MB")}</dd>` : "";
       const sf = v.sf ? `
         <dt title="Server simulation rate — 30 is healthy; consistently lower means it's struggling">tick rate</dt><dd>${esc(v.sf.tick)}/30 ${v.sf.paused ? pill("warn", "paused") : ""}</dd>
