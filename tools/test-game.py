@@ -14,6 +14,7 @@ It doesn't play the game: whether players can join still needs a person with the
 from __future__ import annotations
 
 import getpass
+import glob
 import json
 import os
 import re
@@ -60,6 +61,12 @@ class Dashboard:
                 return job
             time.sleep(5)
         return {"state": "failed", "message": f"still running after {minutes} minutes"}
+
+
+def expected_ports(v) -> list:
+    """The ports a running server must have open: its game port, and its query port when the
+    game answers Steam queries (some only open it when listed publicly)."""
+    return [p for p in (v.get("game_port"), v.get("query_port") if v.get("rows", {}).get("answering") else None) if p]
 
 
 def say(text=""):
@@ -134,7 +141,9 @@ def main(argv) -> int:
             v = d.feed()["servers"].get(key, {})
             seen = v
             rows = v.get("rows", {})
-            ready = v.get("online") and (not rows.get("answering") or v.get("reachable")) \
+            listening = subprocess.run(["ss", "-tulnH"], capture_output=True, text=True).stdout
+            ports_open = all(re.search(rf"[:.]{p}\s", listening) for p in expected_ports(v))
+            ready = v.get("online") and ports_open and (not rows.get("answering") or v.get("reachable")) \
                 and (not rows.get("players") or v.get("players") is not None)
             if ready:
                 break
@@ -148,7 +157,7 @@ def main(argv) -> int:
             step("reports players", seen.get("players") is not None,
                  f"{seen.get('players')} / {seen.get('max_players')}")
         listening = subprocess.run(["ss", "-tulnH"], capture_output=True, text=True).stdout
-        ports = [p for p in (seen.get("game_port"), seen.get("query_port")) if p]
+        ports = expected_ports(seen)
         missing = [p for p in ports if not re.search(rf"[:.]{p}\s", listening)]
         step("listening on its ports", not missing, f"{ports}" + (f", not {missing}" if missing else ""))
         # the in-game buttons the game offers (Save, Message), pressed for real
@@ -175,6 +184,12 @@ def main(argv) -> int:
         if any(s for s in d.feed()["servers"] if s == key):
             r = d.post("/admin/servers/remove", {"key": key})
             step("remove server", r.get("ok", False), r.get("message") or r.get("error", ""))
+        # a game that needs its own copy per server leaves that copy behind on removal (some keep
+        # their world in it) — delete the test's own copy
+        for leftover in glob.glob(os.path.expanduser(f"~/*-{key}")):
+            if os.path.isdir(leftover) and key.startswith("gt-"):
+                subprocess.run(["rm", "-rf", "--", leftover])
+                say(f"✓ deleted the test server's copy of the game ({leftover})")
         if not installed_before and not keep:
             r = d.post("/admin/games/uninstall", {"kind": kind})
             step("uninstall", r.get("ok", False), r.get("message") or r.get("error", ""))

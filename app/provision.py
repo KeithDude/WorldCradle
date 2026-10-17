@@ -165,6 +165,9 @@ def _unit_text(name: str, fields: dict) -> str:
         svc.append(f"KillSignal={fields['kill_signal']}")
     if fields.get("timeout_stop"):
         svc.append(f"TimeoutStopSec={fields['timeout_stop']}")
+    # A server that exits because it was told to stop (Ctrl-C / SIGTERM, or the exit codes for
+    # those) stopped normally: not a failure to restart or to count as a crash.
+    svc.append("SuccessExitStatus=130 143 SIGINT SIGTERM")
     svc += ["Restart=on-failure", "RestartSec=10", "", "[Install]", "WantedBy=default.target", ""]
     return "\n".join(svc)
 

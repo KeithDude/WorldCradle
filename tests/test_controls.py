@@ -72,3 +72,9 @@ def test_a_port_another_program_uses_blocks_the_start(fleet):
     fleet.listening.add(27030)
     with pytest.raises(ActionError, match="port 27030 is being used by another program"):
         controls.perform("island", "start")
+
+
+def test_a_server_told_to_stop_has_not_failed():
+    import provision
+    unit = provision._unit_text("T", {"working_dir": "/x", "exec_start": "/x/run.sh"})
+    assert "SuccessExitStatus=130 143 SIGINT SIGTERM" in unit and "Restart=on-failure" in unit
