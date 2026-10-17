@@ -11,7 +11,6 @@ from __future__ import annotations
 import functools
 import re
 import secrets
-import subprocess
 import threading
 import time
 
@@ -26,7 +25,6 @@ import config
 import controls
 import games
 import installs
-import monitor
 import notifiers
 import osupdates
 import ports
@@ -34,6 +32,7 @@ import project
 import provision
 import reach
 import registry
+import systemd
 import updates
 import version
 from applog import access_log, app_log, audit_log
@@ -150,13 +149,6 @@ def _dashboard_port() -> int:
     """The port this page was opened on (set in gamedash.service, normally 8443)."""
     _, _, port = request.host.rpartition(":")
     return int(port) if port.isdigit() else 443
-
-
-def _command_succeeds(args) -> bool:
-    try:
-        return subprocess.run(args, capture_output=True, text=True, timeout=5).returncode == 0
-    except Exception:
-        return False
 
 
 def _locked_out(ip: str) -> int:
@@ -503,7 +495,7 @@ def admin_config():
         current = config.update(lambda c: c.update(changes))
         audit_log.info("settings changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changes)))
     # report current editable values (admin-only page; token shown for editing)
-    timer_on = _command_succeeds(["systemctl", "--user", "is-enabled", "gamedash-backup.timer"])
+    timer_on = systemd.is_enabled("gamedash-backup.timer")
     return jsonify({
         "ok": True,
         "public_host": current.get("public_host", ""),
@@ -543,7 +535,7 @@ def admin_passwords():
             return jsonify({"ok": False, "error": f"could not write secrets file: {e}"}), 500
         # audit WITHOUT values — only which keys changed
         audit_log.info("game passwords changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changes)))
-        running = [s.name for s in registry.load_servers() if monitor.unit_active(s.unit)]
+        running = [s.name for s in registry.load_servers() if systemd.is_active(s.unit)]
         return jsonify({"ok": True, "changed": sorted(changes),
                         "message": "Saved. Restart servers to apply the new password(s).",
                         "restart": running})
@@ -814,7 +806,7 @@ def admin_backups():
                     "keep": s.backup_keep, "kind": s.kind,
                     "save_paths": [p["path"] for p in saves],
                     "has_cluster": any(p.get("role") == "cluster" for p in saves),
-                    "can_backup": bool(saves), "online": monitor.unit_active(s.unit)})
+                    "can_backup": bool(saves), "online": systemd.is_active(s.unit)})
 
 
 @app.route("/admin/servers/backups/delete", methods=["POST"])

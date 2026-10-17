@@ -20,7 +20,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import tarfile
 import threading
 import time
@@ -29,7 +28,7 @@ import alerts
 import config
 import controls
 import games
-import monitor
+import systemd
 from applog import app_log, audit_log
 from controls import ConfirmRequired
 import paths
@@ -203,7 +202,7 @@ def create_backup(key: str, label: str = "", flush: bool = True) -> dict:
         raise ActionError(f"No save files found to back up for {s.name}. "
                           f"(For a custom service, set its save folder first.)")
     game = games.get(s.kind)
-    if flush and game and game.supports("save") and monitor.unit_active(s.unit):
+    if flush and game and game.supports("save") and systemd.is_active(s.unit):
         try:
             game.save(s)
             time.sleep(1.5)  # let the write settle to disk
@@ -284,7 +283,7 @@ def restore_backup(key: str, name: str, confirm: bool = False,
         if not _orig_allowed(it["orig"], allowed):
             raise ActionError("Refusing restore: this backup targets a path outside "
                               f"{s.name}'s save locations ({it['orig']}).")
-    active = monitor.unit_active(s.unit)
+    active = systemd.is_active(s.unit)
     if active and not confirm:
         cnt, names = controls.live_players(s)
         if cnt:  # players online → require explicit confirm
@@ -305,21 +304,16 @@ def restore_backup(key: str, name: str, confirm: bool = False,
                                   f"snapshot of the current save ({e}). Nothing was changed.")
         if active:
             alerts.suppress(key, 600)
-            try:
-                subprocess.run(["systemctl", "--user", "stop", s.unit],
-                               capture_output=True, text=True, timeout=140)
-            except subprocess.TimeoutExpired:
-                pass  # checked just below
+            systemd.run("stop", s.unit, timeout=140)   # whether it stopped is checked just below
             # Never write save files underneath a running server.
-            if monitor.unit_active(s.unit):
+            if systemd.is_active(s.unit):
                 raise ActionError(f"Restore cancelled: {s.name} did not stop. "
                                   f"Nothing was changed.")
         try:
             n = _restore_archive(path, exclude_roles=exclude_roles)
         finally:
             if active:  # bring it back whether the restore worked or not
-                subprocess.run(["systemctl", "--user", "start", s.unit],
-                               capture_output=True, text=True, timeout=140)
+                systemd.run("start", s.unit, timeout=140)
     finally:
         _restore_lock.release()
     audit_log.info("backup RESTORE key=%s file=%s items=%d cluster=%s", key, name, n, include_cluster)

@@ -139,8 +139,9 @@ nothing for any game; a step that changes them needs trying on real servers.
 - [ ] Move the older game types onto the shared `SimpleGame` / `WineGame` bases where they fit.
       This **changes their launch scripts** (stop timing, folders), so each one needs a real
       create-start-join-stop test — do it game by game, alongside testing those games.
-- [ ] One `systemd` helper instead of six ways of calling `systemctl`; one background-job helper
-      instead of three.
+- [x] One `systemd` module (`run`, `check`, `is_active`, `is_enabled`, `show`) instead of six
+      ways of calling `systemctl`, each with its own timeouts and error handling. *(2026-10-17)*
+- [ ] One background-job helper instead of three (game installs, server creation, updates).
 - [x] `app.js`: one window helper instead of six hand-built ones (every window now closes on
       Escape, a click outside or ✕, and is announced as a dialog), one "players are online —
       continue?" step instead of five, the card buttons in one table. *(2026-10-17)*

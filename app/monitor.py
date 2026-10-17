@@ -10,7 +10,6 @@ import os
 import re
 import socket
 import struct
-import subprocess
 import threading
 
 import a2s
@@ -19,31 +18,6 @@ import psutil
 HOST = "127.0.0.1"
 A2S_TIMEOUT = 2.5
 RCON_TIMEOUT = 4.0
-
-
-# ---- systemd ---------------------------------------------------------------
-
-def unit_active(unit: str) -> bool:
-    """True iff `systemctl --user is-active <unit>` reports active."""
-    try:
-        r = subprocess.run(
-            ["systemctl", "--user", "is-active", unit],
-            capture_output=True, text=True, timeout=5,
-        )
-        return r.stdout.strip() == "active"
-    except Exception:
-        return False
-
-
-def unit_enabled(unit: str) -> bool:
-    try:
-        r = subprocess.run(
-            ["systemctl", "--user", "is-enabled", unit],
-            capture_output=True, text=True, timeout=5,
-        )
-        return r.stdout.strip() == "enabled"
-    except Exception:
-        return False
 
 
 # ---- Steam A2S query (player count + reachability) -------------------------

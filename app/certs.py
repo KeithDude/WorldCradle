@@ -27,6 +27,7 @@ import time
 
 import config
 import paths
+import systemd
 from applog import app_log, audit_log
 from games.base import ActionError
 
@@ -150,9 +151,8 @@ WantedBy=timers.target
     for name, text in (("gamedash-cert-renew.service", svc), ("gamedash-cert-renew.timer", timer)):
         with open(os.path.join(UNITS, name), "w", encoding="utf-8") as f:
             f.write(text)
-    subprocess.run(["systemctl", "--user", "daemon-reload"], capture_output=True, timeout=30)
-    subprocess.run(["systemctl", "--user", "enable", "--now", "gamedash-cert-renew.timer"],
-                   capture_output=True, timeout=30)
+    systemd.run("daemon-reload", timeout=30)
+    systemd.run("enable", "--now", "gamedash-cert-renew.timer", timeout=30)
 
 
 def _explain(output: str) -> str:

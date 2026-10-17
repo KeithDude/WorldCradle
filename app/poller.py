@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -19,8 +18,8 @@ import psutil
 import alerts
 import backups
 import games
-import monitor
 import paths
+import systemd
 from applog import app_log
 from registry import Server, load_servers
 
@@ -65,12 +64,7 @@ _crash_seen: dict[str, dict] = {}   # unit -> {"count": last NRestarts, "events"
 
 def crash_warning(unit: str, name: str) -> str:
     """'' normally; a plain-language warning while this server keeps crashing."""
-    try:
-        out = subprocess.run(["systemctl", "--user", "show", unit, "-p", "NRestarts", "-p", "SubState"],
-                             capture_output=True, text=True, timeout=5).stdout
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    vals = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
+    vals = systemd.show(unit, "NRestarts", "SubState")
     try:
         count = int(vals.get("NRestarts", "0") or 0)
     except ValueError:
@@ -109,9 +103,8 @@ def _cgroup_dir(unit: str, pid: int | None) -> str | None:
             with open(f"/proc/{pid}/cgroup", encoding="utf-8") as f:
                 rel = f.read().strip().split("::", 1)[-1]
         if not rel.endswith(f"/{unit}"):
-            rel = subprocess.run(["systemctl", "--user", "show", "-p", "ControlGroup", "--value", unit],
-                                 capture_output=True, text=True, timeout=5).stdout.strip()
-    except (OSError, ValueError, subprocess.SubprocessError):
+            rel = systemd.show(unit, "ControlGroup").get("ControlGroup", "")
+    except (OSError, ValueError):
         return None
     path = "/sys/fs/cgroup" + rel
     if rel and os.path.isdir(path):
@@ -282,7 +275,7 @@ class Poller:
     def _poll_base(self, s: Server, procs) -> dict:
         """Local-only probe: systemd state + resource use. Sets a private
         '_probe' flag telling _poll_once whether network probes are warranted."""
-        online = monitor.unit_active(s.unit)
+        online = systemd.is_active(s.unit)
         game = games.get(s.kind)
         st: dict = {
             "key": s.key, "name": s.name, "kind": s.kind, "unit": s.unit,
@@ -291,7 +284,7 @@ class Poller:
             "game_port": s.game_port, "query_port": s.query_port,
             "rcon_port": s.rcon_port,
             "online": online,
-            "enabled": monitor.unit_enabled(s.unit),
+            "enabled": systemd.is_enabled(s.unit),
             "cpu_percent": None, "mem_mb": None,
             "players": None, "player_names": [], "player_detail": [], "max_players": None,
             "reachable": None, "note": "",  # reachable: True / False / None=unknown

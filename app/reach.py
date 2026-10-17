@@ -23,6 +23,7 @@ import urllib.request
 import config
 import games
 import monitor
+import systemd
 from applog import app_log
 from games.base import ActionError
 from registry import by_key
@@ -156,7 +157,7 @@ def check(key: str) -> dict:
         "public_ip": pub, "join_address": f"{host}:{s.join_port or s.game_port}" if host else "",
         "rules": [{k: r[k] for k in ("port", "proto", "what")} for r in rules],
         "keep_closed": closed_list(s),
-        "running": monitor.unit_active(s.unit),
+        "running": systemd.is_active(s.unit),
     }
     if not out["running"]:
         out.update(verdict="stopped", evidence="")

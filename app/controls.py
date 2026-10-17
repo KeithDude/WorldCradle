@@ -23,6 +23,7 @@ import time
 import alerts
 import games
 import monitor
+import systemd
 from applog import app_log
 from games.base import ActionError
 from registry import Server, by_key
@@ -44,32 +45,19 @@ class ConfirmRequired(Exception):
         super().__init__("confirmation required")
 
 
-def _systemctl(action: str, unit: str) -> str:
-    try:
-        r = subprocess.run(
-            ["systemctl", "--user", action, unit],
-            capture_output=True, text=True, timeout=130,
-        )
-    except subprocess.TimeoutExpired:
-        raise ActionError(f"The server took too long to {action} — give it a minute and check its status.")
-    if r.returncode != 0:
-        msg = (r.stderr or r.stdout or "").strip() or f"exit {r.returncode}"
-        raise ActionError(f"Couldn't {action} the server: {msg}")
-    return "ok"
+def _systemctl(action: str, unit: str) -> None:
+    """Start, stop or restart a server; a failure is reported in plain words."""
+    systemd.check(action, unit, failed=f"Couldn't {action} the server")
 
 
 def _starts_with_computer(s: Server, on: bool) -> None:
     """Whether the server starts by itself when the computer starts. It follows the owner's last
     Start / Stop, so a stopped server stays stopped through a reboot. Best effort: the start or
     stop itself has already happened, so a failure here is only logged."""
-    try:
-        r = subprocess.run(["systemctl", "--user", "enable" if on else "disable", s.unit],
-                           capture_output=True, text=True, timeout=30)
-        if r.returncode != 0:
-            app_log.warning("couldn't %s %s at boot: %s", "enable" if on else "disable", s.unit,
-                            (r.stderr or r.stdout).strip())
-    except (OSError, subprocess.SubprocessError) as e:
-        app_log.warning("couldn't change start-at-boot for %s: %s", s.unit, e)
+    r = systemd.run("enable" if on else "disable", s.unit, timeout=30)
+    if r.returncode != 0:
+        app_log.warning("couldn't %s %s at boot: %s", "enable" if on else "disable", s.unit,
+                        (r.stderr or r.stdout).strip())
 
 
 def live_players(s: Server) -> tuple[int | None, list[str]]:
@@ -131,7 +119,7 @@ def start_update(app, confirm: bool = False) -> dict:
     if not servers:
         raise ActionError("no servers for that game")
     game = _game_for_app(app).label
-    running = [s for s in servers if monitor.unit_active(s.unit)]
+    running = [s for s in servers if systemd.is_active(s.unit)]
 
     # Player-check: updating stops the server(s).
     count = 0
@@ -273,7 +261,7 @@ def port_clash(s: Server) -> str:
     run at a time, and this is where that is enforced."""
     mine = s.all_ports()
     for other in by_key().values():
-        if other.key != s.key and monitor.unit_active(other.unit):
+        if other.key != s.key and systemd.is_active(other.unit):
             shared = sorted(mine & other.all_ports())
             if shared:
                 return (f"{other.name} is running on the same port{'s' if len(shared) > 1 else ''} "
@@ -313,7 +301,7 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
         return {"ok": True, "chat": game.chat(s)}
 
     if action == "start":
-        if monitor.unit_active(s.unit):
+        if systemd.is_active(s.unit):
             raise ActionError(f"{s.name} is already running.")
         clash = port_clash(s)
         if clash:
@@ -323,7 +311,7 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
         return {"ok": True, "message": f"Started {s.name}."}
 
     if action in DISRUPTIVE:
-        if not monitor.unit_active(s.unit):
+        if not systemd.is_active(s.unit):
             raise ActionError(f"{s.name} is not running.")
         count, names = live_players(s)
         if not confirm and count:  # players online and not yet confirmed
@@ -334,14 +322,12 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
         # Hard kill: SIGKILL the process so NO graceful ExecStop/save runs, then
         # stop to cancel Restart=on-failure (ExecStop now hits a dead process →
         # still no save), then clear the resulting 'failed' state.
-        subprocess.run(["systemctl", "--user", "kill", "-s", "SIGKILL", s.unit],
-                       capture_output=True, text=True, timeout=30)
+        systemd.run("kill", "-s", "SIGKILL", s.unit, timeout=30)
         try:
             _systemctl("stop", s.unit)
         except ActionError:
             pass  # already dying; the kill is what matters
-        subprocess.run(["systemctl", "--user", "reset-failed", s.unit],
-                       capture_output=True, text=True, timeout=15)
+        systemd.run("reset-failed", s.unit, timeout=15)
         _starts_with_computer(s, False)
         return {"ok": True, "message": f"Force-stopped {s.name} — it was NOT saved."}
 

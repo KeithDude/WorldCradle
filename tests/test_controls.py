@@ -33,11 +33,11 @@ def fleet(monkeypatch):
         return subprocess.CompletedProcess(args, 0, "", "")
 
     monkeypatch.setattr(controls, "by_key", lambda: servers)
-    monkeypatch.setattr(controls.monitor, "unit_active",
+    monkeypatch.setattr(controls.systemd, "is_active",
                         lambda unit: unit.removeprefix("gamedash-").removesuffix(".service") in running)
     monkeypatch.setattr(controls.monitor, "ports_in_use", lambda: set(listening))
     monkeypatch.setattr(controls, "live_players", lambda s: (0, []))
-    monkeypatch.setattr(controls.subprocess, "run", fake_run)
+    monkeypatch.setattr(controls.systemd.subprocess, "run", fake_run)
     monkeypatch.setattr(controls.alerts, "suppress", lambda *a: None)
     return SimpleNamespace(calls=calls, running=running, listening=listening)
 

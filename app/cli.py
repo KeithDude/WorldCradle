@@ -61,7 +61,8 @@ def _err(text: str) -> int:
 
 
 def _systemctl(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["systemctl", "--user", *args], capture_output=True, text=True, timeout=180)
+    import systemd
+    return systemd.run(*args, timeout=180)
 
 
 def _active(unit: str) -> bool:

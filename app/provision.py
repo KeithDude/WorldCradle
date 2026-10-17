@@ -23,6 +23,7 @@ import config
 import games
 import registry
 import store
+import systemd
 from applog import app_log, audit_log
 from games.base import ActionError
 
@@ -49,14 +50,6 @@ def _unit_name(key: str) -> str:
 
 def _unit_path(key: str) -> str:
     return os.path.join(SYSTEMD_DIR, _unit_name(key))
-
-
-def _systemctl(*args: str, timeout: int = 60) -> None:
-    r = subprocess.run(["systemctl", "--user", *args],
-                       capture_output=True, text=True, timeout=timeout)
-    if r.returncode != 0:
-        raise ActionError(f"systemctl {' '.join(args)} failed: "
-                          f"{(r.stderr or r.stdout).strip() or r.returncode}")
 
 
 def used_ports() -> set[int]:
@@ -207,7 +200,7 @@ def _register(key: str, kind: str, name: str, fields: dict, start: bool) -> str:
     os.makedirs(SYSTEMD_DIR, exist_ok=True)
     with open(_unit_path(key), "w", encoding="utf-8") as f:
         f.write(_unit_text(name, fields))
-    _systemctl("daemon-reload")
+    systemd.check("daemon-reload")
     store.add(_store_entry(key, kind, name, fields))
     audit_log.info("server CREATED key=%s kind=%s name=%r unit=%s", key, kind, name, _unit_name(key))
     if not start:
@@ -216,7 +209,7 @@ def _register(key: str, kind: str, name: str, fields: dict, start: bool) -> str:
     clash = controls.port_clash(registry.by_key()[key])
     if clash:   # creating it is fine; starting it has to wait until its ports are free
         return f" Not started: its ports are in use — {clash}"
-    _systemctl("enable", "--now", _unit_name(key), timeout=130)
+    systemd.check("enable", "--now", _unit_name(key), timeout=130)
     return ""
 
 
@@ -474,13 +467,13 @@ def destroy(key: str) -> dict:
         raise ActionError("Refusing to remove a legacy (hand-made) server.")
     unit = e.get("unit", _unit_name(key))
     try:
-        _systemctl("disable", "--now", unit, timeout=130)
+        systemd.check("disable", "--now", unit, timeout=130)
     except ActionError:
         pass  # may already be stopped/disabled
     path = _unit_path(key)
     if os.path.exists(path):
         os.remove(path)
-    _systemctl("daemon-reload")
+    systemd.check("daemon-reload")
     store.remove(key)
     # A Windows-only server's private Wine environment (~1 GB) holds no saves — remove it too.
     extra = ""
