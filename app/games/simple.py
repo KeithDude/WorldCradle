@@ -37,6 +37,7 @@ class SimpleGame(GameType):
     # The same for a game whose admin commands go over its admin console port (RCON), with the
     # shared admin password: e.g. {"save": "/server-save", "kick": "/kick {target}"}.
     rcon_commands: dict[str, str] = {}
+    rcon_quit_command = ""   # sent over RCON on stop (saves, then quits)
 
     @property
     def install_marker(self) -> str:
@@ -67,10 +68,16 @@ class SimpleGame(GameType):
         if self.quit_command:
             console = common.console_file(self._log(server_dir, install))
             return f'echo "{self.quit_command}" >> "{console}"\n'
+        if self.rcon_quit_command:
+            return common.rcon_quit_lines(ports["rcon"], self.rcon_quit_command)
         return ""
 
     def save_dir(self, server_dir: str, install: str) -> str:
         return server_dir
+
+    def work_dir(self, server_dir: str, install: str) -> str:
+        """The folder the server runs in."""
+        return os.path.join(install, self.run_dir)
 
     def log_file(self, server_dir: str, install: str) -> str:
         return ""
@@ -112,7 +119,7 @@ class SimpleGame(GameType):
                     f"# This server's own files: {server_dir}\n"
                     f". {config.secrets_path()}\n"
                     + self.pre(spec, ports, name, server_dir, install) + setup +
-                    f'cd "{os.path.join(install, self.run_dir)}" || exit 1\n'
+                    f'cd "{self.work_dir(server_dir, install)}" || exit 1\n'
                     + launch)
         os.chmod(run, 0o755)
         stop_body = self.stop_lines(spec, ports, name, server_dir, install)
