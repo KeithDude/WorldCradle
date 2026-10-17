@@ -38,15 +38,8 @@ _RUN_TEMPLATE = """#!/bin/sh
 #   {server_dir}
 . {secrets}
 cd "{server_dir}" || exit 1
-# Keep the admin-console (RCON) password in step with the ones set in GameDash.
-python3 - "$GAME_ADMIN_PASSWORD" <<'SYNC'
-import re, sys
-p = "server.properties"
-t = open(p, encoding="utf-8").read()
-t = re.sub(r"(?m)^rcon\\.password=.*$", lambda m: "rcon.password=" + sys.argv[1], t)
-open(p, "w", encoding="utf-8").write(t)
-SYNC
-# the -D label does nothing in the game; it lets the dashboard tell this server's process apart
+# the admin-console (RCON) password, from GameDash (see common.password_sync)
+{sync}# the -D label does nothing in the game; it lets the dashboard tell this server's process apart
 exec java -Xms{ram}G -Xmx{ram}G -Dgamedash.server=servers/{key} -jar "{jar}" nogui
 """
 
@@ -210,8 +203,11 @@ class MinecraftGame(GameType):
                 f.write("\n".join(names) + "\n")
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
-            f.write(_RUN_TEMPLATE.format(secrets=config.secrets_path(), server_dir=server_dir,
-                                         jar=jar, ram=ram, key=key))
+            f.write(_RUN_TEMPLATE.format(
+                sync=common.password_sync(os.path.join(server_dir, "server.properties"),
+                                          [("rcon.password", "admin")]),
+                secrets=config.secrets_path(), server_dir=server_dir,
+                jar=jar, ram=ram, key=key))
         os.chmod(run, 0o755)
         # the admin console's "stop" saves the world and exits cleanly
         stop = os.path.join(install, f"gamedash-{key}-stop.sh")

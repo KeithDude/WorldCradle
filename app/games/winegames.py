@@ -22,20 +22,6 @@ def win(path: str) -> str:
     return "Z:" + path.replace("/", "\\\\")
 
 
-def kv_password_sync(path: str, pairs: list[tuple[str, str]]) -> str:
-    """Shell lines that rewrite `key=value` lines of a settings file from the
-    shared passwords. `pairs` = [(key, "join" | "admin")]."""
-    body = "".join(f'    ("{k}", {which}),\n' for k, which in pairs)
-    return (f'python3 - "{path}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
-            "import re, sys\n"
-            "p, join, admin = sys.argv[1:4]\n"
-            't = open(p, encoding="utf-8", newline="").read()     # keep Windows line endings\n'
-            "for key, val in (\n" + body + "):\n"
-            "    t = re.sub(r'(?m)^%s=[^\\r\\n]*' % re.escape(key), lambda m: key + '=' + val, t)\n"
-            'open(p, "w", encoding="utf-8", newline="").write(t)\n'
-            "SYNC\n")
-
-
 class WineGame(SimpleGame):
     steam_platform = "windows"
     requires = ["wine"]
@@ -111,7 +97,7 @@ class ScumGame(WineGame):
         common.write_private(self._ini(server_dir), text)
 
     def sync_lines(self, spec, ports, name, server_dir, install):
-        return kv_password_sync(self._ini(server_dir), [("scum.ServerPassword", "join")])
+        return common.password_sync(self._ini(server_dir), [("scum.ServerPassword", "join")])
 
     def save_dir(self, server_dir, install):
         return os.path.join(server_dir, "Saved")
@@ -203,7 +189,7 @@ class AstroneerGame(WineGame):
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         ini = self._ini(server_dir)
-        return (kv_password_sync(ini, [("ServerPassword", "join"), ("ConsolePassword", "admin")])
+        return (common.password_sync(ini, [("ServerPassword", "join"), ("ConsolePassword", "admin")])
                 # the game's online service must be told this network's current public address
                 + f'python3 - "{ini}" <<\'ADDR\'\n'
                 "import re, socket, sys, urllib.request\n"
@@ -306,7 +292,7 @@ class NeraGame(WineGame):
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         # forget the last run's join code so the card never shows a stale one
-        return (kv_password_sync(self._ini(server_dir), [("HostServerPassword", "join")])
+        return (common.password_sync(self._ini(server_dir), [("HostServerPassword", "join")])
                 + f'rm -f "{server_dir}/Saved/DedicatedServerMagicJoinCode.txt"\n')
 
     def save_dir(self, server_dir, install):
@@ -385,19 +371,18 @@ class WindroseGame(WineGame):
         common.write_private(self._desc(install), json.dumps(desc, indent="\t"))
 
     def sync_lines(self, spec, ports, name, server_dir, install):
-        from games.more import json_password_sync
-        return json_password_sync(self._desc(install),
-                                  'd["ServerDescription_Persistent"]["Password"] = join\n'
-                                  'd["ServerDescription_Persistent"]["IsPasswordProtected"] = bool(join)\n'
-                                  # Under Wine the server picks 127.0.0.1 for its connection sockets,
-                                  # which friends can't reach; give it this computer's network address.
-                                  "import socket\n"
-                                  "try:\n"
-                                  "    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)\n"
-                                  '    s.connect(("192.0.2.1", 9))\n'
-                                  '    d["ServerDescription_Persistent"]["P2pProxyAddress"] = s.getsockname()[0]\n'
-                                  "except OSError:\n"
-                                  "    pass")
+        return common.json_password_sync(
+            self._desc(install), [(("ServerDescription_Persistent", "Password"), "join")],
+            extra=('d["ServerDescription_Persistent"]["IsPasswordProtected"] = bool(join)\n'
+                   # Under Wine the server picks 127.0.0.1 for its connection sockets, which friends
+                   # can't reach; give it this computer's network address.
+                   "import socket\n"
+                   "try:\n"
+                   "    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)\n"
+                   '    s.connect(("192.0.2.1", 9))\n'
+                   '    d["ServerDescription_Persistent"]["P2pProxyAddress"] = s.getsockname()[0]\n'
+                   "except OSError:\n"
+                   "    pass"))
 
     def save_dir(self, server_dir, install):
         return os.path.join(install, "R5", "Saved")

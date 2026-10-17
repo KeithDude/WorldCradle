@@ -3,6 +3,73 @@ from __future__ import annotations
 
 import os
 
+# ---- the shared passwords, written into a game's settings at every start ---------------------
+# The join and admin passwords are set once in GameDash (the secrets file). A game's launch
+# script reads them and writes them into the game's own settings file just before it starts, so
+# a password changed in GameDash reaches every server on its next start. Settings files hold a
+# placeholder until then.
+
+# which value an entry gets, as the Python name in the generated script
+_PASSWORD = {"join": "join", "admin": "admin", "empty": "''"}
+
+
+def password_sync(path: str, entries: list[tuple[str, str]], *, sep: str = "=", quoted: bool = False,
+                  add_missing: bool = False, section: str = "") -> str:
+    """Launch-script lines that set `key<sep>value` lines of a settings file to the shared
+    passwords. `entries` = [(key, "join" | "admin" | "empty")] ("empty": no password). The file's
+    line endings (and a leading byte-order mark) are kept as they are.
+      sep:         what separates key and value — "=", " = " or " "
+      quoted:      write key="value"
+      add_missing: a key that isn't in the file is added at the end …
+      section:     … or, when given (e.g. "[/Script/Game.Settings]"), right after that section's
+                   header (the section is added at the end if it's missing too)."""
+    pairs = "".join(f"    ({key!r}, {_PASSWORD[which]}),\n" for key, which in entries)
+    line = "'%s=\"%s\"' % (key, val)" if quoted else f"key + {sep!r} + val"
+    if section:
+        missing = (f"        head = {section!r}\n"
+                   "        t = (t.replace(head, head + '\\n' + line, 1) if head in t\n"
+                   "             else t + '\\n' + head + '\\n' + line + '\\n')\n")
+    elif add_missing:
+        missing = "        t += line + '\\n'\n"
+    else:
+        missing = "        pass   # not in the file: left out\n"
+    return (f'python3 - "{path}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
+            "import re, sys\n"
+            "p, join, admin = sys.argv[1:4]\n"
+            't = open(p, encoding="utf-8", newline="").read()     # keep its line endings\n'
+            'bom = "\\ufeff" if t.startswith("\\ufeff") else ""\n'
+            "t = t[len(bom):]\n"
+            "for key, val in (\n" + pairs + "):\n"
+            f"    line = {line}\n"
+            f"    pattern = r'(?m)^' + re.escape(key + {sep!r}) + r'[^\\r\\n]*'\n"
+            "    if re.search(pattern, t):\n"
+            "        t = re.sub(pattern, lambda m: line, t)\n"
+            "    else:\n" + missing +
+            'open(p, "w", encoding="utf-8", newline="").write(bom + t)\n'
+            "SYNC\n")
+
+
+def json_password_sync(path: str, entries: list[tuple[tuple[str, ...], str]], *, indent=2,
+                       extra: str = "") -> str:
+    """Launch-script lines that set values in a JSON settings file to the shared passwords.
+    `entries` = [(("Rcon", "Password"), "admin"), …] — the path of keys to the value (missing
+    objects on the way are created). `extra`: more Python run before the file is written back,
+    with the settings as `d` and the passwords as `join` and `admin`."""
+    sets = "".join(f"put({list(keys)!r}, {_PASSWORD[which]})\n" for keys, which in entries)
+    return (f'python3 - "{path}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
+            "import json, sys\n"
+            "p, join, admin = sys.argv[1:4]\n"
+            'd = json.load(open(p, encoding="utf-8-sig"))\n'
+            "def put(keys, val):\n"
+            "    obj = d\n"
+            "    for k in keys[:-1]:\n"
+            "        obj = obj.setdefault(k, {})\n"
+            "    obj[keys[-1]] = val\n"
+            + sets + (extra.rstrip("\n") + "\n" if extra else "") +
+            f'json.dump(d, open(p, "w", encoding="utf-8"), indent={indent!r})\n'
+            "SYNC\n")
+
+
 # ---- a server console you can type into --------------------------------------
 # Many servers only take admin commands (save, say, quit) on their own console.
 # The launch script feeds the console from a plain file; writing a line to that

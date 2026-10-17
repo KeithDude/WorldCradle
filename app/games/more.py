@@ -122,18 +122,6 @@ class Kf2Game(SimpleGame):
         return f"-Port={ports['game']} -QueryPort"
 
 
-def json_password_sync(path: str, edits: str) -> str:
-    """Shell lines that load a JSON settings file as `d`, apply `edits` (Python
-    using `join` and `admin`, the two shared passwords) and write it back."""
-    return (f'python3 - "{path}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
-            "import json, sys\n"
-            "p, join, admin = sys.argv[1:4]\n"
-            'd = json.load(open(p, encoding="utf-8"))\n'
-            f"{edits}\n"
-            'json.dump(d, open(p, "w", encoding="utf-8"), indent=2)\n'
-            "SYNC\n")
-
-
 class ArmaReforgerGame(SimpleGame):
     kind = "armareforger"
     label = "Arma Reforger"
@@ -185,8 +173,8 @@ class ArmaReforgerGame(SimpleGame):
         os.makedirs(os.path.join(server_dir, "profile"), exist_ok=True)
 
     def pre(self, spec, ports, name, server_dir, install):
-        return json_password_sync(os.path.join(server_dir, "config.json"),
-                                  'd["game"]["password"] = join\nd["game"]["passwordAdmin"] = admin')
+        return common.json_password_sync(os.path.join(server_dir, "config.json"),
+                                         [(("game", "password"), "join"), (("game", "passwordAdmin"), "admin")])
 
     def save_dir(self, server_dir, install):
         return os.path.join(server_dir, "profile")
@@ -252,8 +240,8 @@ class EcoGame(SimpleGame):
         common.write_private(os.path.join(install, "Configs", "Network.eco"), json.dumps(net, indent=2))
 
     def pre(self, spec, ports, name, server_dir, install):
-        return json_password_sync(os.path.join(install, "Configs", "Network.eco"),
-                                  'd["Password"] = join\nd["RconPassword"] = admin')
+        return common.json_password_sync(os.path.join(install, "Configs", "Network.eco"),
+                                         [(("Password",), "join"), (("RconPassword",), "admin")])
 
     def save_dir(self, server_dir, install):
         return os.path.join(install, "Storage")
@@ -286,20 +274,6 @@ def ini_set(text: str, key: str, value) -> str:
     pat = re.compile(r"(?m)^%s=.*$" % re.escape(key))
     line = f"{key}={value}"
     return pat.sub(lambda m: line, text, count=1) if pat.search(text) else text + line + "\n"
-
-
-def ini_password_sync(path: str, pairs: list[tuple[str, str]]) -> str:
-    """Shell lines that rewrite `Key="value"` entries of an ini file from the
-    shared passwords. `pairs` = [(key, "join" | "admin")]."""
-    body = "".join(f'    ("{k}", {which}),\n' for k, which in pairs)
-    return (f'python3 - "{path}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
-            "import re, sys\n"
-            "p, join, admin = sys.argv[1:4]\n"
-            't = open(p, encoding="utf-8").read()\n'
-            "for key, val in (\n" + body + "):\n"
-            '    t = re.sub(r\'(?m)^%s=.*$\' % key, lambda m: \'%s="%s"\' % (key, val), t)\n'
-            'open(p, "w", encoding="utf-8").write(t)\n'
-            "SYNC\n")
 
 
 class HumanitzGame(SimpleGame):
@@ -355,8 +329,8 @@ class HumanitzGame(SimpleGame):
         common.write_private(self._ini(install), ref)
 
     def pre(self, spec, ports, name, server_dir, install):
-        return ini_password_sync(self._ini(install),
-                                 [("Password", "join"), ("AdminPass", "admin"), ("RCONPass", "admin")])
+        return common.password_sync(self._ini(install),
+                                    [("Password", "join"), ("AdminPass", "admin"), ("RCONPass", "admin")], quoted=True)
 
     def save_dir(self, server_dir, install):
         return os.path.join(install, "HumanitZServer", "Saved")
@@ -516,19 +490,8 @@ class VeinGame(SimpleGame):
         cfg = self._cfg(server_dir)
         # The server rewrites Game.ini and may drop lines, so put the password back if it is
         # gone. It also needs Steam's library beside its program (a documented first-run step).
-        return (f'python3 - "{cfg}" "$GAME_SERVER_PASSWORD" <<\'SYNC\'\n'
-                "import re, sys\n"
-                "p, join = sys.argv[1:3]\n"
-                't = open(p, encoding="utf-8").read()\n'
-                'line = "Password=" + join\n'
-                "if re.search(r'(?m)^Password=', t):\n"
-                "    t = re.sub(r'(?m)^Password=.*$', lambda m: line, t, count=1)\n"
-                "else:\n"
-                '    head = "[/Script/Vein.VeinGameSession]"\n'
-                '    t = t.replace(head, head + "\\n" + line, 1) if head in t else t + "\\n" + head + "\\n" + line + "\\n"\n'
-                'open(p, "w", encoding="utf-8").write(t)\n'
-                "SYNC\n"
-                f'for lib in "$HOME/.steam/sdk64/steamclient.so" "$HOME/.local/share/Steam/steamcmd/linux64/steamclient.so" '
+        return (common.password_sync(cfg, [("Password", "join")], section="[/Script/Vein.VeinGameSession]")
+                + f'for lib in "$HOME/.steam/sdk64/steamclient.so" "$HOME/.local/share/Steam/steamcmd/linux64/steamclient.so" '
                 f'"$HOME/.steam/steam/steamcmd/linux64/steamclient.so" "{install}/linux64/steamclient.so"; do\n'
                 f'    [ -e "{install}/Vein/Binaries/Linux/steamclient.so" ] && break\n'
                 f'    [ -e "$lib" ] && ln -s "$lib" "{install}/Vein/Binaries/Linux/steamclient.so"\n'
@@ -595,17 +558,8 @@ class DragonwildsGame(SimpleGame):
     def pre(self, spec, ports, name, server_dir, install):
         cfg = self._cfg(server_dir)
         # the server rewrites this file, so add a password line back if it has gone missing
-        return (f'python3 - "{cfg}" "$GAME_SERVER_PASSWORD" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
-                "import re, sys\n"
-                't = open(sys.argv[1], encoding="utf-8").read()\n'
-                'for key, val in (("WorldPassword", sys.argv[2]),):\n'
-                '    line = key + "=" + val\n'
-                "    if re.search(r'(?m)^%s=' % key, t):\n"
-                "        t = re.sub(r'(?m)^%s=.*$' % key, lambda m: line, t, count=1)\n"
-                "    else:\n"
-                "        t = re.sub(r'(?m)^(\\[/Script/Dominion\\.DedicatedServerSettings\\])$', lambda m: m.group(1) + '\\n' + line, t, count=1)\n"
-                'open(sys.argv[1], "w", encoding="utf-8").write(t)\n'
-                "SYNC\n")
+        return common.password_sync(cfg, [("WorldPassword", "join")],
+                                    section="[/Script/Dominion.DedicatedServerSettings]")
 
     def save_dir(self, server_dir, install):
         return os.path.join(server_dir, "Saved")
@@ -673,12 +627,7 @@ def squad_password_lines(rcon_cfg: str, rcon_port: int, set_join: bool) -> str:
     """Shell lines for Squad-engine servers: put the admin password into Rcon.cfg,
     and (optionally) lock the server with the join password once it is up — that
     can only be done through the admin console, not from a settings file."""
-    out = (f'python3 - "{rcon_cfg}" "$GAME_ADMIN_PASSWORD" <<\'SYNC\'\n'
-           "import re, sys\n"
-           't = open(sys.argv[1], encoding="utf-8").read()\n'
-           't = re.sub(r"(?m)^Password=.*$", lambda m: "Password=" + sys.argv[2], t)\n'
-           'open(sys.argv[1], "w", encoding="utf-8").write(t)\n'
-           "SYNC\n")
+    out = common.password_sync(rcon_cfg, [("Password", "admin")])
     if set_join:
         out += (f"python3 - {rcon_port} \"$GAME_ADMIN_PASSWORD\" \"$GAME_SERVER_PASSWORD\" <<'LOCK' &\n"
                 "import socket, struct, sys, time\n"
@@ -768,16 +717,9 @@ class SquadGame(SimpleGame):
         out = squad_password_lines(self._cfg(install, "Rcon.cfg"), ports["rcon"], locked)
         if self.join_password_in_server_cfg:
             # keep Server.cfg's own password line in step too (empty = no password)
-            out += (f'python3 - "{self._cfg(install, "Server.cfg")}" "{"$GAME_SERVER_PASSWORD" if locked else ""}" <<\'SYNC\'\n'
-                    "import re, sys\n"
-                    't = open(sys.argv[1], encoding="utf-8-sig").read()\n'
-                    "line = 'ServerPassword=\"%s\"' % sys.argv[2]\n"
-                    "if re.search(r'(?m)^ServerPassword=', t):\n"
-                    "    t = re.sub(r'(?m)^ServerPassword=.*$', lambda m: line, t, count=1)\n"
-                    "else:\n"
-                    "    t = re.sub(r'(?m)^(ServerName=.*)$', lambda m: m.group(1) + '\\n' + line, t, count=1)\n"
-                    'open(sys.argv[1], "w", encoding="utf-8").write(t)\n'
-                    "SYNC\n")
+            out += common.password_sync(self._cfg(install, "Server.cfg"),
+                                        [("ServerPassword", "join" if locked else "empty")],
+                                        quoted=True, add_missing=True)
         return out
 
     def save_dir(self, server_dir, install):

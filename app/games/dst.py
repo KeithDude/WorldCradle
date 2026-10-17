@@ -33,15 +33,8 @@ _RUN_TEMPLATE = """#!/bin/sh
 # world ("Master") in the foreground. Settings live in the cluster folder:
 #   {cluster_dir}
 . {secrets}
-# keep the join password in step with the one set in GameDash
-python3 - "{cluster_dir}/cluster.ini" "$GAME_SERVER_PASSWORD" <<'SYNC'
-import re, sys
-p, pw = sys.argv[1], sys.argv[2]
-t = open(p, encoding="utf-8").read()
-t = re.sub(r"(?m)^cluster_password = .*$", lambda m: "cluster_password = " + pw, t)
-open(p, "w", encoding="utf-8").write(t)
-SYNC
-cd "{install}/bin64" || exit 1
+# the join password, from GameDash (see common.password_sync)
+{sync}cd "{install}/bin64" || exit 1
 {caves}exec ./{exe} -persistent_storage_root "{root}" -conf_dir {conf} -cluster {cluster} -shard Master
 """
 
@@ -184,6 +177,9 @@ class DstGame(GameType):
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(
+                sync=common.password_sync(os.path.join(cluster_dir, "cluster.ini"), [("cluster_password", "join")],
+                                          sep=" = "),
+                
                 install=install, exe=EXE, root=root, conf=CONF_DIR, cluster=cluster,
                 cluster_dir=cluster_dir, secrets=config.secrets_path(),
                 # A background job started by a script ignores Ctrl-C (SIGINT) by default, and
