@@ -46,8 +46,10 @@ class ConfirmRequired(Exception):
 
 
 def _systemctl(action: str, unit: str) -> None:
-    """Start, stop or restart a server; a failure is reported in plain words."""
-    systemd.check(action, unit, failed=f"Couldn't {action} the server")
+    """Start, stop or restart a server; a failure is reported in plain words. It waits as long as
+    the server is allowed to take to save and stop (some games need minutes), plus a margin."""
+    wait = max(systemd.CHANGE, systemd.stop_limit(unit) + 30)
+    systemd.check(action, unit, timeout=wait, failed=f"Couldn't {action} the server")
 
 
 def _starts_with_computer(s: Server, on: bool) -> None:

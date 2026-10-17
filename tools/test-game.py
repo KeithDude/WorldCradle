@@ -44,7 +44,7 @@ class Dashboard:
         return self.s.get(BASE + path, timeout=60).json()
 
     def post(self, path, body):
-        return self.s.post(BASE + path, json=body, headers=self.headers, timeout=300).json()
+        return self.s.post(BASE + path, json=body, headers=self.headers, timeout=900).json()
 
     def feed(self):
         return self.get("/api/admin.json")

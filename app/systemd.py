@@ -42,6 +42,21 @@ def is_enabled(unit: str) -> bool:
     return run("is-enabled", unit, timeout=QUICK).stdout.strip() == "enabled"
 
 
+def stop_limit(unit: str) -> float:
+    """How long systemd gives the service to stop (its TimeoutStopSec), in seconds — so a start,
+    stop or restart can wait for a game that takes minutes to save. CHANGE if unknown."""
+    text = show(unit, "TimeoutStopUSec").get("TimeoutStopUSec", "")
+    units = {"ms": 0.001, "s": 1, "min": 60, "h": 3600}
+    total = 0.0
+    for part in text.split():
+        num = part.rstrip("abcdefghijklmnopqrstuvwxyz")
+        try:
+            total += float(num) * units[part[len(num):] or "s"]
+        except (ValueError, KeyError):
+            return CHANGE                        # "infinity" or something unexpected
+    return total or CHANGE
+
+
 def show(unit: str, *properties: str) -> dict[str, str]:
     """Some of the service's properties, e.g. show(unit, "NRestarts", "SubState")."""
     args = [a for p in properties for a in ("-p", p)]

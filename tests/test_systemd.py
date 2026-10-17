@@ -27,3 +27,10 @@ def test_show_reads_properties(monkeypatch):
     monkeypatch.setattr(systemd.subprocess, "run",
                         lambda *a, **kw: subprocess.CompletedProcess(a[0], 0, "NRestarts=2\nSubState=running\n", ""))
     assert systemd.show("x.service", "NRestarts", "SubState") == {"NRestarts": "2", "SubState": "running"}
+
+
+def test_stop_limit_reads_systemds_time_spans(monkeypatch):
+    for text, seconds in (("4min 20s", 260), ("2min 10s", 130), ("1min", 60), ("90s", 90),
+                          ("infinity", systemd.CHANGE), ("", systemd.CHANGE)):
+        monkeypatch.setattr(systemd, "show", lambda unit, *p, t=text: {"TimeoutStopUSec": t})
+        assert systemd.stop_limit("x.service") == seconds
