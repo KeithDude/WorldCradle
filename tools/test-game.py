@@ -64,9 +64,11 @@ class Dashboard:
 
 
 def expected_ports(v) -> list:
-    """The ports a running server must have open: its game port, and its query port when the
-    game answers Steam queries (some only open it when listed publicly)."""
-    return [p for p in (v.get("game_port"), v.get("query_port") if v.get("rows", {}).get("answering") else None) if p]
+    """The ports a running server must have open: its game port when players connect to it
+    directly (not when they join through a relay with a code), and its query port when the game
+    answers Steam queries (some only open it when listed publicly)."""
+    return [p for p in (v.get("game_port") if v.get("join_port") else None,
+                        v.get("query_port") if v.get("rows", {}).get("answering") else None) if p]
 
 
 def say(text=""):
