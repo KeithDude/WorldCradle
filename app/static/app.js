@@ -799,7 +799,6 @@ const gamedash = (() => {
         <dl class="meta">
           ${live}
           ${sf}
-          ${v.enabled ? "" : `<dt title="This server won't switch itself on when the computer starts up">starts with computer</dt><dd>${pill("off", "no")}</dd>`}
           <dt title="The network ports this server uses. Press “Can friends connect?” to see which ones your router needs to pass through">ports</dt><dd>${ports}</dd>
           ${updRow}
         </dl>
