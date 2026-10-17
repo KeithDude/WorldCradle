@@ -69,3 +69,19 @@ def test_the_alerts_step_is_ticked_once_a_destination_is_saved(client):
 def _alerts_item(client):
     items = client.get("/admin/checklist").get_json()["items"]
     return next(i for i in items if i["id"] == "alerts")
+
+
+def test_pages_have_no_inline_styles():
+    """The security policy allows styles only from style.css, so a style="" attribute in a page
+    or in the page's code would be silently ignored by the browser."""
+    import glob
+    import os
+    root = os.path.join(os.path.dirname(gd_app.__file__))
+    files = glob.glob(os.path.join(root, "templates", "*.html")) + glob.glob(os.path.join(root, "static", "js", "*.js"))
+    offenders = [os.path.basename(f) for f in files if "style=" in open(f, encoding="utf-8").read()]
+    assert not offenders, f"inline style in: {offenders}"
+
+
+def test_security_policy_allows_no_inline_styles(client):
+    csp = client.get("/").headers["Content-Security-Policy"]
+    assert "style-src 'self';" in csp + ";" and "unsafe-inline" not in csp

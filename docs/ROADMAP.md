@@ -142,8 +142,8 @@ on real servers before it ships:
 - [x] The page's code split into modules by job (`app/static/js/`: core, servers, public, admin,
       server-actions, games-panel, settings, backups); each page loads only its own, with no build
       step. The pre-push check parses every module and checks every import. *(2026-10-17)*
-- [ ] Move inline styles into the stylesheet, which also lets the
-      security policy drop `'unsafe-inline'` for styles.
+- [x] No inline styles: all moved into the stylesheet, so the security policy no longer allows
+      `'unsafe-inline'` styles (a test keeps it that way). *(2026-10-17)*
 
 ### Dashboard
 - [x] Total CPU usage at the top; each server's CPU as its share of the whole computer, and RAM, for

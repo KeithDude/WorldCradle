@@ -96,7 +96,7 @@ def _security_headers(resp):
     resp.headers.setdefault("Content-Security-Policy", "; ".join([
         "default-src 'self'",
         f"script-src 'self' 'nonce-{nonce}'",   # no inline handlers, no eval
-        "style-src 'self' 'unsafe-inline'",     # small style= attributes in the UI
+        "style-src 'self'",                     # no inline styles: everything is in style.css
         "img-src 'self' data:",
         "connect-src 'self'",
         "object-src 'none'",

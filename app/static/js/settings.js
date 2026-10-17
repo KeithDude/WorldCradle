@@ -98,7 +98,7 @@ async function loadAlerts() {
     return `<label title="${tip}">${esc(f.label)}
       <input type="${secret ? "password" : "text"}" data-field="${esc(f.name)}" autocomplete="off"
         value="${saved ? "__saved__" : esc(value || "")}" placeholder="${saved ? "saved" : ""}">
-      <span class="muted" style="font-size:.75rem;font-weight:normal">${tip}</span></label>`;
+      <span class="muted field-help">${tip}</span></label>`;
   };
   const render = () => {
     box.innerHTML = dests.map((d, n) => {
@@ -110,7 +110,7 @@ async function loadAlerts() {
         <div class="alerts-btns"><button class="ctl" data-al-test="${n}">Test</button>
           <button class="linkbtn" data-al-remove="${n}">Remove</button></div>
         <div class="al-result" id="al-result-${n}"></div></div>`;
-    }).join("") || `<p class="muted" style="font-size:.85rem">No alerts set up yet.</p>`;
+    }).join("") || `<p class="muted hint">No alerts set up yet.</p>`;
   };
   const showResults = (results, target) => {
     const html = (results || []).map((r) => r.ok

@@ -27,7 +27,7 @@ export async function loadGames() {
       ? `<div class="g-need bad">Needs ${esc(g.missing.join(", "))} on this computer first — run the GameDash installer again to add it.</div>`
       : `<div class="g-need">About ${esc(g.size_gb)} GB of disk${g.ram_note ? " · " + esc(g.ram_note) : ""}</div>`;
     const side = g.installed
-      ? pill("on", "installed") + `<button class="linkbtn" data-uninstall="${esc(g.kind)}" data-label="${esc(g.label)}" style="font-size:.75rem">Uninstall</button>`
+      ? pill("on", "installed") + `<button class="linkbtn hint-sm" data-uninstall="${esc(g.kind)}" data-label="${esc(g.label)}">Uninstall</button>`
       : `<button class="ctl go" data-install="${esc(g.kind)}" data-label="${esc(g.label)}" data-size="${esc(g.size_gb)}" data-free="${esc(g.free_gb)}"${(busy || g.missing.length) ? " disabled" : ""}>Install</button>`;
     const terms = (g.eula && safeUrl(g.eula.url))
       ? `<div class="g-need">Terms: <a href="${esc(g.eula.url)}" target="_blank" rel="noopener noreferrer">${esc(g.eula.name)}</a>${g.eula.required ? " — you'll be asked to agree when you add a server" : ""}</div>`
@@ -122,7 +122,7 @@ export async function wireAddServer() {
   poolCk.disabled = !poolReady;
   if (!poolReady) poolCk.checked = false;
   poolNote.textContent = poolReady ? "(allocate ports from the pool)" : "(no pool configured)";
-  document.getElementById("as-pool-wrap").style.display = poolReady ? "" : "none";   // nothing to offer without a pool
+  document.getElementById("as-pool-wrap").hidden = !poolReady;   // nothing to offer without a pool
 
   // per-game descriptions come from the server (each game type's provision_hint)
   const CUSTOM_HINT = "Custom service — run any game/server we don't natively support. Give the exact launch command (executable + arguments), its working directory, and the port players connect to. An optional query port enables Steam A2S player counts. It runs as a managed service you can start/stop/log/remove from here.";
@@ -164,13 +164,13 @@ export async function wireAddServer() {
     const on = poolCk.checked && !poolCk.disabled;
     ["as-port", "as-qport"].forEach((id) => {
       const el = document.getElementById(id);
-      if (el) { el.disabled = on; el.style.opacity = on ? .5 : 1; }
+      if (el) { el.disabled = on; el.classList.toggle("dim", on); }
     });
   };
   poolCk.onchange = syncPortBoxes;
   const render = () => {
     const t = types.find((x) => x.kind === kindSel.value) || { custom: true, extra_fields: [] };
-    document.getElementById("as-custom").style.display = t.custom ? "" : "none";
+    document.getElementById("as-custom").hidden = !t.custom;
     document.getElementById("as-extra").innerHTML = eulaField(t) + (t.extra_fields || []).map(extraField).join("");
     const profiles = t.mod_profiles || [];
     const pw = document.getElementById("as-profile-wrap");

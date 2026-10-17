@@ -144,8 +144,8 @@ async function openReach(key) {
       <li>Add one rule for each row above: the same port number for “external” and “internal”, the type shown, and ${d.lan_ip ? `<code>${esc(d.lan_ip)}</code>` : "this computer's address"} as the device to send it to.</li>
       <li>Save, then press “Can friends connect?” again.</li>
     </ol>
-    <p class="muted" style="font-size:.8rem">📱 <b>Test it yourself from outside your home:</b> turn on your phone's <b>Mobile Hotspot</b>, connect a computer that has the game to that hotspot (not to your home Wi-Fi), and join using the “Friends connect to” address. That's exactly how a friend outside your home connects.</p>
-    <p class="muted" style="font-size:.8rem">If friends are only ever on your own home network, you don't need any of this — they can join using this computer's home address${d.lan_ip ? ` (<code>${esc(d.lan_ip)}</code>)` : ""}.</p>`;
+    <p class="muted hint">📱 <b>Test it yourself from outside your home:</b> turn on your phone's <b>Mobile Hotspot</b>, connect a computer that has the game to that hotspot (not to your home Wi-Fi), and join using the “Friends connect to” address. That's exactly how a friend outside your home connects.</p>
+    <p class="muted hint">If friends are only ever on your own home network, you don't need any of this — they can join using this computer's home address${d.lan_ip ? ` (<code>${esc(d.lan_ip)}</code>)` : ""}.</p>`;
 }
 
 // ---- per-server log viewer ----

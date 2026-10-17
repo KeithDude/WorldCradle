@@ -20,9 +20,9 @@
 
   <details class="alerts-panel" id="games-panel" title="The games GameDash can run on this computer. Install one here, then create servers for it with “Add a server”.">
     <summary>🎮 Games <span class="muted" id="games-sum"></span></summary>
-    <p class="muted" style="font-size:.82rem;margin:.6rem 0 0">Installing a game downloads its server files to this computer.
+    <p class="muted hint below">Installing a game downloads its server files to this computer.
       You only do this once per game — after that, “Add a server” creates as many servers as you like from it.</p>
-    <p class="muted" id="games-terms" style="font-size:.82rem;margin:.4rem 0 0"></p>
+    <p class="muted hint below" id="games-terms"></p>
     <div id="games-job" class="games-job" hidden>
       <div class="games-job-text" id="games-job-text"></div>
       <div class="bar"><div class="bar-fill" id="games-job-bar"></div></div>
@@ -52,8 +52,8 @@
       <label class="ck" id="as-pool-wrap" title="Allocate this server's ports from the configured port pool instead of the template/custom ports. Set up a pool in the Port pool panel to enable this."><input type="checkbox" id="as-pool" disabled> use port pool <span class="muted" id="as-pool-note">(no pool configured)</span></label>
       <label class="ck"><input type="checkbox" id="as-start" checked> start it now</label>
       <div class="alerts-btns"><button class="btn" id="as-submit">Add server</button></div>
-      <p class="muted" id="as-prov" style="font-size:.78rem" hidden></p>
-      <p class="muted" id="as-hint" style="font-size:.78rem"></p>
+      <p class="muted hint" id="as-prov" hidden></p>
+      <p class="muted hint" id="as-hint"></p>
     </div>
   </details>
 
