@@ -222,8 +222,8 @@ right before the repository is made public.
    - [x] GitHub Actions: tests, unused-code check and a package build on every push
          (`.github/workflows/tests.yml`); pushing a tag `v<version>` checks VERSION and CHANGELOG
          agree, builds the package and creates the release with it, its checksum and the
-         CHANGELOG notes (`release.yml`). The same steps pass on a clean Ubuntu 26.04 VM; not yet
-         run on GitHub itself. *(2026-10-16)*
+         CHANGELOG notes (`release.yml`). The tests workflow passes on GitHub (first run
+         2026-10-17); the release workflow runs for the first time with the first tag. *(2026-10-16)*
    - [ ] **Sign releases** (beyond the checksum, which only proves the download is complete): sign
          the package / checksum file so `gamedash update` and `get.sh` can tell it came from the
          maintainer even if GitHub were compromised.
