@@ -151,6 +151,13 @@ def main(argv) -> int:
         ports = [p for p in (seen.get("game_port"), seen.get("query_port")) if p]
         missing = [p for p in ports if not re.search(rf"[:.]{p}\s", listening)]
         step("listening on its ports", not missing, f"{ports}" + (f", not {missing}" if missing else ""))
+        # the in-game buttons the game offers (Save, Message), pressed for real
+        for action in [a for a in ("save", "broadcast") if a in seen.get("actions", [])]:
+            body = {"key": key, "action": action, "message": "GameDash test message"}
+            r = d.post("/admin/action", body)
+            step(f"{'Save' if action == 'save' else 'Message'} button", r.get("ok", False),
+                 r.get("message") or r.get("error", ""))
+            time.sleep(3)
         log = d.get(f"/admin/logs/{key}?lines=40").get("text", "")
         result["log_tail"] = log[-3000:]
         say("   last log lines:\n" + "\n".join("     " + l for l in log.splitlines()[-12:]))
