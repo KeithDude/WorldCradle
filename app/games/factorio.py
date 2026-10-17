@@ -17,7 +17,7 @@ import urllib.request
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 from games.simple import RCON_PORT_HELP
 
 DOWNLOAD_URL = "https://factorio.com/get-download/stable/headless/linux64"
@@ -179,8 +179,7 @@ class FactorioGame(GameType):
         return [m.group(1) for m in re.finditer(r"(?m)^\s+(\S+) \(online\)\s*$", text)]
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         names = self.parse_players(self._rcon(s, "/players online") or "") if s.rcon_port else None
         if names is not None:
             out.update(reachable=True, players=len(names), player_names=names,

@@ -6,7 +6,7 @@ import re
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_bool, opt_choice, opt_int, safe_name
 
 
 # World modifiers, straight from the "Valheim Dedicated Server Manual" shipped
@@ -119,8 +119,7 @@ class ValheimGame(GameType):
         return [{"path": os.path.join(candidates[0], s.world), "role": "save"}]
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         if s.log_path:
             count, names = monitor.valheim_players_from_log(s.log_path)
             out["players"] = count

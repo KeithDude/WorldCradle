@@ -7,7 +7,7 @@ import re
 import config
 import monitor
 import registry
-from games.base import ActionError, GameType
+from games.base import ActionError, GameType, empty_probe
 
 
 class SatisfactoryGame(GameType):
@@ -111,8 +111,7 @@ class SatisfactoryGame(GameType):
         return tok
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None, "sf": None}
+        out = empty_probe(sf=None)
         out["reachable"] = monitor.satisfactory_health(s.game_port)
         token = self._get_token(s)
         if token:

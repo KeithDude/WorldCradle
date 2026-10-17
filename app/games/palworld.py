@@ -7,7 +7,7 @@ import shutil
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_float, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_float, safe_name
 from games.simple import RCON_PORT_HELP
 
 # In-INI rewrite (passwords / name / ports / rcon) + public-IP advertise, then
@@ -211,8 +211,7 @@ class PalworldGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         r = self._rcon(s, "ShowPlayers")
         if r is not None:
             e = monitor.parse_palworld_players(r)

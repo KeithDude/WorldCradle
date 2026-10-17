@@ -7,7 +7,7 @@ import sys
 
 import config
 import monitor
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 from games.simple import RCON_PORT_HELP
 
 ARK_EXEC = "./ShooterGame/Binaries/Linux/ShooterGameServer"
@@ -205,8 +205,7 @@ class ArkGame(GameType):
         return out
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         entries = []
         count = None
         resp = monitor.rcon_run(s.rcon_port, s.rcon_password, "ListPlayers")

@@ -10,7 +10,7 @@ import os
 
 import config
 import monitor
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 
 EXE = "RustDedicated"
 
@@ -105,8 +105,7 @@ class RustGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         info = monitor.a2s_info(s.query_port) if s.query_port else None
         if info is not None:
             names = monitor.a2s_player_names(s.query_port) if info["players"] else []

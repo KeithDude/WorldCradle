@@ -5,7 +5,7 @@ game-specific controls beyond start/stop/restart (which are systemd-generic)."""
 from __future__ import annotations
 
 import monitor
-from games.base import GameType
+from games.base import GameType, empty_probe
 
 
 class CustomGame(GameType):
@@ -18,8 +18,7 @@ class CustomGame(GameType):
         return {**super().card_rows(s), "players": asks, "answering": asks}
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         if s.query_port:  # optional A2S probe if the user gave a query port
             info = monitor.a2s_info(s.query_port)
             if info is not None:

@@ -14,7 +14,7 @@ import time
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_bool, safe_name
 from games.simple import RCON_PORT_HELP
 
 LAUNCHER = "start-server.sh"
@@ -135,8 +135,7 @@ class ZomboidGame(GameType):
         return [ln[1:].strip() for ln in text.splitlines() if ln.startswith("-") and ln[1:].strip()]
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         names = self.parse_players(self._rcon(s, "players") or "") if s.rcon_port else None
         if names is not None:
             out.update(reachable=True, players=len(names), player_names=names,

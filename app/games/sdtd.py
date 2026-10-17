@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 import config
 from games import common
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "7DaysToDieServer.x86_64"
@@ -207,8 +207,7 @@ class SdtdGame(GameType):
         return r
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         r = _telnet(s.rcon_port, s.rcon_password or "", "lp") if s.rcon_port else None
         if r is not None:
             names = [m.group("name").strip() for m in _LP_ROW.finditer(r)]

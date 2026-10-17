@@ -80,6 +80,13 @@ def opt_choice(spec: dict, name: str, choices, default: str, label: str) -> str:
     return v
 
 
+def empty_probe(**known) -> dict:
+    """A probe result that knows nothing yet (no player count, no names, not checked), with any
+    `known` values filled in — the starting point of every GameType.probe."""
+    return {"players": None, "player_names": [], "player_detail": [], "max_players": None,
+            "reachable": None, **known}
+
+
 class GameType:
     kind: str = ""
     label: str = ""                 # display name, e.g. "ARK"

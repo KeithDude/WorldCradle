@@ -12,7 +12,7 @@ import re
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
@@ -124,8 +124,7 @@ class ConanGame(GameType):
     # The game's RCON replies don't follow the protocol strictly, so it is read
     # with the tolerant client (monitor.palworld_rcon), like Palworld's.
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         info = monitor.a2s_info(s.query_port) if s.query_port else None
         if info is not None:
             out.update(reachable=True, players=info["players"], max_players=info["max_players"])

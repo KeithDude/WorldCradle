@@ -14,7 +14,7 @@ import secrets
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_bool, safe_name
 
 EXE = "dontstarve_dedicated_server_nullrenderer_x64"
 STORAGE_ROOT = "~/.klei"                 # the game's own default location for clusters
@@ -201,8 +201,7 @@ class DstGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         names = monitor.dst_players_from_log(s.log_path) if s.log_path else None
         if names is not None:
             out["players"] = len(names)

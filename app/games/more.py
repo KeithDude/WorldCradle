@@ -6,7 +6,7 @@ import re
 
 import monitor
 from games import common
-from games.base import ActionError, opt_bool, safe_name
+from games.base import ActionError, empty_probe, opt_bool, safe_name
 from games.simple import GAME_PORT_HELP, QUERY_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 _TOKEN_RE = re.compile(r"^[A-Fa-f0-9]{32}$")
@@ -250,8 +250,7 @@ class EcoGame(SimpleGame):
     def probe(self, s) -> dict:
         import json
         import urllib.request
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         web = (s.port_map or {}).get("web") if getattr(s, "port_map", None) else None
         web = web or next(iter(getattr(s, "extra_ports", []) or []), None)
         if not web:
@@ -358,8 +357,7 @@ class HumanitzGame(SimpleGame):
         return names
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         names = self.parse_players(monitor.palworld_rcon(s.rcon_port, s.rcon_password, "Players")) \
             if s.rcon_port else None
         if names is not None:
@@ -738,8 +736,7 @@ class SquadGame(SimpleGame):
         return [m.group(1).strip() for m in re.finditer(r"(?m)^ID: \d+ \|.*?\| Name: (.*?) \| Team ID:", active)]
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         text = monitor.palworld_rcon(s.rcon_port, s.rcon_password, "ListPlayers") if s.rcon_port else None
         if text is not None:
             names = self.parse_players(text)
@@ -879,8 +876,7 @@ class ScpslGame(SimpleGame):
 
     def probe(self, s) -> dict:
         from games import common
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         try:   # read the answer to the previous poll's question, then ask again
             with open(s.log_path, "rb") as f:
                 f.seek(max(0, os.path.getsize(s.log_path) - 16384))

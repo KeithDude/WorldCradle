@@ -124,3 +124,19 @@ def test_form_fields_check_their_own_limits(g):
         if kind == "select":
             with pytest.raises(ActionError):
                 g.option({f["name"]: "not-a-choice"}, f["name"])
+
+
+@pytest.mark.parametrize("g", ALL, ids=lambda g: g.kind)
+def test_status_check_of_a_stopped_server_is_a_plain_result(g, tmp_path, monkeypatch):
+    """Every game's probe runs (nothing listening, no log yet) and returns the standard fields."""
+    import socket
+    import monitor
+    from registry import Server
+    for name in ("A2S_TIMEOUT", "RCON_TIMEOUT"):     # nothing will answer: don't wait long
+        monkeypatch.setattr(monitor, name, 0.2)
+    s0 = socket.socket(); s0.bind(("127.0.0.1", 0)); free = s0.getsockname()[1]; s0.close()
+    s = Server(key="t", name="T", kind=g.kind, unit="gamedash-t.service", game_port=free, query_port=free,
+               rcon_port=free, rcon_password="pw", log_path=str(tmp_path / "none.log"),
+               save_root=str(tmp_path), install_dir=str(tmp_path))
+    out = g.probe(s)
+    assert {"players", "player_names", "player_detail", "max_players", "reachable"} <= set(out)

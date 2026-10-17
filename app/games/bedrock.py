@@ -19,7 +19,7 @@ import zipfile
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_bool, safe_name
 
 LINKS_URL = "https://net-secondary.web.minecraft-services.net/api/v1.0/download/links"
 EXE = "bedrock_server"
@@ -214,8 +214,7 @@ class BedrockGame(GameType):
             {"path": os.path.join(d, f), "role": "save"} for f in ("server.properties", "allowlist.json", "permissions.json")]
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": monitor.port_listening(s.game_port)}
+        out = empty_probe(reachable=monitor.port_listening(s.game_port))
         names = monitor.roster_from_log(s.log_path, _EVENTS) if s.log_path else None
         if names is not None:
             out.update(players=len(names), player_names=names,

@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 
 from games import common
-from games.base import ActionError, safe_name
+from games.base import ActionError, empty_probe, safe_name
 from games.simple import GAME_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 
@@ -222,8 +222,7 @@ class AstroneerGame(WineGame):
 
     def probe(self, s) -> dict:
         import json
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         if not s.rcon_port:
             return out
         try:
@@ -303,8 +302,7 @@ class NeraGame(WineGame):
 
     def probe(self, s) -> dict:
         import re
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         try:   # <server folder>/Saved/DedicatedServerMagicJoinCode.txt, written once the server is up
             path = os.path.join(os.path.dirname(os.path.dirname(s.log_path)), "DedicatedServerMagicJoinCode.txt")
             with open(path, encoding="utf-8-sig") as f:
@@ -395,8 +393,7 @@ class WindroseGame(WineGame):
 
     def probe(self, s) -> dict:
         import json
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         try:
             with open(self._desc(s.install_dir), encoding="utf-8-sig") as f:
                 d = json.load(f)["ServerDescription_Persistent"]

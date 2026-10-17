@@ -11,7 +11,7 @@ import shutil
 import config
 import monitor
 import registry
-from games.base import ActionError, GameType, opt_choice, opt_float, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_choice, opt_float, safe_name
 
 EXE = "AbioticFactorServer-Win64-Shipping.exe"
 
@@ -210,8 +210,7 @@ class AbioticGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         # Steam A2S answers for reachability and the player limit, but its
         # player count stays 0 for this game — the roster comes from the log.
         info = monitor.a2s_info(s.query_port) if s.query_port else None

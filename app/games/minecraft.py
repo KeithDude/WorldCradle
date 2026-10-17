@@ -18,7 +18,7 @@ import urllib.request
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_bool, opt_int, safe_name
 from games.simple import RCON_PORT_HELP
 
 MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
@@ -255,8 +255,7 @@ class MinecraftGame(GameType):
         return int(m.group(1)), int(m.group(2)), names
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": monitor.port_listening(s.game_port)}
+        out = empty_probe(reachable=monitor.port_listening(s.game_port))
         parsed = self.parse_list(self._rcon(s, "list") or "")
         if parsed:
             count, limit, names = parsed

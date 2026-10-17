@@ -11,7 +11,7 @@ import re
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, empty_probe, opt_choice, opt_int, safe_name
 
 # Source servers load Steam's client library from ~/.steam/sdk32 or sdk64; a
 # fresh machine doesn't have those links, so the launch script makes them.
@@ -99,8 +99,7 @@ class SourceGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         info = monitor.a2s_info(s.query_port) if s.query_port else None
         if info is not None:
             names = monitor.a2s_player_names(s.query_port) if info["players"] else []

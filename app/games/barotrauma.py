@@ -11,7 +11,7 @@ import re
 
 import config
 import monitor
-from games.base import ActionError, GameType, safe_name
+from games.base import ActionError, GameType, empty_probe, safe_name
 
 EXE = "DedicatedServer"
 _EVENTS = re.compile(r"^\s*(?P<joined>[^\r\n]{1,40}?) has joined the server\.\s*$|^\s*(?P<left>[^\r\n]{1,40}?) has left the server\.\s*$", re.M)
@@ -87,8 +87,7 @@ class BarotraumaGame(GameType):
         }
 
     def probe(self, s) -> dict:
-        out = {"players": None, "player_names": [], "player_detail": [],
-               "max_players": None, "reachable": None}
+        out = empty_probe()
         names = monitor.roster_from_log(s.log_path, _EVENTS) if s.log_path else None
         if names is not None:
             out.update(players=len(names), player_names=names,
