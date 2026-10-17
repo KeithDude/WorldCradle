@@ -12,7 +12,7 @@ import re
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 MARKER = "Server.jar"
 _EVENTS = re.compile(r'Player \d+ \("(?P<joined>[^"\r\n]+)"\) connected|Player \d+ \("(?P<left>[^"\r\n]+)"\) disconnected')
@@ -74,8 +74,8 @@ class NecesseGame(GameType):
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(
                 secrets=config.secrets_path(), install=install, server_dir=server_dir, world=world,
-                gp=ports["game"], maxp=opt_int(spec, "maxplayers", 10, 1, 250, "Max players"),
-                pause="1" if opt_bool(spec, "pause_empty", True) else "0", log=log,
+                gp=ports["game"], maxp=self.option(spec, "maxplayers"),
+                pause="1" if self.option(spec, "pause_empty") else "0", log=log,
                 console=common.console_pipe_lines(console)))
         os.chmod(run, 0o755)
         stop = os.path.join(install, f"gamedash-{key}-stop.sh")

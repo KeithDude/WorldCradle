@@ -12,6 +12,8 @@ types orchestrate them.
 """
 from __future__ import annotations
 
+import re
+
 
 class ActionError(Exception):
     """User-facing error from a control action (bad target, no RCON, etc.)."""
@@ -144,6 +146,23 @@ class GameType:
         {"name": "game", "klass": "game", "start": 7100, "label": "Game port"},
     ]
 
+    def option(self, spec: dict, name: str):
+        """The value of one of this game's Add-form fields (`extra_fields`), read from `spec` and
+        checked against the field's own definition — its type, limits, choices and default — so
+        each limit is written once, in the field. Raises ActionError with a plain message."""
+        f = next(f for f in self.extra_fields if f["name"] == name)
+        label = re.sub(r"\s*\([^)]*\)\s*$", "", f["label"]).split(" — ")[0].strip()
+        kind = f.get("type", "text")
+        if kind == "checkbox":
+            return opt_bool(spec, name, f.get("default", False))
+        if kind == "select":
+            values = [o[0] if isinstance(o, (list, tuple)) else o for o in f["options"]]
+            return opt_choice(spec, name, values, f.get("default"), label)
+        if kind == "number":
+            read = opt_float if isinstance(f.get("step"), float) else opt_int
+            return read(spec, name, f.get("default"), f["min"], f["max"], label)
+        raise ValueError(f"{self.kind}: {name} is a {kind} field; read text fields directly")
+
     def port_fields(self) -> list[dict]:
         """Add-form inputs for this game's ports (posted as port_<name>)."""
         def label(p):   # control ports say so where it can't be missed, not only in the tooltip
@@ -156,9 +175,9 @@ class GameType:
 
     def provision_ports(self, used: set[int], use_pool: bool = False,
                         wanted: dict | None = None) -> dict:
-        """Settle this game's ports, avoiding `used` (mutated). A port the
-        operator typed on the form (`wanted[name]`) is used as typed — it may be
-        another server's too (Start refuses while it's in use); the rest are allocated — from the config port pool when `use_pool`,
+        """Settle this game's ports, avoiding `used` (mutated). A port the operator typed on the
+        form (`wanted[name]`) is used as typed — it may be another server's too (Start refuses
+        while it's in use). The rest are allocated: from the config port pool when `use_pool`,
         else upward from each port's conventional start."""
         import ports
         wanted = wanted or {}

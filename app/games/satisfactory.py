@@ -7,7 +7,7 @@ import re
 import config
 import monitor
 import registry
-from games.base import ActionError, GameType, opt_bool, opt_int
+from games.base import ActionError, GameType
 
 
 class SatisfactoryGame(GameType):
@@ -64,8 +64,8 @@ class SatisfactoryGame(GameType):
             raise ActionError(f"Satisfactory isn't installed ({INSTALL} missing).")
         key = spec["key"]
         session = (spec.get("name") or key).strip()
-        maxp = opt_int(spec, "maxplayers", 4, 1, 64, "Max players")
-        flags = "" if opt_bool(spec, "seasonal", True) else " -DisableSeasonalEvents"
+        maxp = self.option(spec, "maxplayers")
+        flags = "" if self.option(spec, "seasonal") else " -DisableSeasonalEvents"
         gp, reliable = ports["game"], ports["query"]
         # Private HOME → its own ~/.config/Epic/FactoryGame/Saved (isolated saves).
         home = os.path.join(INSTALL, "gamedash-homes", key)

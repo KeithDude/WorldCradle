@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 
 from games import common
-from games.base import ActionError, opt_choice, opt_int, safe_name
+from games.base import ActionError, safe_name
 from games.simple import GAME_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 
@@ -72,8 +72,8 @@ class ScumGame(WineGame):
         return os.path.join(server_dir, "Saved", "Config", "WindowsServer", "ServerSettings.ini")
 
     def command(self, spec, ports, name, server_dir, install):
-        maxp = opt_int(spec, "maxplayers", 16, 1, 64, "Max players")
-        opt_choice(spec, "mode", ["PVE", "PVP"], "PVE", "Play style")
+        maxp = self.option(spec, "maxplayers")
+        self.option(spec, "mode")
         # -noheartbeatthread: under Wine the long map load trips the engine's "hang" watchdog, which kills it
         return (f'wine ./SCUMServer.exe -log -port={ports["game"]} -MaxPlayers={maxp} -nobattleye '
                 f'-noheartbeatthread -userdir="{win(server_dir)}\\\\"')
@@ -86,8 +86,8 @@ class ScumGame(WineGame):
         text = open(src, encoding="utf-8", newline="").read()
         for key, value in (
             ("scum.ServerName", name), ("scum.ServerPassword", "set-at-launch"),
-            ("scum.MaxPlayers", opt_int(spec, "maxplayers", 16, 1, 64, "Max players")),
-            ("scum.ServerPlaystyle", opt_choice(spec, "mode", ["PVE", "PVP"], "PVE", "Play style")),
+            ("scum.MaxPlayers", self.option(spec, "maxplayers")),
+            ("scum.ServerPlaystyle", self.option(spec, "mode")),
             ("scum.WelcomeMessage", safe_name(spec.get("welcome") or "", 200) or "Welcome!"),
         ):
             text, n = re.subn(r"(?m)^%s=[^\r\n]*" % re.escape(key), lambda m: f"{key}={value}", text)
@@ -164,7 +164,7 @@ class AstroneerGame(WineGame):
         return os.path.join(server_dir, "Saved", "Config", "WindowsServer", "AstroServerSettings.ini")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "maxplayers", 8, 1, 8, "Max players")
+        self.option(spec, "maxplayers")
         owner = (spec.get("owner") or "").strip()
         if owner and safe_name(owner, 64) != owner:
             raise ActionError("Owner name: please use plain letters, digits, spaces and common punctuation.")
@@ -181,7 +181,7 @@ class AstroneerGame(WineGame):
                "ServerPassword=set-at-launch\r\n"
                "ConsolePassword=set-at-launch\r\n"
                f"ConsolePort={ports['rcon']}\r\n"
-               f"MaximumPlayerCount={opt_int(spec, 'maxplayers', 8, 1, 8, 'Max players')}\r\n"
+               f"MaximumPlayerCount={self.option(spec, "maxplayers")}\r\n"
                "AutoSaveGameInterval=600\r\n")
         common.write_private(self._ini(server_dir), ini)
         with open(os.path.join(cfg, "Engine.ini"), "w", encoding="utf-8", newline="") as f:
@@ -276,8 +276,8 @@ class NeraGame(WineGame):
                             "CustomHostServerUserSettings.ini")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "maxplayers", 10, 1, 10, "Max players")
-        opt_int(spec, "autosave", 300, 10, 900, "Autosave interval")
+        self.option(spec, "maxplayers")
+        self.option(spec, "autosave")
         return (f'wine ./BoatGameServer-Win64-Shipping.exe -log -port={ports["game"]} '
                 f'-userdir="{win(server_dir)}\\\\"')
 
@@ -287,8 +287,8 @@ class NeraGame(WineGame):
                 # the game documents letters and digits only, 30 at most
                 f"HostServerDisplayName={''.join(c for c in name if c.isalnum() or c == ' ')[:30].strip()}\r\n"
                 "HostServerPassword=set-at-launch\r\n"
-                f"MaxPlayers={opt_int(spec, 'maxplayers', 10, 1, 10, 'Max players')}\r\n"
-                f"AutosaveTimerSeconds={opt_int(spec, 'autosave', 300, 10, 900, 'Autosave interval')}\r\n")
+                f"MaxPlayers={self.option(spec, "maxplayers")}\r\n"
+                f"AutosaveTimerSeconds={self.option(spec, "autosave")}\r\n")
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         # forget the last run's join code so the card never shows a stale one
@@ -350,8 +350,8 @@ class WindroseGame(WineGame):
         return os.path.join(install, "R5", "ServerDescription.json")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_choice(spec, "connect", [c for c, _ in self.CONNECT], "code", "How friends connect")
-        opt_int(spec, "maxplayers", 4, 1, 10, "Max players")
+        self.option(spec, "connect")
+        self.option(spec, "maxplayers")
         # -gamedash=… means nothing to the game; it lets the dashboard tell this server's process apart
         return f'wine ./WindroseServer-Win64-Shipping.exe -log -gamedash={os.path.basename(server_dir)}'
 
@@ -359,11 +359,11 @@ class WindroseGame(WineGame):
         import json
         import secrets
         import string
-        direct = opt_choice(spec, "connect", [c for c, _ in self.CONNECT], "code", "How friends connect") == "direct"
+        direct = self.option(spec, "connect") == "direct"
         code = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(8))
         desc = {"Version": 1, "ServerDescription_Persistent": {
             "InviteCode": code, "IsPasswordProtected": True, "Password": "set-at-launch",
-            "ServerName": name, "MaxPlayerCount": opt_int(spec, "maxplayers", 4, 1, 10, "Max players"),
+            "ServerName": name, "MaxPlayerCount": self.option(spec, "maxplayers"),
             "UseDirectConnection": direct, "DirectConnectionServerPort": ports["game"],
             "DirectConnectionProxyAddress": "0.0.0.0", "AutoLoadLatestBackupIfHasBroken": True,
             # each server runs from its own copy, so several may run on one computer
@@ -443,7 +443,7 @@ class StarRuptureGame(WineGame):
         return ("gd" + "".join(c for c in os.path.basename(server_dir) if c.isalnum()))[:20]
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "autosave", 300, 60, 3600, "Autosave interval")
+        self.option(spec, "autosave")
         # The two RCWeb switches turn off the engine's remote-control web interface, which
         # otherwise answers on the game port with no login at all.
         # -gamedash=… means nothing to the game; it lets the dashboard tell this server's process apart.
@@ -455,7 +455,7 @@ class StarRuptureGame(WineGame):
         # DSSettings.txt tells the server which session to run. "Start a new game" must only be
         # set while there is no save yet: left on, it would overwrite the save at every start.
         session = self._session(server_dir)
-        interval = opt_int(spec, "autosave", 300, 60, 3600, "Autosave interval")
+        interval = self.option(spec, "autosave")
         return (f'python3 - "{install}" "{session}" "{interval}" <<\'SESSION\'\n'
                 "import glob, json, os, sys\n"
                 "root, session, interval = sys.argv[1:4]\n"

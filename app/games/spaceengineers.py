@@ -15,7 +15,7 @@ from xml.sax.saxutils import escape
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "DedicatedServer64/SpaceEngineersDedicated.exe"
 WORLDS = [["Star System", "Star System (planets and moons)"], ["Earth Planet", "Earth-like planet"],
@@ -134,17 +134,17 @@ class SpaceEngineersGame(GameType):
         if os.path.exists(cfg_path):
             raise ActionError(f"A Space Engineers server folder for this key already exists ({server_dir}).")
         display = safe_name((spec.get("name") or key).strip()) or key
-        world = opt_choice(spec, "world", [w for w, _ in WORLDS], "Star System", "Starting world")
+        world = self.option(spec, "world")
         if not os.path.isdir(os.path.join(install, "Content", "CustomWorlds", world)):
             raise ActionError(f"This version of Space Engineers doesn't have the “{world}” starting world.")
         os.makedirs(server_dir, exist_ok=True)
         common.write_private(cfg_path, _CFG_TEMPLATE.format(
-            mode=opt_choice(spec, "mode", [m for m, _ in MODES], "Survival", "Game mode"),
-            maxp=opt_int(spec, "maxplayers", 4, 1, 16, "Max players"),
+            mode=self.option(spec, "mode"),
+            maxp=self.option(spec, "maxplayers"),
             steam_port=ports["steam"], port=ports["game"], name=escape(display),
             # must be a full path: a relative one isn't found from the server's own folder
             world_path=escape("Z:" + os.path.join(install, "Content", "CustomWorlds", world).replace("/", "\\")),
-            pause=str(opt_bool(spec, "pause_empty", True)).lower(),
+            pause=str(self.option(spec, "pause_empty")).lower(),
             description=escape(safe_name(spec.get("description") or "", 200))))
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:

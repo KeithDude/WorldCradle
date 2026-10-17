@@ -17,7 +17,7 @@ import urllib.request
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 DOWNLOAD_URL = "https://factorio.com/get-download/stable/headless/linux64"
@@ -128,13 +128,13 @@ class FactorioGame(GameType):
             "name": display,
             "description": safe_name(spec.get("description") or "", 200),
             "tags": [],
-            "max_players": opt_int(spec, "maxplayers", 0, 0, 1000, "Max players"),
+            "max_players": self.option(spec, "maxplayers"),
             "visibility": {"public": False, "lan": True},
             "username": "", "password": "", "token": "",
             "game_password": "set-at-launch",
-            "require_user_verification": opt_bool(spec, "verify_users", True),
-            "auto_pause": opt_bool(spec, "auto_pause", True),
-            "autosave_interval": opt_int(spec, "autosave_interval", 10, 1, 120, "Autosave interval"),
+            "require_user_verification": self.option(spec, "verify_users"),
+            "auto_pause": self.option(spec, "auto_pause"),
+            "autosave_interval": self.option(spec, "autosave_interval"),
             "autosave_slots": 5,
         }
         os.makedirs(os.path.join(server_dir, "saves"), exist_ok=True)

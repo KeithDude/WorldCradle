@@ -15,7 +15,7 @@ import re
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "CoreKeeperServer"
 MODES = [["Normal", "Normal"], ["Hard", "Hard"], ["Casual", "Casual (gentler monsters)"],
@@ -83,7 +83,7 @@ class CoreKeeperGame(GameType):
         seed = (spec.get("seed") or "").strip()
         if not re.match(r"^[\w \-]{0,40}$", seed):
             raise ActionError("World seed: letters, digits, spaces, - and _ only (up to 40).")
-        direct = opt_choice(spec, "connect", [c for c, _ in CONNECT], "relay", "How friends connect") == "direct"
+        direct = self.option(spec, "connect") == "direct"
         extra = ""
         if seed:
             extra += f' \\\n    -worldseed "{seed}"'
@@ -96,8 +96,8 @@ class CoreKeeperGame(GameType):
             f.write(_RUN_TEMPLATE.format(
                 secrets=config.secrets_path(), install=install, exe=EXE, log=log,
                 server_dir=server_dir, name=display, extra=extra,
-                mode=opt_choice(spec, "worldmode", [m for m, _ in MODES], "Normal", "World mode"),
-                maxp=opt_int(spec, "maxplayers", 8, 1, 100, "Max players")))
+                mode=self.option(spec, "worldmode"),
+                maxp=self.option(spec, "maxplayers")))
         os.chmod(run, 0o755)
         return {
             "exec_start": run, "working_dir": install,

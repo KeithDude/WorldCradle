@@ -13,7 +13,7 @@ import re
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 LAUNCHER = "ServerHelper.sh"
 MAPS = [["PEI", "PEI"], ["Washington", "Washington"], ["Russia", "Russia"], ["Germany", "Germany"],
@@ -90,11 +90,11 @@ class UnturnedGame(GameType):
             f"Name {display}",
             f"Port {ports['game']}",
             "Password set-at-launch",
-            f"MaxPlayers {opt_int(spec, 'maxplayers', 12, 1, 48, 'Max players')}",
-            f"Map {opt_choice(spec, 'map', [m for m, _ in MAPS], 'PEI', 'Map')}",
-            f"Mode {opt_choice(spec, 'mode', [m for m, _ in MODES], 'Normal', 'Difficulty')}",
-            opt_choice(spec, "pvp", ["PVE", "PVP"], "PVE", "Combat"),
-            f"Perspective {opt_choice(spec, 'perspective', [p for p, _ in PERSPECTIVES], 'Both', 'Camera')}",
+            f"MaxPlayers {self.option(spec, "maxplayers")}",
+            f"Map {self.option(spec, "map")}",
+            f"Mode {self.option(spec, "mode")}",
+            self.option(spec, "pvp"),
+            f"Perspective {self.option(spec, "perspective")}",
         ]
         welcome = safe_name(spec.get("welcome") or "", 120)
         if welcome:

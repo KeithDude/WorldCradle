@@ -12,7 +12,7 @@ import re
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
@@ -72,7 +72,7 @@ class ConanGame(GameType):
         if os.path.isdir(cfg_dir):
             raise ActionError(f"A Conan Exiles server folder for this key already exists ({server_dir}).")
         display = safe_name((spec.get("name") or key).strip()) or key
-        pvp = opt_choice(spec, "mode", ["pve", "pvp"], "pve", "Combat") == "pvp"
+        pvp = self.option(spec, "mode") == "pvp"
         os.makedirs(cfg_dir, exist_ok=True)
         # the server adds every other setting, with its default, on first start
         for name, body in (
@@ -93,7 +93,7 @@ class ConanGame(GameType):
                 secrets=config.secrets_path(), install=install, server_dir=server_dir, cfg=_CFG,
                 userdir_win="Z:" + server_dir.replace("/", "\\\\") + "\\\\",
                 gp=ports["game"], qp=ports["query"], rp=ports["rcon"], name=display,
-                maxp=opt_int(spec, "maxplayers", 10, 1, 70, "Max players"),
+                maxp=self.option(spec, "maxplayers"),
                 wine=common.wine_env_lines(prefix)))
         os.chmod(run, 0o755)
         return {

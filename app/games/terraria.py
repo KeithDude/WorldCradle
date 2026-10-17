@@ -18,7 +18,7 @@ import zipfile
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 NAMES_URL = "https://terraria.org/api/get/dedicated-servers-names"
 ZIP_URL = "https://terraria.org/api/download/pc-dedicated-server/"
@@ -122,14 +122,14 @@ class TerrariaGame(GameType):
         cfg = {
             "world": os.path.join(server_dir, "worlds", world + ".wld"),
             "worldpath": os.path.join(server_dir, "worlds"),
-            "autocreate": opt_choice(spec, "size", [v for v, _ in SIZES], "2", "World size"),
+            "autocreate": self.option(spec, "size"),
             "worldname": world,
-            "difficulty": opt_choice(spec, "difficulty", [v for v, _ in DIFFICULTIES], "0", "Difficulty"),
-            "maxplayers": opt_int(spec, "maxplayers", 8, 1, 255, "Max players"),
+            "difficulty": self.option(spec, "difficulty"),
+            "maxplayers": self.option(spec, "maxplayers"),
             "port": ports["game"],
             "password": "set-at-launch",
             "motd": safe_name(spec.get("motd") or "", 120),
-            "secure": "1" if opt_bool(spec, "secure", True) else "0",
+            "secure": "1" if self.option(spec, "secure") else "0",
             "upnp": "0",
             # each server keeps its own ban list (the default is one file shared by every server)
             "banlist": os.path.join(server_dir, "banlist.txt"),

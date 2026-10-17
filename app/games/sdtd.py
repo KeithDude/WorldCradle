@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 import config
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "7DaysToDieServer.x86_64"
@@ -154,7 +154,7 @@ class SdtdGame(GameType):
         seed = (spec.get("seed") or "").strip() or key
         if not re.match(r"^[A-Za-z0-9 _\-]{1,40}$", seed):
             raise ActionError("World seed: letters, digits, spaces, - and _ only (up to 40).")
-        size = opt_int(spec, "world_size", 6144, 6144, 10240, "Random-world size")
+        size = self.option(spec, "world_size")
         if size % 2048:
             raise ActionError("Random-world size must be 6144, 8192 or 10240.")
         xml = open(template, encoding="utf-8").read()
@@ -163,13 +163,13 @@ class SdtdGame(GameType):
             "ServerDescription": safe_name(spec.get("description") or "", 200),
             "ServerPassword": "set-at-launch",
             "ServerPort": ports["game"],
-            "ServerVisibility": opt_choice(spec, "visibility", [v for v, _ in VISIBILITY], "2", "Visibility"),
-            "ServerMaxPlayerCount": opt_int(spec, "maxplayers", 8, 1, 16, "Max players"),
-            "GameWorld": opt_choice(spec, "world", [v for v, _ in WORLDS], "Navezgane", "World"),
+            "ServerVisibility": self.option(spec, "visibility"),
+            "ServerMaxPlayerCount": self.option(spec, "maxplayers"),
+            "GameWorld": self.option(spec, "world"),
             "WorldGenSeed": seed, "WorldGenSize": size,
             "GameName": re.sub(r"[^A-Za-z0-9_]", "_", key),
-            "GameDifficulty": opt_choice(spec, "difficulty", [v for v, _ in DIFFICULTIES], "1", "Difficulty"),
-            "EACEnabled": str(opt_bool(spec, "eac", True)).lower(),
+            "GameDifficulty": self.option(spec, "difficulty"),
+            "EACEnabled": str(self.option(spec, "eac")).lower(),
             "TelnetEnabled": "true", "TelnetPort": ports["rcon"], "TelnetPassword": "set-at-launch",
             "WebDashboardEnabled": "false",     # its web panel would be one more thing exposed
             "UserDataFolder": os.path.join(server_dir, "data"),   # saves + generated worlds live here

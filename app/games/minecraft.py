@@ -18,7 +18,7 @@ import urllib.request
 import config
 import monitor
 from games import common
-from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name)
+from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
 from games.simple import RCON_PORT_HELP
 
 MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
@@ -161,7 +161,7 @@ class MinecraftGame(GameType):
             raise ActionError(f"A Minecraft server folder for this key already exists ({server_dir}). "
                               f"Pick a different key, or move that folder away first.")
         display = safe_name((spec.get("name") or key).strip()) or key
-        ram = opt_int(spec, "memory", 2, 1, 32, "Memory")
+        ram = self.option(spec, "memory")
         names = [n.strip() for n in (spec.get("whitelist_names") or "").split(",") if n.strip()]
         bad = [n for n in names if not _NAME_RE.match(n)]
         if bad:
@@ -171,17 +171,16 @@ class MinecraftGame(GameType):
         if not re.match(r"^[\w \-]{0,64}$", seed):
             raise ActionError("World seed: letters, digits, spaces, - and _ only (up to 64).")
         b = lambda name, default: str(opt_bool(spec, name, default)).lower()  # noqa: E731
-        whitelist = opt_bool(spec, "whitelist", True)
+        whitelist = self.option(spec, "whitelist")
         props = {
             "motd": display,
             "server-port": ports["game"],
-            "max-players": opt_int(spec, "maxplayers", 10, 1, 200, "Max players"),
-            "gamemode": opt_choice(spec, "gamemode", [v for v, _ in GAMEMODES], "survival", "Game mode"),
-            "difficulty": opt_choice(spec, "difficulty", [v for v, _ in DIFFICULTIES], "easy", "Difficulty"),
+            "max-players": self.option(spec, "maxplayers"),
+            "gamemode": self.option(spec, "gamemode"),
+            "difficulty": self.option(spec, "difficulty"),
             "hardcore": b("hardcore", False),
             "white-list": str(whitelist).lower(), "enforce-whitelist": str(whitelist).lower(),
-            "level-type": opt_choice(spec, "world_type", [v for v, _ in WORLD_TYPES],
-                                     "minecraft:normal", "World type").replace(":", "\\:"),
+            "level-type": self.option(spec, "world_type").replace(":", "\\:"),
             "level-seed": seed,
             "view-distance": opt_int(spec, "view_distance", 10, 3, 32, "View distance"),
             "online-mode": "true",          # verify accounts with Mojang (blocks impersonation)

@@ -14,7 +14,7 @@ import os
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "VRisingServer.exe"
@@ -86,16 +86,16 @@ class VRisingGame(GameType):
         if os.path.exists(os.path.join(settings_dir, "ServerHostSettings.json")):
             raise ActionError(f"A V Rising server folder for this key already exists ({data_dir}).")
         display = safe_name((spec.get("name") or key).strip()) or key
-        preset = opt_choice(spec, "preset", [p for p, _ in PRESETS], "StandardPvE", "Rules")
+        preset = self.option(spec, "preset")
         if not os.path.isfile(os.path.join(install, "VRisingServer_Data/StreamingAssets/GameSettingPresets",
                                            preset + ".json")):
             raise ActionError(f"This version of V Rising doesn't have the “{preset}” rules.")
-        listed = opt_bool(spec, "listed", True)
+        listed = self.option(spec, "listed")
         host = json.load(open(os.path.join(template, "ServerHostSettings.json"), encoding="utf-8-sig"))
         host.update({
             "Name": display, "Description": safe_name(spec.get("description") or "", 200),
             "Port": ports["game"], "QueryPort": ports["query"],
-            "MaxConnectedUsers": opt_int(spec, "maxplayers", 10, 1, 128, "Max players"),
+            "MaxConnectedUsers": self.option(spec, "maxplayers"),
             "SaveName": "world", "Password": "set-at-launch",
             "ListOnSteam": listed, "ListOnEOS": listed,
             "GameSettingsPreset": preset,

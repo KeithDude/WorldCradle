@@ -7,8 +7,7 @@ import shutil
 
 import config
 import monitor
-from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_float,
-                        opt_int, safe_name)
+from games.base import ActionError, GameType, opt_float, safe_name
 from games.simple import RCON_PORT_HELP
 
 # In-INI rewrite (passwords / name / ports / rcon) + public-IP advertise, then
@@ -149,15 +148,14 @@ class PalworldGame(GameType):
             raise ActionError(f"Palworld install dir missing: {install}")
         key = spec["key"]
         display = safe_name((spec.get("name") or key).strip()) or key
-        maxp = opt_int(spec, "maxplayers", 10, 1, 32, "Max players")
-        pvp = opt_bool(spec, "pvp", False)
+        maxp = self.option(spec, "maxplayers")
+        pvp = self.option(spec, "pvp")
         bare = {
             # the game's documentation lists all three for PvP
             "bIsPvP": str(pvp), "bEnablePlayerToPlayerDamage": str(pvp),
             "bEnableDefenseOtherGuildPlayer": str(pvp),
-            "bHardcore": str(opt_bool(spec, "hardcore", False)),
-            "DeathPenalty": opt_choice(spec, "death_penalty",
-                                       [v for v, _ in DEATH_PENALTIES], "Item", "Death penalty"),
+            "bHardcore": str(self.option(spec, "hardcore")),
+            "DeathPenalty": self.option(spec, "death_penalty"),
         }
         for field, ini_key, lo, hi, label in (("exp_rate", "ExpRate", 0.1, 20, "XP rate"),
                                               ("capture_rate", "PalCaptureRate", 0.5, 2,
@@ -166,7 +164,7 @@ class PalworldGame(GameType):
             if n is not None:
                 bare[ini_key] = f"{n:.6f}"
         quoted = {"ServerDescription": safe_name(spec.get("description") or "", 120)}
-        flags = " -publiclobby" if opt_bool(spec, "publiclobby", False) else ""
+        flags = " -publiclobby" if self.option(spec, "publiclobby") else ""
         gp, qp, rp = ports["game"], ports["query"], ports["rcon"]
         ini = os.path.join(install, "Pal/Saved/Config/LinuxServer/PalWorldSettings.ini")
         if not os.path.isfile(ini):  # never-run install: start from the shipped defaults

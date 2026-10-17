@@ -11,8 +11,7 @@ import shutil
 import config
 import monitor
 import registry
-from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_float,
-                        opt_int, safe_name)
+from games.base import ActionError, GameType, opt_choice, opt_float, safe_name
 
 EXE = "AbioticFactorServer-Win64-Shipping.exe"
 
@@ -164,21 +163,18 @@ class AbioticGame(GameType):
                 raise ActionError(f"World '{world}' is already used by {s.name} — two servers "
                                   f"writing one world would corrupt it.")
         display = safe_name((spec.get("name") or key).strip()) or key
-        maxp = opt_int(spec, "maxplayers", 6, 1, 24, "Max players")
+        maxp = self.option(spec, "maxplayers")
         platform = opt_choice(spec, "platform", [v for v, _ in PLATFORMS], "", "Who can join")
         flags = (f" -PlatformLimited={platform}" if platform else "") + \
-                (" -LANOnly" if opt_bool(spec, "lanonly", False) else "")
+                (" -LANOnly" if self.option(spec, "lanonly") else "")
 
         sandbox = dict(SANDBOX_DEFAULTS)
-        sandbox["GameDifficulty"] = opt_choice(spec, "difficulty", [v for v, _ in DIFFICULTIES],
-                                               "1", "Difficulty")
-        sandbox["HardcoreMode"] = str(opt_bool(spec, "hardcore", False))
-        sandbox["DeathPenalties"] = opt_choice(spec, "death_penalties",
-                                               [v for v, _ in DEATH_PENALTIES], "1", "Death penalty")
-        sandbox["DayNightCycleState"] = opt_choice(spec, "daynight", [v for v, _ in DAY_NIGHT],
-                                                   "0", "Day / night")
-        sandbox["LootRespawnEnabled"] = str(opt_bool(spec, "loot_respawn", False))
-        sandbox["PowerSocketsOffAtNight"] = str(opt_bool(spec, "power_off_night", True))
+        sandbox["GameDifficulty"] = self.option(spec, "difficulty")
+        sandbox["HardcoreMode"] = str(self.option(spec, "hardcore"))
+        sandbox["DeathPenalties"] = self.option(spec, "death_penalties")
+        sandbox["DayNightCycleState"] = self.option(spec, "daynight")
+        sandbox["LootRespawnEnabled"] = str(self.option(spec, "loot_respawn"))
+        sandbox["PowerSocketsOffAtNight"] = str(self.option(spec, "power_off_night"))
         for field, (skey, lo, hi, label) in _MULTIPLIERS.items():
             n = opt_float(spec, field, None, lo, hi, label)
             if n is not None:

@@ -14,7 +14,7 @@ import sys
 import config
 from games import common
 from games.ark import GAMEDASH_DIR, ArkGame
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
@@ -85,10 +85,10 @@ class AsaGame(ArkGame):
         if not re.match(r"^[A-Za-z0-9_]{1,40}$", cluster_id):
             raise ActionError("Cluster name must be letters/digits/underscores.")
         key = spec["key"]
-        mapcode = opt_choice(spec, "map", [m for m, _ in MAPS], "TheIsland_WP", "Map")
+        mapcode = self.option(spec, "map")
         display = safe_name((spec.get("name") or mapcode).strip()) or mapcode
-        maxp = opt_int(spec, "maxplayers", 10, 1, 127, "Max players")
-        pve = opt_choice(spec, "mode", ("pve", "pvp"), "pve", "Game mode") == "pve"
+        maxp = self.option(spec, "maxplayers")
+        pve = self.option(spec, "mode") == "pve"
         mods = "".join((spec.get("mods") or "").split())
         if mods and not re.match(r"^\d{3,12}(,\d{3,12})*$", mods):
             raise ActionError("Mod IDs must be numbers separated by commas.")
@@ -103,7 +103,7 @@ class AsaGame(ArkGame):
                 "?ServerPassword=${GAME_SERVER_PASSWORD}?ServerAdminPassword=${GAME_ADMIN_PASSWORD}")
         # with no -ServerPlatform the game lets every platform in, so "off" has to say PC only
         flags = (f" -mods={mods}" if mods else "") + \
-                (" -ServerPlatform=ALL" if opt_bool(spec, "crossplay", False) else " -ServerPlatform=PC")
+                (" -ServerPlatform=ALL" if self.option(spec, "crossplay") else " -ServerPlatform=PC")
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(

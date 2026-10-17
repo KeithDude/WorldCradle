@@ -14,7 +14,7 @@ import secrets
 import config
 import monitor
 from games import common
-from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name)
+from games.base import ActionError, GameType, opt_bool, safe_name
 
 EXE = "dontstarve_dedicated_server_nullrenderer_x64"
 STORAGE_ROOT = "~/.klei"                 # the game's own default location for clusters
@@ -118,19 +118,19 @@ class DstGame(GameType):
                               "Get one free at accounts.klei.com → Games → Don't Starve Together → "
                               "Game Servers.")
         display = safe_name((spec.get("name") or key).strip()) or key
-        if opt_bool(spec, "lan_only", False):
+        if self.option(spec, "lan_only"):
             # a home-network-only server refuses to start on any other port
-            used = [ports["game"]] + ([ports["caves"]] if "caves" in ports and opt_bool(spec, "caves", True) else [])
+            used = [ports["game"]] + ([ports["caves"]] if "caves" in ports and self.option(spec, "caves") else [])
             if any(not 10998 <= p <= 11018 for p in used):
                 raise ActionError("A home-network-only Don't Starve Together server must use game ports "
                                   "between 10998 and 11018 — pick ports in that range, or untick "
                                   "“Home network only”.")
-        maxp = opt_int(spec, "maxplayers", 6, 1, 64, "Max players")
-        caves = opt_bool(spec, "caves", True)
+        maxp = self.option(spec, "maxplayers")
+        caves = self.option(spec, "caves")
         b = lambda name, default: str(opt_bool(spec, name, default)).lower()  # noqa: E731
         cluster_ini = self._ini({
             "GAMEPLAY": {
-                "game_mode": opt_choice(spec, "game_mode", [v for v, _ in GAME_MODES], "survival", "Game mode"),
+                "game_mode": self.option(spec, "game_mode"),
                 "max_players": maxp, "pvp": b("pvp", False),
                 "pause_when_empty": b("pause_when_empty", True),
                 "vote_enabled": b("vote_enabled", True),
@@ -139,8 +139,7 @@ class DstGame(GameType):
                 "cluster_name": display,
                 "cluster_description": safe_name(spec.get("description") or "", 200),
                 "cluster_password": "",   # filled in from the shared join password at each start
-                "cluster_intention": opt_choice(spec, "intention", [v for v, _ in INTENTIONS],
-                                                "cooperative", "Play style"),
+                "cluster_intention": self.option(spec, "intention"),
                 "lan_only_cluster": b("lan_only", False),
                 "offline_cluster": "false",
             },

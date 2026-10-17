@@ -10,7 +10,7 @@ import os
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "RustDedicated"
 
@@ -78,7 +78,7 @@ class RustGame(GameType):
         if os.path.isdir(ident_dir):
             raise ActionError(f"A Rust save folder for this key already exists ({ident_dir}).")
         display = safe_name((spec.get("name") or key).strip()) or key
-        seed = opt_int(spec, "seed", None, 1, 2147483647, "Map seed")
+        seed = self.option(spec, "seed")
         if seed is None:
             seed = int.from_bytes(os.urandom(4), "big") % 2147483646 + 1
         os.makedirs(ident_dir, exist_ok=True)
@@ -89,8 +89,8 @@ class RustGame(GameType):
                 secrets=config.secrets_path(), install=install, exe=EXE, log=log, identity=identity,
                 gp=ports["game"], qp=ports["query"], rp=ports["rcon"], ap=ports["app"],
                 name=display, description=safe_name(spec.get("description") or "", 200),
-                maxp=opt_int(spec, "maxplayers", 20, 1, 500, "Max players"),
-                size=opt_int(spec, "worldsize", 3000, 1000, 6000, "Map size"), seed=seed))
+                maxp=self.option(spec, "maxplayers"),
+                size=self.option(spec, "worldsize"), seed=seed))
         os.chmod(run, 0o755)
         return {
             "exec_start": run, "working_dir": install,

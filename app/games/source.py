@@ -167,7 +167,7 @@ class Cs2Game(SourceGame):
                  "options": [[k, v[2]] for k, v in self.MODES.items()]}] + self.common_fields()
 
     def launch(self, spec, port, name, maxp, mapname):
-        mode = opt_choice(spec, "mode", list(self.MODES), "competitive", "Game mode")
+        mode = self.option(spec, "mode")
         gt, gm, _ = self.MODES[mode]
         # Valve's own launcher sets up the library path the server needs
         return ("game",
@@ -199,7 +199,7 @@ class GmodGame(SourceGame):
                  "options": self.GAMEMODES}] + self.common_fields()
 
     def launch(self, spec, port, name, maxp, mapname):
-        gm = opt_choice(spec, "gamemode", [g for g, _ in self.GAMEMODES], "sandbox", "Game mode")
+        gm = self.option(spec, "gamemode")
         return ("", f'./srcds_linux -game garrysmod -console -ip 0.0.0.0 -port {port} +maxplayers {maxp} '
                     f'+gamemode {gm} +map {mapname} +hostname "\\"{name}\\""')
 
@@ -236,7 +236,7 @@ class L4d2Game(SourceGame):
                  "options": self.MODES}] + self.common_fields()
 
     def launch(self, spec, port, name, maxp, mapname):
-        mode = opt_choice(spec, "mode", [m for m, _ in self.MODES], "coop", "Game mode")
+        mode = self.option(spec, "mode")
         return ("", f'./srcds_linux -game left4dead2 -console -ip 0.0.0.0 -port {port} +maxplayers {maxp} '
                     f'+map {mapname} {mode} +hostname "\\"{name}\\""')
 

@@ -107,3 +107,20 @@ def test_join_steps_only_use_known_placeholders(g):
     known = {"address", "host", "port", "server", "password"}
     for step in g.join_steps:
         assert set(re.findall(r"\{(\w+)\}", step)) <= known, f"{g.kind}: {step}"
+
+
+@pytest.mark.parametrize("g", ALL, ids=lambda g: g.kind)
+def test_form_fields_check_their_own_limits(g):
+    """Each number, list and checkbox field is read and checked from its own definition
+    (GameType.option), so a value outside the form's limits is refused."""
+    for f in g.extra_fields:
+        kind = f.get("type", "text")
+        if kind not in ("number", "select", "checkbox"):
+            continue
+        assert g.option({}, f["name"]) == f.get("default", False if kind == "checkbox" else None)
+        if kind == "number":
+            with pytest.raises(ActionError):
+                g.option({f["name"]: f["max"] + 1000}, f["name"])
+        if kind == "select":
+            with pytest.raises(ActionError):
+                g.option({f["name"]: "not-a-choice"}, f["name"])

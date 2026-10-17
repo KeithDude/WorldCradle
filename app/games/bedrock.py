@@ -19,7 +19,7 @@ import zipfile
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, opt_bool, safe_name
 
 LINKS_URL = "https://net-secondary.web.minecraft-services.net/api/v1.0/download/links"
 EXE = "bedrock_server"
@@ -142,10 +142,10 @@ class BedrockGame(GameType):
         b = lambda name, default: str(opt_bool(spec, name, default)).lower()  # noqa: E731
         values = {
             "server-name": display, "level-name": "world",
-            "gamemode": opt_choice(spec, "gamemode", [v for v, _ in GAMEMODES], "survival", "Game mode"),
-            "difficulty": opt_choice(spec, "difficulty", [v for v, _ in DIFFICULTIES], "easy", "Difficulty"),
+            "gamemode": self.option(spec, "gamemode"),
+            "difficulty": self.option(spec, "difficulty"),
             "allow-cheats": b("cheats", False),
-            "max-players": opt_int(spec, "maxplayers", 10, 1, 100, "Max players"),
+            "max-players": self.option(spec, "maxplayers"),
             "online-mode": "true",            # verify players with Xbox Live (blocks impersonation)
             "allow-list": b("allowlist", True),
             "server-port": ports["game"], "server-portv6": ports["game6"],

@@ -11,7 +11,7 @@ import re
 
 import config
 import monitor
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "DedicatedServer"
 _EVENTS = re.compile(r"^\s*(?P<joined>[^\r\n]{1,40}?) has joined the server\.\s*$|^\s*(?P<left>[^\r\n]{1,40}?) has left the server\.\s*$", re.M)
@@ -71,8 +71,8 @@ class BarotraumaGame(GameType):
             f.write(_RUN_TEMPLATE.format(
                 secrets=config.secrets_path(), install=install, exe=EXE, name=display,
                 gp=ports["game"], qp=ports["query"], log=log,
-                maxp=opt_int(spec, "maxplayers", 8, 1, 16, "Max players"),
-                public="true" if opt_bool(spec, "public", False) else "false"))
+                maxp=self.option(spec, "maxplayers"),
+                public="true" if self.option(spec, "public") else "false"))
         os.chmod(run, 0o755)
         return {
             "exec_start": run, "working_dir": install,

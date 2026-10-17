@@ -12,7 +12,7 @@ import os
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, opt_bool, safe_name
 
 EXE = "Icarus/Binaries/Win64/IcarusServer-Win64-Shipping.exe"
 _CFG = "Saved/Config/WindowsServer"
@@ -74,7 +74,7 @@ class IcarusGame(GameType):
         ini = ("[/Script/Icarus.DedicatedServerSettings]\n"
                f"SessionName={display}\n"
                "JoinPassword=set-at-launch\n"
-               f"MaxPlayers={opt_int(spec, 'maxplayers', 8, 1, 8, 'Max players')}\n"
+               f"MaxPlayers={self.option(spec, "maxplayers")}\n"
                "AdminPassword=set-at-launch\n"
                # by default the server quits when nobody has joined or everyone has left
                "ShutdownIfNotJoinedFor=-1.000000\n"

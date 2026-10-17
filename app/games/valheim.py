@@ -150,8 +150,8 @@ class ValheimGame(GameType):
             savedir_arg = ""
         modded = (spec.get("profile") or "vanilla") == "modded"
         # ---- optional launch arguments (only emitted when set) ----
-        extra = " -public 1" if opt_bool(spec, "public", False) else " -public 0"
-        if opt_bool(spec, "crossplay", False):
+        extra = " -public 1" if self.option(spec, "public") else " -public 0"
+        if self.option(spec, "crossplay"):
             # -instanceid keeps PlayFab IDs unique across servers on this box
             extra += f' -crossplay -instanceid "{key}"'
         preset = opt_choice(spec, "preset", PRESETS, "", "World preset")

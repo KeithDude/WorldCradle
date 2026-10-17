@@ -14,7 +14,7 @@ import os
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "enshrouded_server.exe"
 PRESETS = [["Default", "Default"], ["Relaxed", "Relaxed (easier)"], ["Hard", "Hard"],
@@ -76,10 +76,10 @@ class EnshroudedGame(GameType):
             "name": display,
             "saveDirectory": "./savegame", "logDirectory": "./logs",
             "ip": "0.0.0.0", "queryPort": ports["game"],
-            "slotCount": opt_int(spec, "maxplayers", 8, 1, 16, "Max players"),
-            "enableVoiceChat": opt_bool(spec, "voice_chat", False),
-            "enableTextChat": opt_bool(spec, "text_chat", True),
-            "gameSettingsPreset": opt_choice(spec, "preset", [p for p, _ in PRESETS], "Default", "Difficulty"),
+            "slotCount": self.option(spec, "maxplayers"),
+            "enableVoiceChat": self.option(spec, "voice_chat"),
+            "enableTextChat": self.option(spec, "text_chat"),
+            "gameSettingsPreset": self.option(spec, "preset"),
             "userGroups": [
                 {"name": "Admin", "password": "set-at-launch", **full},
                 {"name": "Friend", "password": "set-at-launch", **{**full, "canKickBan": False}},

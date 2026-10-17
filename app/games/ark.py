@@ -7,8 +7,7 @@ import sys
 
 import config
 import monitor
-from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_float,
-                        opt_int, safe_name)
+from games.base import ActionError, GameType, safe_name
 from games.simple import RCON_PORT_HELP
 
 ARK_EXEC = "./ShooterGame/Binaries/Linux/ShooterGameServer"
@@ -119,14 +118,14 @@ class ArkGame(GameType):
         if not re.match(r"^[A-Za-z0-9_]{3,40}$", mapcode):
             raise ActionError("Map code must be 3-40 letters/digits/underscores (e.g. TheCenter).")
         friendly = safe_name((spec.get("name") or mapcode).strip()) or mapcode
-        maxp = opt_int(spec, "maxplayers", 10, 1, 127, "Max players")
-        pve = opt_choice(spec, "mode", ("pve", "pvp"), "pve", "Game mode") == "pve"
-        difficulty = opt_float(spec, "difficulty", None, 0.5, 20, "Difficulty override")
+        maxp = self.option(spec, "maxplayers")
+        pve = self.option(spec, "mode") == "pve"
+        difficulty = self.option(spec, "difficulty")
         mods = "".join((spec.get("mods") or "").split())
         if mods and not re.match(r"^\d{6,12}(,\d{6,12})*$", mods):
             raise ActionError("Mod IDs must be Workshop numbers separated by commas.")
-        battleye = opt_bool(spec, "battleye", True)
-        crossplay = opt_bool(spec, "crossplay", False)
+        battleye = self.option(spec, "battleye")
+        crossplay = self.option(spec, "crossplay")
         gp, qp, rp = ports["game"], ports["query"], ports["rcon"]
         save = (spec.get("savedir") or "").strip() or f"gd_{key.replace('-', '_')}"  # AltSaveDirectoryName
         if not re.match(r"^[A-Za-z0-9_]{1,40}$", save):

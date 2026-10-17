@@ -6,7 +6,7 @@ import re
 
 import monitor
 from games import common
-from games.base import ActionError, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, opt_bool, safe_name
 from games.simple import GAME_PORT_HELP, QUERY_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 _TOKEN_RE = re.compile(r"^[A-Fa-f0-9]{32}$")
@@ -58,9 +58,8 @@ class InsurgencyGame(SimpleGame):
                 _gslt_field(581320)]
 
     def command(self, spec, ports, name, server_dir, install):
-        _, mapname, scenario = self.SCENARIOS[opt_choice(spec, "scenario", list(self.SCENARIOS),
-                                                         "coop_hideout", "Starting mode and map")]
-        maxp = opt_int(spec, "maxplayers", 8, 1, 28, "Max players")
+        _, mapname, scenario = self.SCENARIOS[self.option(spec, "scenario")]
+        maxp = self.option(spec, "maxplayers")
         token = _gslt(spec)
         return (f'./InsurgencyServer-Linux-Shipping "{mapname}?Scenario={scenario}?MaxPlayers={maxp}'
                 f'?Password=$GAME_SERVER_PASSWORD" -Port={ports["game"]} -QueryPort={ports["query"]} '
@@ -108,9 +107,9 @@ class Kf2Game(SimpleGame):
 
     def command(self, spec, ports, name, server_dir, install):
         key = re.sub(r"[^A-Za-z0-9_]", "_", spec["key"])
-        mapname = opt_choice(spec, "map", self.MAPS, "KF-BioticsLab", "Starting map")
-        diff = opt_choice(spec, "difficulty", [d for d, _ in self.DIFFICULTIES], "0", "Difficulty")
-        length = opt_choice(spec, "length", [d for d, _ in self.LENGTHS], "1", "Game length")
+        mapname = self.option(spec, "map")
+        diff = self.option(spec, "difficulty")
+        length = self.option(spec, "length")
         # ConfigSubDir gives this server its own settings folder under KFGame/Config
         return (f'./Binaries/Win64/KFGameSteamServer.bin.x86_64 "{mapname}?ConfigSubDir=gd_{key}'
                 f'?Difficulty={diff}?GameLength={length}'
@@ -149,8 +148,8 @@ class ArmaReforgerGame(SimpleGame):
                       "admin password).")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_choice(spec, "scenario", [s for s, _ in self.SCENARIOS], self.SCENARIOS[0][0], "Scenario")
-        opt_int(spec, "maxplayers", 16, 1, 128, "Max players")
+        self.option(spec, "scenario")
+        self.option(spec, "maxplayers")
         return (f'./ArmaReforgerServer -config "{server_dir}/config.json" -profile "{server_dir}/profile" '
                 f"-maxFPS 60 -nothrow")
 
@@ -161,12 +160,11 @@ class ArmaReforgerGame(SimpleGame):
             "a2s": {"address": "0.0.0.0", "port": ports["query"]},
             "game": {
                 "name": name, "password": "set-at-launch", "passwordAdmin": "set-at-launch",
-                "scenarioId": opt_choice(spec, "scenario", [s for s, _ in self.SCENARIOS],
-                                         self.SCENARIOS[0][0], "Scenario"),
-                "maxPlayers": opt_int(spec, "maxplayers", 16, 1, 128, "Max players"),
-                "visible": opt_bool(spec, "visible", True),
-                "crossPlatform": opt_bool(spec, "crossplay", True),
-                "gameProperties": {"battlEye": opt_bool(spec, "battleye", True)},
+                "scenarioId": self.option(spec, "scenario"),
+                "maxPlayers": self.option(spec, "maxplayers"),
+                "visible": self.option(spec, "visible"),
+                "crossPlatform": self.option(spec, "crossplay"),
+                "gameProperties": {"battlEye": self.option(spec, "battleye")},
             },
         }
         common.write_private(os.path.join(server_dir, "config.json"), json.dumps(cfg, indent=2))
@@ -216,7 +214,7 @@ class EcoGame(SimpleGame):
                       "difficulty settings are in the server's Configs folder.")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "maxplayers", None, 1, 500, "Max players")
+        self.option(spec, "maxplayers")
         token = (spec.get("user_token") or "").strip()
         if token and not re.match(r"^[A-Za-z0-9._\-]{20,2000}$", token):
             raise ActionError("That doesn't look like an Eco server token — copy it again from your "
@@ -235,7 +233,7 @@ class EcoGame(SimpleGame):
             "RconServerPort": ports["rcon"], "SteamServerPort": ports["steam"],
             "RconPassword": "set-at-launch", "UPnPEnabled": False,
             "RconIPAddress": "127.0.0.1",     # the admin console listens on this computer only
-            "DefaultSlots": opt_int(spec, "maxplayers", None, 1, 500, "Max players") or -1,
+            "DefaultSlots": self.option(spec, "maxplayers") or -1,
         })
         common.write_private(os.path.join(install, "Configs", "Network.eco"), json.dumps(net, indent=2))
 
@@ -310,7 +308,7 @@ class HumanitzGame(SimpleGame):
         return os.path.join(install, "HumanitZServer", "GameServerSettings.ini")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "maxplayers", 8, 1, 32, "Max players")
+        self.option(spec, "maxplayers")
         return (f'./HumanitZServer/Binaries/Linux/HumanitZServer-Linux-Shipping HumanitZServer -log '
                 f'-port={ports["game"]} -queryport={ports["query"]} -steamservername="{name}"')
 
@@ -320,7 +318,7 @@ class HumanitzGame(SimpleGame):
         b = lambda field, default: "true" if opt_bool(spec, field, default) else "false"  # noqa: E731
         for key, value in (
             ("ServerName", f'"{name}"'), ("Password", '"set-at-launch"'), ("AdminPass", '"set-at-launch"'),
-            ("MaxPlayers", opt_int(spec, "maxplayers", 8, 1, 32, "Max players")),
+            ("MaxPlayers", self.option(spec, "maxplayers")),
             ("RCONEnabled", "true"), ("RConPort", ports["rcon"]), ("RCONPass", '"set-at-launch"'),
             ("PVP", b("pvp", False)), ("PermaDeath", b("permadeath", False)),
             ("LootRespawn", b("loot_respawn", True)),
@@ -417,8 +415,8 @@ class SoulmaskGame(SimpleGame):
         return f'export LD_LIBRARY_PATH="{install}/linux64:$LD_LIBRARY_PATH"\n'
 
     def command(self, spec, ports, name, server_dir, install):
-        maxp = opt_int(spec, "maxplayers", 10, 1, 70, "Max players")
-        mode = opt_choice(spec, "mode", ["pve", "pvp"], "pve", "Combat")
+        maxp = self.option(spec, "maxplayers")
+        mode = self.option(spec, "mode")
         return (f'./WS/Binaries/Linux/WSServer-Linux-Shipping WS Level01_Main -server -log -UTF8Output '
                 f'-MULTIHOME=0.0.0.0 -forcepassthrough -Port={ports["game"]} -QueryPort={ports["query"]} '
                 f'-EchoPort={ports["echo"]} -SteamServerName="{name}" -MaxPlayers={maxp} -{mode} '
@@ -462,7 +460,7 @@ class VeinGame(SimpleGame):
         return os.path.join(server_dir, "Saved", "Config", "LinuxServer", "Game.ini")
 
     def command(self, spec, ports, name, server_dir, install):
-        opt_int(spec, "maxplayers", 8, 1, 64, "Max players")
+        self.option(spec, "maxplayers")
         ids = [a.strip() for a in (spec.get("admins") or "").split(",") if a.strip()]
         if any(not re.match(r"^\d{17}$", a) for a in ids):
             raise ActionError("Admin Steam IDs are 17-digit numbers (find yours at steamid.io).")
@@ -472,9 +470,9 @@ class VeinGame(SimpleGame):
     def write_files(self, spec, ports, name, server_dir, install):
         ids = [a.strip() for a in (spec.get("admins") or "").split(",") if a.strip()]
         ini = ("[/Script/Engine.GameSession]\n"
-               f"MaxPlayers={opt_int(spec, 'maxplayers', 8, 1, 64, 'Max players')}\n\n"
+               f"MaxPlayers={self.option(spec, "maxplayers")}\n\n"
                "[/Script/Vein.VeinGameSession]\n"
-               f"bPublic={'True' if opt_bool(spec, 'public', True) else 'False'}\n"
+               f"bPublic={'True' if self.option(spec, "public") else 'False'}\n"
                f'ServerName={name}\n'
                f'ServerDescription={safe_name(spec.get("description") or "", 200)}\n'
                "BindAddr=0.0.0.0\n"
@@ -605,16 +603,16 @@ class StationeersGame(SimpleGame):
         return "gd_" + os.path.basename(server_dir).replace("-", "_")
 
     def command(self, spec, ports, name, server_dir, install):
-        world = opt_choice(spec, "world", [w for w, _ in STATIONEERS_WORLDS], "Lunar", "World")
+        world = self.option(spec, "world")
         return (f'./{self.exe} -batchmode -nographics -logFile "{self.log_file(server_dir, install)}" '
                 f'-settingspath "{server_dir}/setting.xml" -load {self._save(server_dir)} {world} '
                 f'-settings StartLocalHost true LocalIpAddress 0.0.0.0 UPNPEnabled false UseSteamP2P false '
-                f'ServerVisible {"true" if opt_bool(spec, "public", True) else "false"} '
+                f'ServerVisible {"true" if self.option(spec, "public") else "false"} '
                 f'GamePort {ports["game"]} UpdatePort {ports["update"]} '
                 f'ServerName "{name}" ServerPassword "$GAME_SERVER_PASSWORD" '
-                f'ServerMaxPlayers {opt_int(spec, "maxplayers", 10, 1, 20, "Max players")} '
-                f'AutoSave true SaveInterval {opt_int(spec, "autosave", 300, 60, 3600, "Autosave interval")} '
-                f'AutoPauseServer {"true" if opt_bool(spec, "pause_empty", True) else "false"}')
+                f'ServerMaxPlayers {self.option(spec, "maxplayers")} '
+                f'AutoSave true SaveInterval {self.option(spec, "autosave")} '
+                f'AutoPauseServer {"true" if self.option(spec, "pause_empty") else "false"}')
 
     def save_dir(self, server_dir, install):
         return os.path.join(install, "saves", self._save(server_dir))
@@ -693,15 +691,15 @@ class SquadGame(SimpleGame):
         return os.path.join(install, self.project, "ServerConfig", name)
 
     def command(self, spec, ports, name, server_dir, install):
-        maxp = opt_int(spec, "maxplayers", 40, 1, 100, "Max players")
+        maxp = self.option(spec, "maxplayers")
         return (f'./{self.exe} {self.project} Port={ports["game"]} QueryPort={ports["query"]} '
                 f'beaconport={ports["beacon"]} FIXEDMAXPLAYERS={maxp} RANDOM=NONE -log')
 
     def write_files(self, spec, ports, name, server_dir, install):
         edits = {
             "Server.cfg": (("ServerName", f'"{name}"'),
-                           ("MaxPlayers", opt_int(spec, "maxplayers", 40, 1, 100, "Max players")),
-                           ("ShouldAdvertise", "true" if opt_bool(spec, "public", True) else "false")),
+                           ("MaxPlayers", self.option(spec, "maxplayers")),
+                           ("ShouldAdvertise", "true" if self.option(spec, "public") else "false")),
             # the admin console listens on this computer only
             "Rcon.cfg": (("IP", "127.0.0.1"), ("Port", ports["rcon"]), ("Password", "set-at-launch")),
         }
@@ -713,7 +711,7 @@ class SquadGame(SimpleGame):
             common.write_private(path, text)
 
     def pre(self, spec, ports, name, server_dir, install):
-        locked = opt_bool(spec, "locked", True)
+        locked = self.option(spec, "locked")
         out = squad_password_lines(self._cfg(install, "Rcon.cfg"), ports["rcon"], locked)
         if self.join_password_in_server_cfg:
             # keep Server.cfg's own password line in step too (empty = no password)
@@ -825,8 +823,8 @@ class ScpslGame(SimpleGame):
         email = (spec.get("email") or "").strip()
         if email and not re.match(r"^[^@\s]{1,64}@[A-Za-z0-9.-]{1,120}\.[A-Za-z]{2,}$", email):
             raise ActionError("That contact e-mail doesn't look right.")
-        return (opt_int(spec, "maxplayers", 20, 1, 100, "Max players"),
-                opt_bool(spec, "friendly_fire", False), email)
+        return (self.option(spec, "maxplayers"),
+                self.option(spec, "friendly_fire"), email)
 
     def command(self, spec, ports, name, server_dir, install):
         self._options(spec)

@@ -14,7 +14,7 @@ import time
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
+from games.base import ActionError, GameType, opt_bool, safe_name
 from games.simple import RCON_PORT_HELP
 
 LAUNCHER = "start-server.sh"
@@ -78,7 +78,7 @@ class ZomboidGame(GameType):
         b = lambda name, default: str(opt_bool(spec, name, default)).lower()  # noqa: E731
         ini = {
             "DefaultPort": ports["game"], "UDPPort": ports["game"] + 1,
-            "MaxPlayers": opt_int(spec, "maxplayers", 8, 1, 100, "Max players"),
+            "MaxPlayers": self.option(spec, "maxplayers"),
             "PublicName": display,
             "PublicDescription": safe_name(spec.get("description") or "", 200),
             "Public": b("public", False), "PVP": b("pvp", False),

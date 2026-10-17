@@ -12,7 +12,7 @@ import os
 import config
 import monitor
 from games import common
-from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, safe_name
 
 EXE = "SonsOfTheForestDS.exe"
 GAME_APPID = "1326470"   # the game's own App ID; the server insists on a steam_appid.txt holding it
@@ -76,10 +76,10 @@ class SotfGame(GameType):
         cfg = {
             "IpAddress": "0.0.0.0", "GamePort": ports["game"], "QueryPort": ports["query"],
             "BlobSyncPort": ports["blob"], "ServerName": display,
-            "MaxPlayers": opt_int(spec, "maxplayers", 8, 1, 8, "Max players"),
-            "Password": "set-at-launch", "LanOnly": opt_bool(spec, "lan_only", False),
+            "MaxPlayers": self.option(spec, "maxplayers"),
+            "Password": "set-at-launch", "LanOnly": self.option(spec, "lan_only"),
             "SaveSlot": 1, "SaveMode": "Continue",
-            "GameMode": opt_choice(spec, "mode", [m for m, _ in MODES], "Normal", "Difficulty"),
+            "GameMode": self.option(spec, "mode"),
             "SaveInterval": 600, "IdleDayCycleSpeed": 0.0, "IdleTargetFramerate": 5,
             "ActiveTargetFramerate": 60, "LogFilesEnabled": True, "TimestampLogFilenames": False,
             "TimestampLogEntries": True,
