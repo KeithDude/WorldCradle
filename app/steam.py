@@ -24,6 +24,10 @@ TARBALL_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.t
 _PROGRESS = re.compile(r"Update state \(0x[0-9a-f]+\) ([a-z ]+?), progress: ([\d.]+) \((\d+) / (\d+)\)")
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 _BUILDID = re.compile(r'"buildid"\s*"(\d+)"')
+# Steam's own client library, which dedicated servers load from ~/.steam/sdk32 and sdk64. Valve
+# publishes it as the "Steamworks SDK Redist" (steamcmd itself only carries the 32-bit one).
+REDIST_APP = 1007
+REDIST_DIR = os.path.expanduser("~/.local/share/gamedash/steamworks-redist")
 
 
 def find() -> str | None:
@@ -140,7 +144,39 @@ def app_update(app: int, install_dir: str, platform: str | None = None,
             p.kill()
             return False, "steamcmd took too long and was stopped"
         if ok:
+            if app != REDIST_APP:
+                link_client_libs()
             return True, "\n".join(tail)
         app_log.warning("steamcmd app_update %s attempt %d did not finish: %s",
                         app, attempt, " | ".join(tail[-3:]))
     return False, "\n".join(tail)
+
+
+def link_client_libs() -> None:
+    """Make sure ~/.steam/sdk32 and sdk64 hold Steam's client library, which most dedicated
+    servers need to start ("Steam game server failed to initialize" without it). Links that are
+    already there are left alone. Best effort: a failure is logged, never raised."""
+    try:
+        def candidates(bits):
+            return [os.path.join(d, f"linux{bits}", "steamclient.so") for d in (
+                REDIST_DIR, PRIVATE_DIR, os.path.expanduser("~/.local/share/Steam/steamcmd"),
+                os.path.expanduser("~/.steam/steamcmd"))]
+        missing = [b for b in (32, 64) if not os.path.exists(os.path.expanduser(f"~/.steam/sdk{b}/steamclient.so"))]
+        if not missing:
+            return
+        if any(not any(os.path.isfile(c) for c in candidates(b)) for b in missing):
+            app_update(REDIST_APP, REDIST_DIR, timeout=1800)   # about 30 MB, once
+        for b in missing:
+            src = next((c for c in candidates(b) if os.path.isfile(c)), None)
+            if src:
+                d = os.path.expanduser(f"~/.steam/sdk{b}")
+                os.makedirs(d, exist_ok=True)
+                link = os.path.join(d, "steamclient.so")
+                if os.path.lexists(link):        # a link to a copy that has since been removed
+                    os.unlink(link)
+                os.symlink(src, link)
+                app_log.info("linked %s -> %s", link, src)
+            else:
+                app_log.warning("no %d-bit steamclient.so found for ~/.steam/sdk%d", b, b)
+    except Exception as e:
+        app_log.warning("couldn't set up Steam's client library: %r", e)

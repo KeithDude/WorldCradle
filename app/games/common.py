@@ -115,16 +115,6 @@ def console_send(s, line: str) -> bool:
     return True
 
 
-def stop_script(path: str, console: str, quit_line: str, proc_match: str, wait: int = 45) -> None:
-    """Write an ExecStop script: type the game's quit command, then wait for
-    the server process to finish saving and exit."""
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("#!/bin/sh\n"
-                "# gamedash-managed graceful stop: ask the server to save and quit, then wait.\n"
-                f'echo "{quit_line}" >> "{console}"\n'
-                f"i=0\nwhile [ $i -lt {wait} ] && pgrep -f -- '{proc_match}' >/dev/null; do sleep 1; i=$((i+1)); done\n"
-                "exit 0\n")
-    os.chmod(path, 0o755)
 
 
 # ---- Windows-only servers under Wine -----------------------------------------
@@ -142,30 +132,22 @@ def wine_env_lines(prefix: str) -> str:
 
 # ---- graceful stop over Source RCON -------------------------------------------
 
-def rcon_quit_lines(port: int, command: str) -> str:
-    """Shell lines that send one command over RCON with the shared admin password, using the
-    dashboard's own Python and RCON client (the script must have loaded the secrets file)."""
+def rcon_quit_lines(port: int, commands, lenient: bool = False) -> str:
+    """Shell lines that send a command (or several, in order) over RCON with the shared admin
+    password, using the dashboard's own Python and RCON client — the lenient one for servers
+    whose RCON only resembles Valve's (the script must have loaded the secrets file)."""
     import sys
+    commands = [commands] if isinstance(commands, str) else list(commands)
+    client = "palworld_rcon" if lenient else "source_rcon"
     return (f'"{sys.executable}" - {port} "$GAME_ADMIN_PASSWORD" <<\'STOP\'\n'
             "import sys\n"
             f"sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))!r})\n"
             "import monitor\n"
-            f"monitor.source_rcon(int(sys.argv[1]), sys.argv[2], {command!r}, timeout=8)\n"
+            f"for cmd in {commands!r}:\n"
+            f"    monitor.{client}(int(sys.argv[1]), sys.argv[2], cmd, timeout=15)\n"
             "STOP\n")
 
 
-def rcon_stop_script(path: str, secrets_path: str, port: int, command: str, proc_match: str,
-                     wait: int = 60) -> None:
-    """Write an ExecStop script: send the game's quit command over RCON, then wait for the
-    server process to finish saving and exit."""
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("#!/bin/sh\n"
-                "# gamedash-managed graceful stop: ask the server (over its admin console) to save and quit.\n"
-                f". {secrets_path}\n"
-                + rcon_quit_lines(port, command) +
-                f"i=0\nwhile [ $i -lt {wait} ] && pgrep -f -- '{proc_match}' >/dev/null; do sleep 1; i=$((i+1)); done\n"
-                "exit 0\n")
-    os.chmod(path, 0o755)
 
 
 def link_farm(install: str, server_dir: str, own: set[str]) -> None:

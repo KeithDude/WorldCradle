@@ -46,5 +46,5 @@ class Kf2Game(SimpleGame):
                 f'-Port={ports["game"]} -QueryPort={ports["query"]} -WebAdminPort={ports["web"]} '
                 f'-ServerName="\\"{name}\\""')
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-Port={ports['game']} -QueryPort"

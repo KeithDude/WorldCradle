@@ -20,7 +20,7 @@
   "game_port": 19132,
   "install_dir": "<ROOT>/installs/bedrock",
   "join_port": 19132,
-  "kill_signal": "SIGTERM",
+  "kill_signal": "SIGINT",
   "log_path": "<ROOT>/installs/bedrock/gamedash-servers/test/server.log",
   "proc_match": "<ROOT>/installs/bedrock/gamedash-servers/test/server.log.console",
   "query_port": null,

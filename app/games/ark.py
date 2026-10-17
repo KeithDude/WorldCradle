@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 
 import config
 import monitor
-from games.base import ActionError, GameType, empty_probe, safe_name
-from games.simple import RCON_PORT_HELP
+from games.base import ActionError, empty_probe
+from games.simple import RCON_PORT_HELP, SimpleGame
 
 ARK_EXEC = "./ShooterGame/Binaries/Linux/ShooterGameServer"
 # Official maps: (map code for the launch line, display name, folder under
@@ -30,7 +29,7 @@ ARK_MAPS = [
 GAMEDASH_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-class ArkGame(GameType):
+class ArkGame(SimpleGame):
     join_steps = [
         "In Steam: <b>View → Game Servers → “Favorites” tab → “Add a Server”</b>.",
         "Enter this address and add it: <code>{address}</code>",
@@ -41,16 +40,20 @@ class ArkGame(GameType):
     kind = "ark"
     label = "ARK"
     title = "ARK: Survival Evolved"
-    install_marker = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    # its maps save by name (AltSaveDirectoryName) in the shared install; the cluster folder holds
+    # what travels between maps
+    own_folder = False
+    stop_seconds = 130           # it saves on exit
     install_gb = 26
     ram_note = "about 6-8 GB of memory per running map"
     about = "Survival with dinosaurs. Each map is its own server; maps in a cluster share characters."
     steam_app = 376030
     update_script = "UpdateArkServer.sh"
-    actions = {"save", "broadcast", "kick", "ban", "chat"}
-
-    # provisioning: a new cluster map from the shared install (own ports/savedir)
-    provisionable = True
+    rcon_commands = {"save": "SaveWorld", "broadcast": "ServerChat {message}", "kick": "KickPlayer {target}",
+                     "ban": "BanPlayer {target}"}
+    rcon_quit_command = ("SaveWorld", "DoExit")
+    actions = {"save", "broadcast", "kick", "ban", "chat"}   # chat: its in-game chat, read over RCON
     provision_hint = ("ARK — adds a new map to your cluster (characters & dinos transfer between "
                       "maps in the same cluster). Ports, save folder and the cluster launch are "
                       "generated for you; the join/admin passwords are the shared ones. Rates, decay "
@@ -102,95 +105,82 @@ class ArkGame(GameType):
          "help": RCON_PORT_HELP},
     ]
 
-    def provision(self, spec: dict, ports: dict) -> dict:
-        ARK_DIR = config.install_dir("ark")
-        cfg = config.load()
-        CLUSTER_ID = (spec.get("cluster_id") or "").strip() or cfg.get("ark_cluster_id") or "gamedash"
-        if not re.match(r"^[A-Za-z0-9_]{1,40}$", CLUSTER_ID):
+    # ---- the launch ------------------------------------------------------------------------
+    @staticmethod
+    def _cluster_id(spec) -> str:
+        cid = (spec.get("cluster_id") or "").strip() or config.load().get("ark_cluster_id") or "gamedash"
+        if not re.match(r"^[A-Za-z0-9_]{1,40}$", cid):
             raise ActionError("Cluster ID must be letters/digits/underscores.")
-        prefix = cfg.get("server_name_prefix", "")  # optional (Settings → General)
-        CLUSTER_DIR = os.path.join(ARK_DIR, "cluster")
-        SECRETS = config.secrets_path()
-        if not os.path.isdir(ARK_DIR):
-            raise ActionError(f"ARK isn't installed ({ARK_DIR} missing).")
-        key = spec["key"]
+        return cid
+
+    @staticmethod
+    def _save(spec) -> str:
+        """Its save folder's name (AltSaveDirectoryName)."""
+        save = (spec.get("savedir") or "").strip() or f"gd_{spec['key'].replace('-', '_')}"
+        if not re.match(r"^[A-Za-z0-9_]{1,40}$", save):
+            raise ActionError("Save folder name must be letters/digits/underscores.")
+        return save
+
+    @staticmethod
+    def _map(spec) -> str:
         mapcode = (spec.get("map_custom") or "").strip() or (spec.get("map") or "").strip()
         if not re.match(r"^[A-Za-z0-9_]{3,40}$", mapcode):
             raise ActionError("Map code must be 3-40 letters/digits/underscores (e.g. TheCenter).")
-        friendly = safe_name((spec.get("name") or mapcode).strip()) or mapcode
-        maxp = self.option(spec, "maxplayers")
-        pve = self.option(spec, "mode") == "pve"
-        difficulty = self.option(spec, "difficulty")
+        return mapcode
+
+    @staticmethod
+    def _mods(spec, pattern=r"^\d{6,12}(,\d{6,12})*$", what="Workshop numbers") -> str:
         mods = "".join((spec.get("mods") or "").split())
-        if mods and not re.match(r"^\d{6,12}(,\d{6,12})*$", mods):
-            raise ActionError("Mod IDs must be Workshop numbers separated by commas.")
-        battleye = self.option(spec, "battleye")
-        crossplay = self.option(spec, "crossplay")
-        gp, qp, rp = ports["game"], ports["query"], ports["rcon"]
-        save = (spec.get("savedir") or "").strip() or f"gd_{key.replace('-', '_')}"  # AltSaveDirectoryName
-        if not re.match(r"^[A-Za-z0-9_]{1,40}$", save):
-            raise ActionError("Save folder name must be letters/digits/underscores.")
-        run = os.path.join(ARK_DIR, f"gamedash-{key}-run.sh")
-        opts = (
-            f"{mapcode}?listen?SessionName={prefix}{friendly}?MaxPlayers={maxp}"
-            "?ServerPassword=${GAME_SERVER_PASSWORD}?ServerAdminPassword=${GAME_ADMIN_PASSWORD}"
-            f"?Port={gp}?QueryPort={qp}?RCONEnabled=True?RCONPort={rp}?AltSaveDirectoryName={save}"
-            f"?ServerPVE={'True' if pve else 'False'}"
-        )
+        if mods and not re.match(pattern, mods):
+            raise ActionError(f"Mod IDs must be {what} separated by commas.")
+        return mods
+
+    def session_name(self, spec, name) -> str:
+        return config.load().get("server_name_prefix", "") + name   # optional prefix (Settings → General)
+
+    def cluster_dir(self, install) -> str:
+        return os.path.join(install, "cluster")
+
+    def command(self, spec, ports, name, server_dir, install):
+        mods = self._mods(spec)
+        difficulty = self.option(spec, "difficulty")
+        opts = (f"{self._map(spec)}?listen?SessionName={self.session_name(spec, name)}?MaxPlayers={self.option(spec, 'maxplayers')}"
+                "?ServerPassword=${GAME_SERVER_PASSWORD}?ServerAdminPassword=${GAME_ADMIN_PASSWORD}"
+                f"?Port={ports['game']}?QueryPort={ports['query']}?RCONEnabled=True?RCONPort={ports['rcon']}"
+                f"?AltSaveDirectoryName={self._save(spec)}"
+                f"?ServerPVE={'True' if self.option(spec, 'mode') == 'pve' else 'False'}")
         if difficulty is not None:
             opts += f"?OverrideOfficialDifficulty={difficulty:.1f}"
         if mods:
             opts += f"?GameModIds={mods}"
-        flags = ""
-        if mods:
-            flags += " -automanagedmods"
-        if not battleye:
-            flags += " -NoBattlEye"
-        epic = ""
-        if crossplay:
+        flags = (" -automanagedmods" if mods else "") + ("" if self.option(spec, "battleye") else " -NoBattlEye")
+        if self.option(spec, "crossplay"):
             # Epic players connect to an address the server must be told: this network's public one
-            flags += ' -crossplay${EPIC_IP:+ -PublicIPForEpic=$EPIC_IP}'
-            epic = ("EPIC_IP=$(python3 -c 'import urllib.request, socket\n"
-                    "for u in (\"https://api.ipify.org\", \"https://checkip.amazonaws.com\"):\n"
-                    "    try:\n"
-                    "        ip = urllib.request.urlopen(u, timeout=6).read(64).decode().strip(); socket.inet_aton(ip); print(ip); break\n"
-                    "    except Exception:\n"
-                    "        pass')\n")
-        script = (
-            "#!/bin/sh\n"
-            f". {SECRETS}\n"
-            f'mkdir -p "{CLUSTER_DIR}"\n'
-            + epic +
-            f'cd "{ARK_DIR}" || exit 1\n'
-            f'exec {ARK_EXEC} \\\n'
-            f'  "{opts}" \\\n'
-            f'  -server -log -clusterid={CLUSTER_ID} '
-            f'-ClusterDirOverride="{CLUSTER_DIR}" -NoTransferFromFiltering{flags}\n'
-        )
-        with open(run, "w", encoding="utf-8") as f:
-            f.write(script)
-        os.chmod(run, 0o755)
-        # graceful stop: RCON SaveWorld + DoExit via gamedash's own helper. Use the
-        # running interpreter (the venv python, which has the rcon module) and the
-        # absolute path to arkstop.py — robust to wherever the code/venv live.
-        stop = os.path.join(ARK_DIR, f"gamedash-{key}-stop.sh")
-        with open(stop, "w", encoding="utf-8") as f:
-            f.write(
-                "#!/bin/sh\n"
-                f". {SECRETS}\n"
-                f'"{sys.executable}" "{os.path.join(GAMEDASH_DIR, "arkstop.py")}" {rp} "$GAME_ADMIN_PASSWORD"\n'
-            )
-        os.chmod(stop, 0o755)
-        return {
-            "exec_start": run, "working_dir": ARK_DIR,
-            "game_port": gp, "query_port": qp, "rcon_port": rp,
-            "rcon_password_ref": "GAME_ADMIN_PASSWORD",
-            "a2s": True, "proc_match": f"{mapcode}?listen",
-            "server_name": f"{prefix}{friendly}", "join_port": qp,
-            "install_dir": ARK_DIR, "steam_app": 376030,
-            "exec_stop": stop, "timeout_stop": 130,  # ARK saves on DoExit
-            "save_dir": save, "cluster_id": CLUSTER_ID,  # for backup save_paths
-        }
+            flags += " -crossplay${EPIC_IP:+ -PublicIPForEpic=$EPIC_IP}"
+        return (f'{ARK_EXEC} \\\n  "{opts}" \\\n'
+                f'  -server -log -clusterid={self._cluster_id(spec)} '
+                f'-ClusterDirOverride="{self.cluster_dir(install)}" -NoTransferFromFiltering{flags}')
+
+    def pre(self, spec, ports, name, server_dir, install):
+        epic = ("EPIC_IP=$(python3 -c 'import urllib.request, socket\n"
+                "for u in (\"https://api.ipify.org\", \"https://checkip.amazonaws.com\"):\n"
+                "    try:\n"
+                "        ip = urllib.request.urlopen(u, timeout=6).read(64).decode().strip(); socket.inet_aton(ip); print(ip); break\n"
+                "    except Exception:\n"
+                "        pass')\n") if self.option(spec, "crossplay") else ""
+        return f'mkdir -p "{self.cluster_dir(install)}"\n' + epic
+
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"AltSaveDirectoryName={self._save(spec)}?"
+
+    def provision(self, spec: dict, ports: dict) -> dict:
+        if not spec.get("name"):
+            spec = {**spec, "name": self._map(spec)}    # a map is named after itself by default
+        out = super().provision(spec, ports)
+        out.update(server_name=self.session_name(spec, out["server_name"]),
+                   join_port=ports.get("query", ports["game"]),   # players add it in Steam by its query port
+                   save_dir=self._save(spec), cluster_id=self._cluster_id(spec))   # for backups
+        return out
 
     def save_paths(self, s) -> list[dict]:
         install = s.install_dir or config.install_dir(self.kind)   # (ASA reuses this)
@@ -208,7 +198,7 @@ class ArkGame(GameType):
         out = empty_probe()
         entries = []
         count = None
-        resp = monitor.rcon_run(s.rcon_port, s.rcon_password, "ListPlayers")
+        resp = self.rcon_send(s, "ListPlayers")
         if resp is not None:
             entries = monitor.parse_ark_players(resp)
             count = len(entries)
@@ -225,32 +215,8 @@ class ArkGame(GameType):
         out["player_detail"] = entries
         return out
 
-    def save(self, s) -> str:
-        r = monitor.rcon_run(s.rcon_port, s.rcon_password, "SaveWorld")
-        if r is None:
-            raise ActionError(f"Save to {s.name} failed (no RCON response).")
-        return r.strip() or "World Saved"
-
-    def broadcast(self, s, message: str) -> str:
-        r = monitor.rcon_run(s.rcon_port, s.rcon_password, "ServerChat " + message)
-        if r is None:
-            raise ActionError(f"Broadcast to {s.name} failed (no RCON response).")
-        return "sent"
-
-    def kick(self, s, target: str) -> str:
-        r = monitor.rcon_run(s.rcon_port, s.rcon_password, "KickPlayer " + target)
-        if r is None:
-            raise ActionError(f"Kick on {s.name} failed (no RCON response).")
-        return r.strip() or "ok"
-
-    def ban(self, s, target: str) -> str:
-        r = monitor.rcon_run(s.rcon_port, s.rcon_password, "BanPlayer " + target)
-        if r is None:
-            raise ActionError(f"Ban on {s.name} failed (no RCON response).")
-        return r.strip() or "ok"
-
     def chat(self, s) -> str:
-        r = monitor.rcon_run(s.rcon_port, s.rcon_password, "GetChat")
+        r = self.rcon_send(s, "GetChat")
         t = (r or "").strip()
         if not t or "server received, but no response" in t.lower():
             t = ""

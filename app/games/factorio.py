@@ -14,7 +14,6 @@ import re
 import tarfile
 import urllib.request
 
-import monitor
 from games import common
 from games.base import ActionError, empty_probe, safe_name
 from games.simple import RCON_PORT_HELP, SimpleGame
@@ -145,11 +144,8 @@ class FactorioGame(SimpleGame):
     def log_file(self, server_dir, install):
         return os.path.join(server_dir, "console.log")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-c {server_dir}/config.ini"
-
-    def _rcon(self, s, cmd: str) -> str | None:
-        return monitor.rcon_run(s.rcon_port, s.rcon_password, cmd)
 
     @staticmethod
     def parse_players(text: str) -> list[str] | None:
@@ -160,7 +156,7 @@ class FactorioGame(SimpleGame):
 
     def probe(self, s) -> dict:
         out = empty_probe()
-        names = self.parse_players(self._rcon(s, "/players online") or "") if s.rcon_port else None
+        names = self.parse_players(self.rcon_send(s, "/players online") or "") if s.rcon_port else None
         if names is not None:
             out.update(reachable=True, players=len(names), player_names=names,
                        player_detail=[{"name": n, "id": n} for n in names])

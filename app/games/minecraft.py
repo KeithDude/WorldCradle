@@ -59,7 +59,6 @@ class MinecraftGame(SimpleGame):
     exe = "server.jar"
     servers_folder = "servers"
     has_query = False
-    kill_signal = "SIGTERM"
     rcon_commands = {"save": "save-all", "broadcast": "say {message}", "kick": "kick {target}",
                      "ban": "ban {target}"}
     rcon_quit_command = "stop"   # saves the world, then exits
@@ -154,7 +153,7 @@ class MinecraftGame(SimpleGame):
         opt_int(spec, "view_distance", 10, 3, 32, "View distance")
         ram = self.option(spec, "memory")
         # the -D label does nothing in the game; it lets the dashboard tell this server's process apart
-        return (f"java -Xms{ram}G -Xmx{ram}G -Dgamedash.server={self.proc_pattern(spec['key'], ports, server_dir)} "
+        return (f"java -Xms{ram}G -Xmx{ram}G -Dgamedash.server={self.proc_pattern(spec, ports, server_dir)} "
                 f'-jar "{os.path.join(install, self.exe)}" nogui')
 
     def write_files(self, spec: dict, ports: dict, name: str, server_dir: str, install: str) -> None:
@@ -197,23 +196,20 @@ class MinecraftGame(SimpleGame):
     def work_dir(self, server_dir: str, install: str) -> str:
         return server_dir      # the world, settings and logs live in the server's own folder
 
-    def proc_pattern(self, key: str, ports: dict, server_dir: str) -> str:
-        return f"servers/{key}"
+    def proc_pattern(self, spec: dict, ports: dict, server_dir: str) -> str:
+        return f"servers/{spec['key']}"
 
     def log_file(self, server_dir: str, install: str) -> str:
         return os.path.join(server_dir, "logs", "latest.log")
 
     # ---- monitoring + controls (RCON) --------------------------------------
-    def _rcon(self, s, cmd: str) -> str | None:
-        return monitor.rcon_run(s.rcon_port, s.rcon_password, cmd)
-
     def _apply_pending_whitelist(self, s) -> None:
         """First boot: add the names typed on the Add form, then forget the list."""
         path = os.path.join(s.save_root or "", "gamedash-whitelist.txt")
         if not s.save_root or not os.path.isfile(path):
             return
         names = [n.strip() for n in open(path, encoding="utf-8") if _NAME_RE.match(n.strip())]
-        if all(self._rcon(s, f"whitelist add {n}") is not None for n in names):
+        if all(self.rcon_send(s, f"whitelist add {n}") is not None for n in names):
             os.unlink(path)
 
     def _apply_pending_gamerules(self, s) -> None:
@@ -223,7 +219,7 @@ class MinecraftGame(SimpleGame):
             return
         lines = [l.strip() for l in open(path, encoding="utf-8")
                  if re.match(r"^gamerule [a-z_]+ (true|false)$", l.strip())]
-        if all("is now set to" in (self._rcon(s, l) or "") for l in lines):
+        if all("is now set to" in (self.rcon_send(s, l) or "") for l in lines):
             os.unlink(path)
 
     @staticmethod
@@ -236,7 +232,7 @@ class MinecraftGame(SimpleGame):
 
     def probe(self, s) -> dict:
         out = empty_probe(reachable=monitor.port_listening(s.game_port))
-        parsed = self.parse_list(self._rcon(s, "list") or "")
+        parsed = self.parse_list(self.rcon_send(s, "list") or "")
         if parsed:
             count, limit, names = parsed
             out.update(players=count, max_players=limit, player_names=names,

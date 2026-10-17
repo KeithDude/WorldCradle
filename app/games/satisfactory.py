@@ -7,10 +7,11 @@ import re
 import config
 import monitor
 import registry
-from games.base import ActionError, GameType, empty_probe
+from games.base import ActionError, empty_probe
+from games.simple import SimpleGame
 
 
-class SatisfactoryGame(GameType):
+class SatisfactoryGame(SimpleGame):
     join_steps = [
         "In Satisfactory: <b>Server Manager → “Add Server”</b>.",
         "Enter: <code>{address}</code>",
@@ -19,19 +20,18 @@ class SatisfactoryGame(GameType):
     server_stats = True     # tick rate, progress and game time from its HTTPS API
     kind = "satisfactory"
     label = "Satisfactory"
-    install_marker = "FactoryServer.sh"
+    exe = "FactoryServer.sh"
+    # Each server runs with its own HOME (this folder), so its saves and settings are its own and
+    # several can run from one install.
+    servers_folder = "gamedash-homes"
+    has_query = False            # players and stats come from its HTTPS API
+    stop_seconds = 90            # SIGINT flushes a clean autosave
     install_gb = 3
     ram_note = "about 4-8 GB of memory, more for very large factories"
     about = "Factory building. You name the server and set its passwords in-game after first connecting."
     steam_app = 1690800
     update_script = "UpdateSatisfactoryServer.sh"
-    actions = {"save"}
-
-    # provisioning: a new instance from the SHARED install. Each instance gets
-    # its own ports + its own HOME (so its saves/config live in a private dir),
-    # so multiple can run from one install. The one thing that corrupts data is
-    # two instances writing the SAME save — hence the note below.
-    provisionable = True
+    actions = {"save"}           # through its HTTPS API
     extra_fields = [
         {"name": "maxplayers", "label": "Max players (1-64, game default is 4)", "type": "number",
          "min": 1, "max": 64, "default": 4,
@@ -58,42 +58,23 @@ class SatisfactoryGame(GameType):
          "help": "Without this one forwarded, players hang on the loading screen."},
     ]
 
-    def provision(self, spec: dict, ports: dict) -> dict:
-        INSTALL = config.install_dir("satisfactory")
-        if not os.path.isdir(INSTALL):
-            raise ActionError(f"Satisfactory isn't installed ({INSTALL} missing).")
-        key = spec["key"]
-        session = (spec.get("name") or key).strip()
-        maxp = self.option(spec, "maxplayers")
+    def command(self, spec, ports, name, server_dir, install):
         flags = "" if self.option(spec, "seasonal") else " -DisableSeasonalEvents"
-        gp, reliable = ports["game"], ports["query"]
-        # Private HOME → its own ~/.config/Epic/FactoryGame/Saved (isolated saves).
-        home = os.path.join(INSTALL, "gamedash-homes", key)
-        run = os.path.join(INSTALL, f"gamedash-{key}-run.sh")
-        script = (
-            "#!/bin/sh\n"
-            f'export HOME="{home}"\n'
-            f'mkdir -p "$HOME"\n'
-            f'cd "{INSTALL}" || exit 1\n'
-            f'exec ./FactoryServer.sh -Port={gp} -ReliablePort={reliable} '
-            f'-unattended -LOG=gamedash-{key}.log \\\n'
-            f"    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers={maxp}'{flags}\n"
-        )
-        with open(run, "w", encoding="utf-8") as f:
-            f.write(script)
-        os.chmod(run, 0o755)
-        return {
-            "exec_start": run, "working_dir": INSTALL,
-            "game_port": gp, "query_port": reliable, "rcon_port": None,
-            "a2s": False, "proc_match": f"-Port={gp}",
-            "server_name": session, "join_port": gp,
-            "install_dir": INSTALL, "steam_app": 1690800,
-            "kill_signal": "SIGINT", "timeout_stop": 90,  # clean autosave flush on stop
-            # this instance's isolated saves live under its private HOME
-            "save_root": os.path.join(home, ".config/Epic/FactoryGame/Saved/SaveGames"),
-        }
+        return (f'./FactoryServer.sh -Port={ports["game"]} -ReliablePort={ports["query"]} '
+                f'-unattended -LOG=gamedash-{spec["key"]}.log \\\n'
+                f"    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers={self.option(spec, 'maxplayers')}'{flags}")
+
+    def pre(self, spec, ports, name, server_dir, install):
+        return f'export HOME="{server_dir}"\n'
+
+    def save_dir(self, server_dir, install):
+        return os.path.join(server_dir, ".config/Epic/FactoryGame/Saved/SaveGames")
+
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"-Port={ports['game']} "
 
     def __init__(self):
+        super().__init__()
         # minted tokens cached per game_port (each instance has its own API).
         self._tokens: dict[int, str] = {}
 

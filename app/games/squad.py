@@ -115,7 +115,7 @@ class SquadGame(SimpleGame):
     def log_file(self, server_dir, install):
         return os.path.join(install, self.project, "Saved", "Logs", f"{self.project}.log")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"Port={ports['game']} QueryPort"
 
     has_query = False   # no Steam query answer; the admin console reports players instead

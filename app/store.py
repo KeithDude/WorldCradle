@@ -80,6 +80,18 @@ def remove(key: str) -> bool:
         return True
 
 
+def replace(key: str, entry: dict) -> bool:
+    """Swap one entry for a new one, in place (atomic). Returns False if the key isn't there."""
+    with _lock:
+        servers = load()
+        i = next((n for n, e in enumerate(servers) if e.get("key") == key), None)
+        if i is None:
+            return False
+        servers[i] = entry
+        save(servers)
+        return True
+
+
 def update(key: str, **fields) -> bool:
     """Set fields on one entry (atomic). Returns False if the key isn't there."""
     with _lock:

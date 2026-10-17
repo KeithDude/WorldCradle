@@ -4,9 +4,8 @@ from __future__ import annotations
 import os
 import re
 
-import monitor
 from games import common
-from games.base import ActionError, empty_probe, opt_bool
+from games.base import empty_probe, opt_bool
 from games.simple import GAME_PORT_HELP, QUERY_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
 
@@ -20,7 +19,9 @@ class HumanitzGame(SimpleGame):
     install_gb = 1.5
     ram_note = "about 4-8 GB of memory"
     about = "Top-down zombie survival with vehicles and base building."
-    actions = {"broadcast"}      # no "save" console command is documented; the game autosaves
+    # no "save" console command is documented; the game autosaves
+    rcon_commands = {"broadcast": "admin {message}"}
+    rcon_lenient = True          # its RCON is only "similar to" Valve's
     stop_seconds = 120           # the makers' own service example allows it up to 5 minutes to save and exit
     port_layout = [port("game", 7790, "Game port (UDP)", help=GAME_PORT_HELP),
                    port("query", 27180, "Steam query port (UDP)", help=QUERY_PORT_HELP),
@@ -69,14 +70,8 @@ class HumanitzGame(SimpleGame):
     def save_dir(self, server_dir, install):
         return os.path.join(install, "HumanitZServer", "Saved")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-port={ports['game']} -queryport"
-
-    def _rcon(self, s, cmd: str, what: str) -> str:
-        r = monitor.palworld_rcon(s.rcon_port, s.rcon_password, cmd)   # "similar to" Valve's RCON: tolerant client
-        if r is None:
-            raise ActionError(f"{what} on {s.name} failed (the admin console didn't answer).")
-        return r.strip() or "ok"
 
     has_query = False   # it doesn't answer Steam's query; the admin console lists players instead
 
@@ -95,13 +90,9 @@ class HumanitzGame(SimpleGame):
 
     def probe(self, s) -> dict:
         out = empty_probe()
-        names = self.parse_players(monitor.palworld_rcon(s.rcon_port, s.rcon_password, "Players")) \
-            if s.rcon_port else None
+        names = self.parse_players(self.rcon_send(s, "Players")) if s.rcon_port else None
         if names is not None:
             out.update(reachable=True, players=len(names), player_names=names,
                        player_detail=[{"name": n, "id": ""} for n in names])
         return out
 
-    def broadcast(self, s, message: str) -> str:
-        self._rcon(s, "admin " + message.replace("\n", " ")[:200], "Message")
-        return "sent"

@@ -46,7 +46,7 @@ class WindroseGame(WineGame):
         self.option(spec, "connect")
         self.option(spec, "maxplayers")
         # -gamedash=… means nothing to the game; it lets the dashboard tell this server's process apart
-        return f'wine ./WindroseServer-Win64-Shipping.exe -log -gamedash={os.path.basename(server_dir)}'
+        return f'wine ./WindroseServer-Win64-Shipping.exe -gamedash={os.path.basename(server_dir)} -log'
 
     def write_files(self, spec, ports, name, server_dir, install):
         import json
@@ -83,8 +83,8 @@ class WindroseGame(WineGame):
     def log_file(self, server_dir, install):
         return os.path.join(install, "R5", "Saved", "Logs", "R5.log")
 
-    def proc_pattern(self, key, ports, server_dir):
-        return f"-gamedash={key}$"
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"-gamedash={spec['key']} -log"
 
     def probe(self, s) -> dict:
         import json

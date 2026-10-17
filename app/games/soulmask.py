@@ -64,5 +64,5 @@ class SoulmaskGame(SimpleGame):
     def save_dir(self, server_dir, install):
         return os.path.join(install, "WS", "Saved")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-Port={ports['game']} -QueryPort"

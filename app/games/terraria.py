@@ -130,7 +130,7 @@ class TerrariaGame(SimpleGame):
     def log_file(self, server_dir, install):
         return os.path.join(server_dir, "server.log")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-config {server_dir}/serverconfig.txt"
 
     def probe(self, s) -> dict:

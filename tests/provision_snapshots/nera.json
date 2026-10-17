@@ -13,7 +13,7 @@
   "join_port": 7777,
   "kill_signal": "SIGINT",
   "log_path": "<ROOT>/installs/nera/gamedash-servers/test/Saved/Logs/BoatGame.log",
-  "proc_match": "gamedash-servers\\\\test\\\\",
+  "proc_match": "gamedash-servers\\test\\",
   "query_port": null,
   "rcon_port": null,
   "save_root": "<ROOT>/installs/nera/gamedash-servers/test/Saved",

@@ -61,7 +61,7 @@ class BarotraumaGame(SimpleGame):
         # give each server its own folder (owners are told in provision_note; on the roadmap).
         return os.path.expanduser("~/.local/share/Daedalic Entertainment GmbH/Barotrauma/Multiplayer")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-port {ports['game']} -queryport"
 
     def probe(self, s) -> dict:

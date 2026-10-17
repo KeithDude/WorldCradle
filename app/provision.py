@@ -216,6 +216,49 @@ def _register(key: str, kind: str, name: str, fields: dict, start: bool) -> str:
     return ""
 
 
+def adopt(key: str, spec: dict, ports: dict) -> dict:
+    """Bring an existing server onto its game's current standard launch: new launch and stop
+    scripts, service file and record, made the way a new server's are, from `spec` (its
+    settings, as the Add form would give them) and `ports` (its ports by name). Its settings
+    files, world and saves are not touched. Everything replaced is kept beside it with a
+    ".before-adopt-<time>" suffix. Doesn't start or stop it — the caller does that, with the
+    server stopped."""
+    import time
+    entry = store.get(key)
+    if entry is None:
+        raise ActionError(f"No server with key '{key}'.")
+    game = games.get(entry["kind"])
+    if game is None or not hasattr(game, "command"):
+        raise ActionError(f"{entry['kind']} servers can't be adopted.")
+    if systemd.is_active(_unit_name(key)):
+        raise ActionError(f"Stop {entry['name']} first.")
+    install = os.path.expanduser(entry.get("install_dir") or config.install_dir(entry["kind"]))
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    kept = []
+    for path in (_unit_path(key), os.path.join(install, f"gamedash-{key}-run.sh"),
+                 os.path.join(install, f"gamedash-{key}-stop.sh"), store.STORE_PATH):
+        if os.path.isfile(path):
+            shutil.copy2(path, f"{path}.before-adopt-{stamp}")
+            kept.append(path)
+    full = {**spec, "key": key, "kind": entry["kind"], "install_dir": install, "adopt": True}
+    full.setdefault("name", entry.get("server_name") or entry["name"])
+    fields = game.provision(full, ports)
+    old_stop = os.path.join(install, f"gamedash-{key}-stop.sh")
+    if not fields.get("exec_stop") and os.path.isfile(old_stop):
+        os.unlink(old_stop)          # the old stop script no longer applies (a copy is kept)
+    with open(_unit_path(key), "w", encoding="utf-8") as f:
+        f.write(_unit_text(entry["name"], fields))
+    systemd.check("daemon-reload")
+    new = _store_entry(key, entry["kind"], entry["name"], fields)
+    for k in ("backup_keep", "notes"):      # the owner's own choices carry over
+        if k in entry:
+            new[k] = entry[k]
+    store.replace(key, new)
+    audit_log.info("server ADOPTED key=%s kind=%s (kept: %s)", key, entry["kind"], ", ".join(kept))
+    return {"ok": True, "message": f"{entry['name']} now uses the standard {game.label} launch.",
+            "kept": [f"{p}.before-adopt-{stamp}" for p in kept], "entry": new}
+
+
 def create(spec: dict) -> dict:
     """Create a gamedash-managed server: custom (kind='custom', caller gives the
     launch command) or a game template (kind in games, auto config+ports).

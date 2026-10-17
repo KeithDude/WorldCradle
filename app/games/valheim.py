@@ -4,9 +4,9 @@ from __future__ import annotations
 import os
 import re
 
-import config
 import monitor
-from games.base import ActionError, GameType, empty_probe, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, empty_probe, opt_bool, opt_choice, opt_int
+from games.simple import SimpleGame
 
 
 # World modifiers, straight from the "Valheim Dedicated Server Manual" shipped
@@ -33,7 +33,7 @@ def _choices(values: list[str], blank: str) -> list[list[str]]:
     return [["", blank]] + [[v, v] for v in values]
 
 
-class ValheimGame(GameType):
+class ValheimGame(SimpleGame):
     join_steps = [
         "In Valheim: <b>Start → “Join Game” tab → “Join IP”</b>.",
         "Enter: <code>{address}</code>",
@@ -42,16 +42,16 @@ class ValheimGame(GameType):
     reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "valheim"
     label = "Valheim"
-    install_marker = "valheim_server.x86_64"
+    exe = "valheim_server.x86_64"
+    # its worlds live in its own save folder (the -savedir option, or the game's default), by name
+    own_folder = False
+    has_query = False            # who's on is read from its log
     install_gb = 2
     ram_note = "about 2-4 GB of memory"
     about = "Viking survival and building. Light on resources; several worlds can share one install."
     steam_app = 896660
     update_script = "UpdateValheimServer.sh"
-    actions: set[str] = set()  # no RCON → no in-app controls
-
-    # provisioning: a new world from the shared install
-    provisionable = True
+    # no admin console: no in-app controls
     provision_hint = ("Valheim — spins up a world from your existing install (a new one, or an "
                       "existing world if the name matches). Ports and the launch are generated for "
                       "you; the join password is the shared one. Leave the world modifiers on "
@@ -127,52 +127,54 @@ class ValheimGame(GameType):
             out["player_detail"] = [{"name": n, "id": ""} for n in names]
         return out
 
-    def provision(self, spec: dict, ports: dict) -> dict:
-        INSTALL = config.install_dir("valheim")
-        SECRETS = config.secrets_path()
-        if not os.path.isdir(INSTALL):
-            raise ActionError(f"Valheim isn't installed ({INSTALL} missing).")
-        key = spec["key"]
+    @staticmethod
+    def _world(spec) -> str:
         world = (spec.get("world") or "").strip()
         if not re.match(r"^[A-Za-z0-9_]{3,20}$", world):
             raise ActionError("World name must be 3-20 letters, digits, or underscores.")
-        display = safe_name((spec.get("name") or world).strip()) or world
-        gp, qp = ports["game"], ports["query"]
-        log = f"gamedash-{key}.log"
-        run = os.path.join(INSTALL, f"gamedash-{key}-run.sh")
-        # optional custom save dir (-savedir); blank → default worlds_local
-        savedir = os.path.expanduser((spec.get("savedir") or "").strip())
-        if savedir:
-            os.makedirs(savedir, exist_ok=True)
-            savedir_arg = f' -savedir "{savedir}"'
-        else:
-            savedir_arg = ""
-        modded = (spec.get("profile") or "vanilla") == "modded"
-        # ---- optional launch arguments (only emitted when set) ----
-        extra = " -public 1" if self.option(spec, "public") else " -public 0"
+        return world
+
+    @staticmethod
+    def _savedir(spec) -> str:
+        """The -savedir folder ("" = the game's default worlds_local)."""
+        return os.path.expanduser((spec.get("savedir") or "").strip())
+
+    def command(self, spec, ports, name, server_dir, install):
+        world = self._world(spec)
+        savedir = self._savedir(spec)
+        args = f' -savedir "{savedir}"' if savedir else ""
+        args += " -public 1" if self.option(spec, "public") else " -public 0"
         if self.option(spec, "crossplay"):
             # -instanceid keeps PlayFab IDs unique across servers on this box
-            extra += f' -crossplay -instanceid "{key}"'
+            args += f' -crossplay -instanceid "{spec["key"]}"'
         preset = opt_choice(spec, "preset", PRESETS, "", "World preset")
         if preset:
-            extra += f" -preset {preset}"
+            args += f" -preset {preset}"
         for m, vals in MODIFIERS.items():
             v = opt_choice(spec, f"mod_{m}", vals, "", _MOD_LABELS[m])
             if v:
-                extra += f" -modifier {m} {v}"
+                args += f" -modifier {m} {v}"
         for k in SETKEYS:
             if opt_bool(spec, f"key_{k}", False):
-                extra += f" -setkey {k}"
+                args += f" -setkey {k}"
         for arg, lo, hi, label in (("saveinterval", 60, 86400, "World save interval"),
                                    ("backups", 1, 100, "Backups to keep"),
                                    ("backupshort", 60, 604800, "First backup interval"),
                                    ("backuplong", 60, 2592000, "Later backups interval")):
             n = opt_int(spec, arg, None, lo, hi, label)
             if n is not None:
-                extra += f" -{arg} {n}"
-        # Modded: the BepInEx doorstop preamble (loads the shared install's
-        # BepInEx/plugins). Vanilla: clean launch, no doorstop. Both source the
-        # join password set in GameDash and share the launch tail.
+                args += f" -{arg} {n}"
+        return (f'./valheim_server.x86_64 -nographics -batchmode -logfile "{self.log_file(server_dir, install)}" '
+                f'-name "{name}" -port {ports["game"]} -world "{world}" '
+                f'-password "${{GAME_SERVER_PASSWORD}}"{args}')
+
+    def write_files(self, spec, ports, name, server_dir, install):
+        if self._savedir(spec):
+            os.makedirs(self._savedir(spec), exist_ok=True)
+
+    def pre(self, spec, ports, name, server_dir, install):
+        # Modded: the BepInEx doorstop (loads the shared install's BepInEx/plugins). Vanilla: a
+        # clean launch.
         doorstop = (
             "# BepInEx doorstop — loads ./BepInEx/plugins from the shared install.\n"
             "# Add/remove mods there; edit this script for per-world launch tweaks.\n"
@@ -181,28 +183,17 @@ class ValheimGame(GameType):
             "export DOORSTOP_CORLIB_OVERRIDE_PATH=./unstripped_corlib\n"
             'export LD_LIBRARY_PATH="./doorstop_libs:$LD_LIBRARY_PATH"\n'
             'export LD_PRELOAD="libdoorstop_x64.so:$LD_PRELOAD"\n'
-        ) if modded else ""
-        script = (
-            "#!/bin/sh\n"
-            f"# gamedash-managed Valheim world ({'modded' if modded else 'vanilla'}).\n"
-            f". {SECRETS}\n"
-            f"{doorstop}"
-            "export LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH\n"
-            "export SteamAppID=892970\n"
-            f'exec ./valheim_server.x86_64 -nographics -batchmode -logfile "./{log}" '
-            f'-name "{display}" -port {gp} -world "{world}"{savedir_arg} '
-            f'-password "${{GAME_SERVER_PASSWORD}}"{extra}\n'
-        )
-        with open(run, "w", encoding="utf-8") as f:
-            f.write(script)
-        os.chmod(run, 0o755)
-        return {
-            "exec_start": run, "working_dir": INSTALL,
-            "game_port": gp, "query_port": qp, "rcon_port": None,
-            "a2s": False, "proc_match": f"-port {gp}",
-            "server_name": display, "join_port": gp,
-            "log_path": os.path.join(INSTALL, log),
-            "install_dir": INSTALL, "steam_app": 896660,
-            "kill_signal": "SIGINT", "timeout_stop": 60,  # clean Valheim save on stop
-            "world": world, "save_root": savedir,  # for backup save_paths
-        }
+        ) if (spec.get("profile") or "vanilla") == "modded" else ""
+        return doorstop + "export LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH\nexport SteamAppID=892970\n"
+
+    def log_file(self, server_dir, install):
+        return os.path.join(install, f"gamedash-{os.path.basename(server_dir)}.log")
+
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"-port {ports['game']}"
+
+    def provision(self, spec: dict, ports: dict) -> dict:
+        out = super().provision(spec, ports)
+        # the world is found by name in its save folder (see save_paths)
+        out.update(world=self._world(spec), save_root=self._savedir(spec))
+        return out

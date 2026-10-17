@@ -48,7 +48,7 @@ class NecesseGame(SimpleGame):
                 f'    -password "$GAME_SERVER_PASSWORD" -pausewhenempty {1 if self.option(spec, "pause_empty") else 0} '
                 "-logging 1")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-datadir {server_dir}"
 
     def probe(self, s) -> dict:

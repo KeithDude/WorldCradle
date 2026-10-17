@@ -13,14 +13,14 @@ class ScpslGame(SimpleGame):
     label = "SCP: Secret Laboratory"
     steam_app = 996560
     exe = "LocalAdmin"
-    shell = "/bin/bash"          # the launch line feeds the console from a file
     install_gb = 0.6
     ram_note = "about 2-4 GB of memory"
     about = "Multiplayer horror game set in a containment facility; rounds of escape and pursuit."
     has_query = False
     kill_signal = "SIGTERM"
     stop_seconds = 30            # rounds, not worlds: nothing to save
-    actions = {"broadcast"}
+    console_commands = {"broadcast": "/bc 10 {message}"}
+    quit_command = "exit"
     port_layout = [port("game", 7777, "Game port (UDP)", help=GAME_PORT_HELP)]
     extra_fields = [
         {"name": "maxplayers", "label": "Max players (1-100)", "type": "number", "min": 1, "max": 100,
@@ -50,8 +50,7 @@ class ScpslGame(SimpleGame):
 
     def command(self, spec, ports, name, server_dir, install):
         self._options(spec)
-        return (f'./LocalAdmin {ports["game"]} --acceptEULA --useDefault --noSetCursor '
-                f'> "{self.log_file(server_dir, install)}" 2>&1 < <(tail -n0 -F "$CONSOLE")')
+        return f'./LocalAdmin {ports["game"]} --acceptEULA --useDefault --noSetCursor'
 
     def write_files(self, spec, ports, name, server_dir, install):
         maxp, ff, email = self._options(spec)
@@ -68,19 +67,13 @@ class ScpslGame(SimpleGame):
             f.write(text)
 
     def pre(self, spec, ports, name, server_dir, install):
-        from games import common
         # the game keeps settings in the user's config folder; give each server its own
-        return (f'export XDG_CONFIG_HOME="{server_dir}"\n'
-                + common.console_pipe_lines(common.console_file(self.log_file(server_dir, install))))
-
-    def stop_lines(self, spec, ports, name, server_dir, install):
-        from games import common
-        return f'echo "exit" >> "{common.console_file(self.log_file(server_dir, install))}"\n'
+        return f'export XDG_CONFIG_HOME="{server_dir}"\n'
 
     def log_file(self, server_dir, install):
         return os.path.join(server_dir, "server.log")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"LocalAdmin {ports['game']} --acceptEULA"
 
     @staticmethod
@@ -115,8 +108,4 @@ class ScpslGame(SimpleGame):
         return out
 
     def broadcast(self, s, message: str) -> str:
-        from games import common
-        text = re.sub(r"[\r\n<>]", " ", message)[:200]
-        if not common.console_send(s, "/bc 10 " + text):
-            raise ActionError(f"Message to {s.name} failed — the server's console isn't available.")
-        return "sent"
+        return super().broadcast(s, re.sub(r"[<>]", " ", message))   # no rich-text tags

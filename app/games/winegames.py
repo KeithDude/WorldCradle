@@ -35,5 +35,9 @@ class WineGame(SimpleGame):
         return (self.sync_lines(spec, ports, name, server_dir, install)
                 + common.wine_env_lines(common.wine_prefix(self.kind, key)))
 
-    def proc_pattern(self, key, ports, server_dir):
-        return f"gamedash-servers\\\\{key}\\\\"
+    def after_stop_lines(self, spec, server_dir):
+        # Wine's helper programs outlive the server; close them so the stop doesn't hang on them
+        return f'WINEPREFIX="{common.wine_prefix(self.kind, spec["key"])}" wineserver -k 2>/dev/null\n'
+
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"gamedash-servers\\{spec['key']}\\"

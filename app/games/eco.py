@@ -75,7 +75,7 @@ class EcoGame(SimpleGame):
     def save_dir(self, server_dir, install):
         return os.path.join(install, "Storage")
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return os.path.dirname(os.path.dirname(server_dir)) + "/EcoServer"
 
     def probe(self, s) -> dict:

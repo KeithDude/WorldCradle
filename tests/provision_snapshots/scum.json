@@ -14,7 +14,7 @@
   "join_port": 7042,
   "kill_signal": "SIGINT",
   "log_path": "<ROOT>/installs/scum/gamedash-servers/test/Saved/Logs/SCUM.log",
-  "proc_match": "gamedash-servers\\\\test\\\\",
+  "proc_match": "gamedash-servers\\test\\",
   "query_port": null,
   "rcon_port": null,
   "save_root": "<ROOT>/installs/scum/gamedash-servers/test/Saved",

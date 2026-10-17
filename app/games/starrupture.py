@@ -43,9 +43,9 @@ class StarRuptureGame(WineGame):
         # The two RCWeb switches turn off the engine's remote-control web interface, which
         # otherwise answers on the game port with no login at all.
         # -gamedash=… means nothing to the game; it lets the dashboard tell this server's process apart.
-        return ('wine ./StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe -Log '
-                f'-Port={ports["game"]} -RCWebControlDisable -RCWebInterfaceDisable '
-                f'-gamedash={os.path.basename(server_dir)}')
+        return ('wine ./StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe '
+                f'-gamedash={os.path.basename(server_dir)} -Log '
+                f'-Port={ports["game"]} -RCWebControlDisable -RCWebInterfaceDisable')
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         # DSSettings.txt tells the server which session to run. "Start a new game" must only be
@@ -70,5 +70,5 @@ class StarRuptureGame(WineGame):
     def log_file(self, server_dir, install):
         return os.path.join(install, "StarRupture", "Saved", "Logs", "StarRupture.log")
 
-    def proc_pattern(self, key, ports, server_dir):
-        return f"-gamedash={key}$"
+    def proc_pattern(self, spec, ports, server_dir):
+        return f"-gamedash={spec['key']} -Log"

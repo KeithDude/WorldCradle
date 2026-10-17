@@ -66,7 +66,7 @@ class InsurgencyGame(SimpleGame):
                 f'-RconListenPort={ports["rcon"]} -log'
                 + (f" -GSLTToken={token}" if token else ""))
 
-    def proc_pattern(self, key, ports, server_dir):
+    def proc_pattern(self, spec, ports, server_dir):
         return f"-Port={ports['game']} -QueryPort"
 
     def broadcast(self, s, message: str) -> str:

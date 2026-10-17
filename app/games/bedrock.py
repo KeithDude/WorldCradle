@@ -42,7 +42,6 @@ class BedrockGame(SimpleGame):
     title = "Minecraft: Bedrock Edition"
     exe = EXE
     has_query = False
-    kill_signal = "SIGTERM"
     pre_lines = "export LD_LIBRARY_PATH=.\n"   # its libraries sit next to it
     console_commands = {"broadcast": "say {message}", "kick": 'kick "{target}"'}
     quit_command = "stop"          # saves the world, then quits
@@ -174,7 +173,7 @@ class BedrockGame(SimpleGame):
     def log_file(self, server_dir: str, install: str) -> str:
         return os.path.join(server_dir, "server.log")
 
-    def proc_pattern(self, key: str, ports: dict, server_dir: str) -> str:
+    def proc_pattern(self, spec: dict, ports: dict, server_dir: str) -> str:
         return f"{server_dir}/server.log.console"   # the console feeder identifies this server
 
     def save_paths(self, s) -> list[dict]:
