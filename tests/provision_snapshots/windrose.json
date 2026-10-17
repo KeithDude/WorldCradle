@@ -8,7 +8,7 @@
   "extra_ports": [],
   "game_port": 7777,
   "install_dir": "<ROOT>/installs/windrose",
-  "join_port": 7777,
+  "join_port": null,
   "kill_signal": "SIGINT",
   "log_path": "<ROOT>/installs/windrose/R5/Saved/Logs/R5.log",
   "proc_match": "-realmcradle=test -log",

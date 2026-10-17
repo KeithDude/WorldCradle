@@ -20,6 +20,7 @@ class WindroseGame(WineGame):
     ram_note = "about 8 GB of memory for 2 players, 16 GB for 10"
     about = "Co-op pirate survival and sailing adventure. Runs through Wine."
     has_query = False
+    reports_players = False      # it tells no one who is on; friends join with the invite code
     port_layout = [port("game", 7777, "Direct-connection port (TCP and UDP)", proto="UDP and TCP",
                         help="Only used with the “direct address” connection: forward it for both TCP and UDP.")]
     CONNECT = [["code", "Invite code — friends type a code; no router setup needed"],
@@ -85,6 +86,24 @@ class WindroseGame(WineGame):
 
     def proc_pattern(self, spec, ports, server_dir):
         return f"-realmcradle={spec['key']} -log"
+
+    def _direct(self, install) -> bool:
+        import json
+        try:
+            with open(self._desc(install), encoding="utf-8-sig") as f:
+                return bool(json.load(f)["ServerDescription_Persistent"].get("UseDirectConnection"))
+        except (OSError, ValueError, KeyError, TypeError):
+            return False
+
+    def card_rows(self, s) -> dict:
+        # whether it answers can only be seen with the direct address (it then listens on its port)
+        return {**super().card_rows(s), "answering": self._direct(s.install_dir)}
+
+    def provision(self, spec: dict, ports: dict) -> dict:
+        out = super().provision(spec, ports)
+        if self.option(spec, "connect") != "direct":
+            out["join_port"] = None      # friends join with the invite code, not an address
+        return out
 
     def probe(self, s) -> dict:
         import json
