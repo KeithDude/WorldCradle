@@ -138,16 +138,14 @@ class SpaceEngineersGame(GameType):
         if not os.path.isdir(os.path.join(install, "Content", "CustomWorlds", world)):
             raise ActionError(f"This version of Space Engineers doesn't have the “{world}” starting world.")
         os.makedirs(server_dir, exist_ok=True)
-        fd = os.open(cfg_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold the password hash
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(_CFG_TEMPLATE.format(
-                mode=opt_choice(spec, "mode", [m for m, _ in MODES], "Survival", "Game mode"),
-                maxp=opt_int(spec, "maxplayers", 4, 1, 16, "Max players"),
-                steam_port=ports["steam"], port=ports["game"], name=escape(display),
-                # must be a full path: a relative one isn't found from the server's own folder
-                world_path=escape("Z:" + os.path.join(install, "Content", "CustomWorlds", world).replace("/", "\\")),
-                pause=str(opt_bool(spec, "pause_empty", True)).lower(),
-                description=escape(safe_name(spec.get("description") or "", 200))))
+        common.write_private(cfg_path, _CFG_TEMPLATE.format(
+            mode=opt_choice(spec, "mode", [m for m, _ in MODES], "Survival", "Game mode"),
+            maxp=opt_int(spec, "maxplayers", 4, 1, 16, "Max players"),
+            steam_port=ports["steam"], port=ports["game"], name=escape(display),
+            # must be a full path: a relative one isn't found from the server's own folder
+            world_path=escape("Z:" + os.path.join(install, "Content", "CustomWorlds", world).replace("/", "\\")),
+            pause=str(opt_bool(spec, "pause_empty", True)).lower(),
+            description=escape(safe_name(spec.get("description") or "", 200))))
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(

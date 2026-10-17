@@ -110,10 +110,7 @@ class VRisingGame(GameType):
             "Rcon": {"Enabled": True, "Port": ports["rcon"], "Password": "set-at-launch"},
         })
         os.makedirs(settings_dir, exist_ok=True)
-        fd = os.open(os.path.join(settings_dir, "ServerHostSettings.json"),
-                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold both passwords
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(host, f, indent=2)
+        common.write_private(os.path.join(settings_dir, "ServerHostSettings.json"), json.dumps(host, indent=2))   # will hold both passwords
         log = os.path.join(data_dir, "VRisingServer.log")
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:

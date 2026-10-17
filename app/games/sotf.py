@@ -95,9 +95,7 @@ class SotfGame(GameType):
             "GameSettings": {}, "CustomGameModeSettings": {},
         }
         os.makedirs(server_dir, exist_ok=True)
-        fd = os.open(cfg_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold the join password
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2)
+        common.write_private(cfg_path, json.dumps(cfg, indent=2))   # will hold the join password
         # Without this file the first start only creates it, says "restart" and hangs.
         with open(os.path.join(server_dir, "ownerswhitelist.txt"), "w", encoding="utf-8") as f:
             f.write("# In-game admins: one Steam ID (the long number, SteamID64) per line.\n"

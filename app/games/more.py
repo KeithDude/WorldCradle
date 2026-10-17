@@ -5,6 +5,7 @@ import os
 import re
 
 import monitor
+from games import common
 from games.base import ActionError, opt_bool, opt_choice, opt_int, safe_name
 from games.simple import GAME_PORT_HELP, QUERY_PORT_HELP, RCON_PORT_HELP, SimpleGame, port
 
@@ -180,9 +181,7 @@ class ArmaReforgerGame(SimpleGame):
                 "gameProperties": {"battlEye": opt_bool(spec, "battleye", True)},
             },
         }
-        fd = os.open(os.path.join(server_dir, "config.json"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2)
+        common.write_private(os.path.join(server_dir, "config.json"), json.dumps(cfg, indent=2))
         os.makedirs(os.path.join(server_dir, "profile"), exist_ok=True)
 
     def pre(self, spec, ports, name, server_dir, install):
@@ -250,9 +249,7 @@ class EcoGame(SimpleGame):
             "RconIPAddress": "127.0.0.1",     # the admin console listens on this computer only
             "DefaultSlots": opt_int(spec, "maxplayers", None, 1, 500, "Max players") or -1,
         })
-        fd = os.open(os.path.join(install, "Configs", "Network.eco"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(net, f, indent=2)
+        common.write_private(os.path.join(install, "Configs", "Network.eco"), json.dumps(net, indent=2))
 
     def pre(self, spec, ports, name, server_dir, install):
         return json_password_sync(os.path.join(install, "Configs", "Network.eco"),
@@ -355,9 +352,7 @@ class HumanitzGame(SimpleGame):
             ("LootRespawn", b("loot_respawn", True)),
         ):
             ref = ini_set(ref, key, value)
-        fd = os.open(self._ini(install), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(ref)
+        common.write_private(self._ini(install), ref)
 
     def pre(self, spec, ports, name, server_dir, install):
         return ini_password_sync(self._ini(install),
@@ -515,9 +510,7 @@ class VeinGame(SimpleGame):
                "[OnlineSubsystemSteam]\n"
                f"GameServerQueryPort={ports['query']}\n")
         os.makedirs(os.path.dirname(self._cfg(server_dir)), exist_ok=True)
-        fd = os.open(self._cfg(server_dir), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(ini)
+        common.write_private(self._cfg(server_dir), ini)
 
     def pre(self, spec, ports, name, server_dir, install):
         cfg = self._cfg(server_dir)
@@ -597,9 +590,7 @@ class DragonwildsGame(SimpleGame):
                "PlatformPolicy=Crossplay\n"
                "bAllowSendingCrashDumps=False\n")
         os.makedirs(os.path.dirname(self._cfg(server_dir)), exist_ok=True)
-        fd = os.open(self._cfg(server_dir), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(ini)
+        common.write_private(self._cfg(server_dir), ini)
 
     def pre(self, spec, ports, name, server_dir, install):
         cfg = self._cfg(server_dir)
@@ -770,9 +761,7 @@ class SquadGame(SimpleGame):
             text = open(path, encoding="utf-8-sig").read()
             for key, value in pairs:
                 text = ini_set(text, key, value)
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(text)
+            common.write_private(path, text)
 
     def pre(self, spec, ports, name, server_dir, install):
         locked = opt_bool(spec, "locked", True)

@@ -16,6 +16,7 @@ import urllib.request
 
 import config
 import monitor
+from games import common
 from games.base import ActionError, GameType, opt_bool, opt_int, safe_name
 from games.simple import RCON_PORT_HELP
 
@@ -144,10 +145,7 @@ class FactorioGame(GameType):
             "autosave_slots": 5,
         }
         os.makedirs(os.path.join(server_dir, "saves"), exist_ok=True)
-        fd = os.open(os.path.join(server_dir, "server-settings.json"),
-                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold the join password
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(settings, f, indent=2)
+        common.write_private(os.path.join(server_dir, "server-settings.json"), json.dumps(settings, indent=2))   # will hold the join password
         # in-game admins are their own file, not a server-settings.json entry
         with open(os.path.join(server_dir, "server-adminlist.json"), "w", encoding="utf-8") as f:
             json.dump(admins, f)

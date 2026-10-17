@@ -99,9 +99,7 @@ class ZomboidGame(GameType):
             "UPnP": "false",
         }
         os.makedirs(os.path.dirname(ini_path), exist_ok=True)
-        fd = os.open(ini_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold both passwords
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write("".join(f"{k}={v}\n" for k, v in ini.items()))
+        common.write_private(ini_path, "".join(f"{k}={v}\n" for k, v in ini.items()))   # will hold both passwords
         proc = f"-cachedir={server_dir}"
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:

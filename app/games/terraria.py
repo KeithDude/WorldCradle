@@ -144,9 +144,7 @@ class TerrariaGame(GameType):
         if seed:
             cfg["seed"] = seed
         path = os.path.join(server_dir, "serverconfig.txt")
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold the join password
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write("".join(f"{k}={v}\n" for k, v in cfg.items()))
+        common.write_private(path, "".join(f"{k}={v}\n" for k, v in cfg.items()))   # will hold the join password
         log = os.path.join(server_dir, "server.log")
         console = common.console_file(log)
         proc = f"-config {server_dir}/serverconfig.txt"

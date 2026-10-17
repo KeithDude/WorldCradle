@@ -8,6 +8,16 @@ import os
 # The launch script feeds the console from a plain file; writing a line to that
 # file is typing it. `tail -F` follows the file, so no named pipe is needed.
 
+def write_private(path: str, text: str) -> None:
+    """Write a settings file only this account can read (0600) — for files that hold, or will be
+    given at each start, a password or token. The text is written exactly as given (no line-ending
+    changes), and a file that already existed is made private too."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+    os.chmod(path, 0o600)
+
+
 def console_file(log_path: str) -> str:
     return log_path + ".console"
 

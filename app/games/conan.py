@@ -90,9 +90,7 @@ class ConanGame(GameType):
             ("Game.ini", f"[RconPlugin]\nRconEnabled=1\nRconPort={ports['rcon']}\n"
                          "RconPassword=set-at-launch\nRconMaxKarma=60\n"),
         ):
-            fd = os.open(os.path.join(cfg_dir, name), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(body)
+            common.write_private(os.path.join(cfg_dir, name), body)
         prefix = common.wine_prefix(self.kind, key)
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:

@@ -197,10 +197,7 @@ class MinecraftGame(GameType):
             "enable-query": "false",
         }
         os.makedirs(server_dir, exist_ok=True)
-        fd = os.open(os.path.join(server_dir, "server.properties"),
-                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold the RCON password
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write("".join(f"{k}={v}\n" for k, v in props.items()))
+        common.write_private(os.path.join(server_dir, "server.properties"), "".join(f"{k}={v}\n" for k, v in props.items()))   # will hold the RCON password
         with open(os.path.join(server_dir, "eula.txt"), "w", encoding="utf-8") as f:
             f.write(f"# Accepted in GameDash's Add-a-server form by the operator ({EULA_URL})\neula=true\n")
         # PvP and command blocks stopped being server.properties settings (Minecraft 1.21.9);

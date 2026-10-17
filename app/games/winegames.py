@@ -108,9 +108,7 @@ class ScumGame(WineGame):
             if n != 1:
                 raise ActionError(f"SCUM's settings template is missing {key}.")
         os.makedirs(os.path.dirname(self._ini(server_dir)), exist_ok=True)
-        fd = os.open(self._ini(server_dir), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
-            f.write(text)
+        common.write_private(self._ini(server_dir), text)
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         return kv_password_sync(self._ini(server_dir), [("scum.ServerPassword", "join")])
@@ -199,9 +197,7 @@ class AstroneerGame(WineGame):
                f"ConsolePort={ports['rcon']}\r\n"
                f"MaximumPlayerCount={opt_int(spec, 'maxplayers', 8, 1, 8, 'Max players')}\r\n"
                "AutoSaveGameInterval=600\r\n")
-        fd = os.open(self._ini(server_dir), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
-            f.write(ini)
+        common.write_private(self._ini(server_dir), ini)
         with open(os.path.join(cfg, "Engine.ini"), "w", encoding="utf-8", newline="") as f:
             f.write(f"[URL]\r\nPort={ports['game']}\r\n")
 
@@ -301,14 +297,12 @@ class NeraGame(WineGame):
 
     def write_files(self, spec, ports, name, server_dir, install):
         os.makedirs(os.path.dirname(self._ini(server_dir)), exist_ok=True)
-        fd = os.open(self._ini(server_dir), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
-            f.write("[/Script/BoatGame.BGCustomHostServerSettings]\r\n"
-                    # the game documents letters and digits only, 30 at most
-                    f"HostServerDisplayName={''.join(c for c in name if c.isalnum() or c == ' ')[:30].strip()}\r\n"
-                    "HostServerPassword=set-at-launch\r\n"
-                    f"MaxPlayers={opt_int(spec, 'maxplayers', 10, 1, 10, 'Max players')}\r\n"
-                    f"AutosaveTimerSeconds={opt_int(spec, 'autosave', 300, 10, 900, 'Autosave interval')}\r\n")
+        common.write_private(self._ini(server_dir), "[/Script/BoatGame.BGCustomHostServerSettings]\r\n"
+                # the game documents letters and digits only, 30 at most
+                f"HostServerDisplayName={''.join(c for c in name if c.isalnum() or c == ' ')[:30].strip()}\r\n"
+                "HostServerPassword=set-at-launch\r\n"
+                f"MaxPlayers={opt_int(spec, 'maxplayers', 10, 1, 10, 'Max players')}\r\n"
+                f"AutosaveTimerSeconds={opt_int(spec, 'autosave', 300, 10, 900, 'Autosave interval')}\r\n")
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         # forget the last run's join code so the card never shows a stale one
@@ -388,9 +382,7 @@ class WindroseGame(WineGame):
             "DirectConnectionProxyAddress": "0.0.0.0", "AutoLoadLatestBackupIfHasBroken": True,
             # each server runs from its own copy, so several may run on one computer
             "CanLaunchMultipleServerInstances": True}}
-        fd = os.open(self._desc(install), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(desc, f, indent="\t")
+        common.write_private(self._desc(install), json.dumps(desc, indent="\t"))
 
     def sync_lines(self, spec, ports, name, server_dir, install):
         from games.more import json_password_sync

@@ -13,6 +13,7 @@ import secrets
 
 import config
 import monitor
+from games import common
 from games.base import (ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name)
 
 EXE = "dontstarve_dedicated_server_nullrenderer_x64"
@@ -171,9 +172,7 @@ class DstGame(GameType):
         os.makedirs(cluster_dir, mode=0o700, exist_ok=True)
         for name, body in (("cluster.ini", cluster_ini), ("cluster_token.txt", token)):
             path = os.path.join(cluster_dir, name)
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)  # holds the password/token
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(body)
+            common.write_private(path, body)  # holds the password/token
         for shard, ini in shards.items():
             os.makedirs(os.path.join(cluster_dir, shard), exist_ok=True)
             with open(os.path.join(cluster_dir, shard, "server.ini"), "w", encoding="utf-8") as f:

@@ -13,6 +13,7 @@ import socket
 from xml.sax.saxutils import escape
 
 import config
+from games import common
 from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
 from games.simple import RCON_PORT_HELP
 
@@ -176,10 +177,7 @@ class SdtdGame(GameType):
         for k, v in values.items():
             xml = self._set(xml, k, v)
         os.makedirs(os.path.join(server_dir, "data"), exist_ok=True)
-        fd = os.open(os.path.join(server_dir, "serverconfig.xml"),
-                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold both passwords
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(xml)
+        common.write_private(os.path.join(server_dir, "serverconfig.xml"), xml)   # will hold both passwords
         log = os.path.join(server_dir, "server.log")
         proc = f"-configfile={server_dir}/serverconfig.xml"
         run = os.path.join(install, f"gamedash-{key}-run.sh")

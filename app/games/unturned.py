@@ -109,9 +109,7 @@ class UnturnedGame(GameType):
         if token:
             lines.append(f"GSLT {token}")
         os.makedirs(os.path.dirname(cmds), exist_ok=True)
-        fd = os.open(cmds, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # holds the password + token
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
+        common.write_private(cmds, "\n".join(lines) + "\n")   # holds the password + token
         log = os.path.join(server_dir, "gamedash-console.log")
         console = common.console_file(log)
         nettype = "InternetServer" if token else "LanServer"

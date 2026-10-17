@@ -91,9 +91,7 @@ class IcarusGame(GameType):
                f"AllowNonAdminsToDeleteProspects={b('anyone_delete', False)}\n"
                "ResumeProspect=True\n")
         os.makedirs(cfg_dir, exist_ok=True)
-        fd = os.open(os.path.join(cfg_dir, "ServerSettings.ini"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(ini)
+        common.write_private(os.path.join(cfg_dir, "ServerSettings.ini"), ini)
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
             f.write(_RUN_TEMPLATE.format(

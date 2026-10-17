@@ -97,9 +97,7 @@ class EnshroudedGame(GameType):
             ],
         }
         common.link_farm(install, server_dir, {"enshrouded_server.json", "savegame", "logs"})
-        fd = os.open(cfg_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)   # will hold both passwords
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent="\t")
+        common.write_private(cfg_path, json.dumps(cfg, indent="\t"))   # will hold both passwords
         prefix = common.wine_prefix(self.kind, key)
         run = os.path.join(install, f"gamedash-{key}-run.sh")
         with open(run, "w", encoding="utf-8") as f:
