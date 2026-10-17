@@ -84,6 +84,12 @@ exec wine {exe} \\
 
 
 class AbioticGame(GameType):
+    join_steps = [
+        "In Abiotic Factor: <b>Join a Game</b>, search the server list for <b>{server}</b>.",
+        "Or connect directly by IP: <code>{address}</code>",
+        "{password} Type it in the game's own password prompt — it can re-send a password "
+        "remembered from another server.",
+    ]
     kind = "abiotic"
     label = "Abiotic Factor"
     install_marker = "AbioticFactor/Binaries/Win64/AbioticFactorServer-Win64-Shipping.exe"

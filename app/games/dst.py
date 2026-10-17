@@ -46,6 +46,12 @@ cd "{install}/bin64" || exit 1
 
 
 class DstGame(GameType):
+    join_steps = [
+        "In Don't Starve Together: <b>Browse Games</b>, search for <b>{server}</b> and join.",
+        "If it doesn't show up: open the console with the <b>~</b> key and type "
+        "<code>c_connect(\"{host}\", {port}, \"password\")</code> with the join password.",
+        "{password}",
+    ]
     reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "dst"
     label = "Don't Starve Together"

@@ -99,3 +99,11 @@ def test_card_rows_depend_on_the_game_not_on_running(g):
     rows = g.card_rows(s)
     assert set(rows) == {"players", "answering", "server_stats"}
     assert all(isinstance(v, bool) for v in rows.values())
+
+
+@pytest.mark.parametrize("g", ALL, ids=lambda g: g.kind)
+def test_join_steps_only_use_known_placeholders(g):
+    import re
+    known = {"address", "host", "port", "server", "password"}
+    for step in g.join_steps:
+        assert set(re.findall(r"\{(\w+)\}", step)) <= known, f"{g.kind}: {step}"

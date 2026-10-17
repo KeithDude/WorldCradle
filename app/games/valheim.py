@@ -34,6 +34,11 @@ def _choices(values: list[str], blank: str) -> list[list[str]]:
 
 
 class ValheimGame(GameType):
+    join_steps = [
+        "In Valheim: <b>Start → “Join Game” tab → “Join IP”</b>.",
+        "Enter: <code>{address}</code>",
+        "{password}",
+    ]
     reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "valheim"
     label = "Valheim"

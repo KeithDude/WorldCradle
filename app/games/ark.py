@@ -32,6 +32,13 @@ GAMEDASH_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class ArkGame(GameType):
+    join_steps = [
+        "In Steam: <b>View → Game Servers → “Favorites” tab → “Add a Server”</b>.",
+        "Enter this address and add it: <code>{address}</code>",
+        "Launch ARK and choose <b>“Join ARK”</b>.",
+        "Switch the session filter to <b>“Favorites”</b> — your added server shows up there.",
+        "Select <b>{server}</b> and join. {password}",
+    ]
     kind = "ark"
     label = "ARK"
     title = "ARK: Survival Evolved"

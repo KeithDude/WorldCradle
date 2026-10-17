@@ -135,8 +135,11 @@ on real servers before it ships:
 - [x] `app.js`: one window helper instead of six hand-built ones (every window now closes on
       Escape, a click outside or ✕, and is announced as a dialog), one "players are online —
       continue?" step instead of five, the card buttons in one table. *(2026-10-17)*
-- [ ] `app.js`: per-game join instructions and actions sent by the server, and the file split
-      into a few modules. Move inline styles into the stylesheet, which also lets the
+- [x] Each game declares its own "How to join" steps and its in-game buttons (Save, Message, Chat)
+      come from what the game supports, instead of game names written into `app.js` — which also
+      gave Terraria and other console games the Save / Message buttons they were missing.
+      *(2026-10-17)*
+- [ ] `app.js`: split into a few modules. Move inline styles into the stylesheet, which also lets the
       security policy drop `'unsafe-inline'` for styles.
 
 ### Dashboard

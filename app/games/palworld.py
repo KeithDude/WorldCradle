@@ -79,6 +79,11 @@ def set_ini_options(ini: str, quoted: dict, bare: dict) -> None:
 
 
 class PalworldGame(GameType):
+    join_steps = [
+        "In Palworld: <b>Join Multiplayer (Co-op) → Community Servers</b>, search <b>{server}</b>.",
+        "Or use <b>“Connect to Server”</b> by IP: <code>{address}</code>",
+        "{password}",
+    ]
     reports_answering = False   # who's on comes from its log / admin console, not a port check
     kind = "palworld"
     label = "Palworld"

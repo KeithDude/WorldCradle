@@ -14,7 +14,7 @@ import sys
 import config
 from games import common
 from games.ark import GAMEDASH_DIR, ArkGame
-from games.base import ActionError, opt_bool, opt_choice, opt_int, safe_name
+from games.base import ActionError, GameType, opt_bool, opt_choice, opt_int, safe_name
 from games.simple import RCON_PORT_HELP
 
 EXE = "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
@@ -35,6 +35,7 @@ exec wine ./ArkAscendedServer.exe \\
 
 
 class AsaGame(ArkGame):
+    join_steps = GameType.join_steps     # not ARK's Steam-favourites route
     kind = "asa"
     label = "ARK Ascended"
     title = "ARK: Survival Ascended"

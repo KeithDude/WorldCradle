@@ -94,6 +94,10 @@ class GameType:
     ram_note: str = ""              # plain-language memory guidance
     about: str = ""                 # one line for the Games list
     actions: set[str] = set()       # supported controls: save/broadcast/kick/ban/chat
+    # "How to join" steps shown to players (HTML, written here — never from user input). The page
+    # fills in {address} (host:port), {host}, {port}, {server} (the server's name) and {password}
+    # (a sentence about the shared join password), escaping each value.
+    join_steps: list[str] = ["Connect to <code>{address}</code>."]
 
     @property
     def eula(self) -> dict | None:

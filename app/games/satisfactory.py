@@ -11,6 +11,11 @@ from games.base import ActionError, GameType, opt_bool, opt_int
 
 
 class SatisfactoryGame(GameType):
+    join_steps = [
+        "In Satisfactory: <b>Server Manager → “Add Server”</b>.",
+        "Enter: <code>{address}</code>",
+        "Follow the prompts.",
+    ]
     server_stats = True     # tick rate, progress and game time from its HTTPS API
     kind = "satisfactory"
     label = "Satisfactory"

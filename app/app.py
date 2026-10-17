@@ -285,6 +285,7 @@ def api_public():
     snap = poller.snapshot()
     return jsonify({"servers": _public_servers(snap), "ts": snap.get("ts", 0),
                     "titles": games.titles(),
+                    "join_steps": games.join_steps(),
                     "public_host": config.load().get("public_host", "")})
 
 
@@ -417,6 +418,7 @@ def api_admin():
     snap["install_job"] = installs.status()
     snap["public_host"] = config.load().get("public_host", "")
     snap["titles"] = games.titles()
+    snap["join_steps"] = games.join_steps()
     return jsonify(snap)
 
 

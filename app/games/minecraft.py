@@ -64,6 +64,11 @@ def _java_major() -> int | None:
 
 
 class MinecraftGame(GameType):
+    join_steps = [
+        "In Minecraft: Java Edition: <b>Multiplayer → Add Server</b>.",
+        "Server Address: <code>{address}</code>",
+        "There is no password — the server owner has to add your Minecraft username to its whitelist first.",
+    ]
     kind = "minecraft"
     label = "Minecraft"
     title = "Minecraft: Java Edition"

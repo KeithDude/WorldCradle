@@ -296,6 +296,7 @@ class Poller:
             "players": None, "player_names": [], "player_detail": [], "max_players": None,
             "reachable": None, "note": "",  # reachable: True / False / None=unknown
             "sf": None,  # Satisfactory extra state (tick rate, phase, uptime, …)
+            "actions": sorted(game.actions) if game else [],   # which in-game buttons it has
             # which rows the card shows: they depend on the game, not on whether it's running
             "rows": game.card_rows(s) if game else {"players": False, "answering": False, "server_stats": False},
             "backup_warn": self._backup_warn(s),

@@ -72,4 +72,9 @@ def titles() -> dict[str, str]:
     return {g.label: g.title for g in _TYPES if g.title and g.title != g.label}
 
 
-__all__ = ["get", "all_types", "titles", "GameType", "ActionError", "BY_KIND"]
+def join_steps() -> dict[str, list[str]]:
+    """{game kind: "How to join" steps} for the pages (see GameType.join_steps)."""
+    return {g.kind: list(g.join_steps) for g in _TYPES}
+
+
+__all__ = ["get", "all_types", "titles", "join_steps", "GameType", "ActionError", "BY_KIND"]

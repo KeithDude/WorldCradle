@@ -29,46 +29,16 @@ const gamedash = (() => {
         title="Show step-by-step instructions + the address to connect to this server">ⓘ How to join</button>`
     : "";
 
-  function joinSteps(kind, srvname, addr) {
-    const pw = `Enter the join password (the one you were given — it's the same for every server).`;
-    if (kind === "ark") return [
-      `In Steam: <b>View → Game Servers → “Favorites” tab → “Add a Server”</b>.`,
-      `Enter this address and add it: <code>${addr}</code>`,
-      `Launch ARK and choose <b>“Join ARK”</b>.`,
-      `Switch the session filter to <b>“Favorites”</b> — your added server shows up there.`,
-      `Select <b>${esc(srvname)}</b> and join. ${pw}`,
-    ];
-    if (kind === "palworld") return [
-      `In Palworld: <b>Join Multiplayer (Co-op) → Community Servers</b>, search <b>${esc(srvname)}</b>.`,
-      `Or use <b>“Connect to Server”</b> by IP: <code>${addr}</code>`,
-      pw,
-    ];
-    if (kind === "valheim") return [
-      `In Valheim: <b>Start → “Join Game” tab → “Join IP”</b>.`,
-      `Enter: <code>${addr}</code>`,
-      pw,
-    ];
-    if (kind === "abiotic") return [
-      `In Abiotic Factor: <b>Join a Game</b>, search the server list for <b>${esc(srvname)}</b>.`,
-      `Or connect directly by IP: <code>${addr}</code>`,
-      `${pw} Type it in the game's own password prompt — it can re-send a password remembered from another server.`,
-    ];
-    if (kind === "minecraft") return [
-      `In Minecraft: Java Edition: <b>Multiplayer → Add Server</b>.`,
-      `Server Address: <code>${addr}</code>`,
-      `There is no password — the server owner has to add your Minecraft username to its whitelist first.`,
-    ];
-    if (kind === "dst") return [
-      `In Don't Starve Together: <b>Browse Games</b>, search for <b>${esc(srvname)}</b> and join.`,
-      `If it doesn't show up: open the console with the <b>~</b> key and type <code>c_connect("${addr.split(":")[0]}", ${addr.split(":")[1]}, "password")</code> with the join password.`,
-      pw,
-    ];
-    if (kind === "satisfactory") return [
-      `In Satisfactory: <b>Server Manager → “Add Server”</b>.`,
-      `Enter: <code>${addr}</code>`,
-      `Follow the prompts.`,
-    ];
-    return [`Connect to <code>${addr}</code>.`];
+  // "How to join" steps for each game, sent with the feeds (each game type declares its own;
+  // see GameType.join_steps). The values put into them are escaped here.
+  let JOIN_STEPS = {};
+  const PASSWORD_STEP = "Enter the join password (the one you were given — it's the same for every server).";
+
+  function joinSteps(kind, srvname, host, port) {
+    const values = { address: esc(`${host}:${port}`), host: esc(host), port: esc(port),
+                     server: esc(srvname || ""), password: PASSWORD_STEP };
+    return (JOIN_STEPS[kind] || ["Connect to <code>{address}</code>."])
+      .map((step) => step.replace(/\{(\w+)\}/g, (m, k) => (k in values ? values[k] : m)));
   }
 
   // ---- pop-up windows ----
@@ -107,8 +77,8 @@ const gamedash = (() => {
   }
 
   function openJoin(info) {
-    const addr = esc(`${joinHost()}:${info.port}`);   // goes into innerHTML via joinSteps
-    const steps = joinSteps(info.kind, info.srvname, addr).map((s) => `<li>${s}</li>`).join("");
+    const addr = esc(`${joinHost()}:${info.port}`);
+    const steps = joinSteps(info.kind, info.srvname, joinHost(), info.port).map((s) => `<li>${s}</li>`).join("");
     openModal({ id: "join-modal", title: "Join — " + info.name, bodyHtml: `
       ${info.srvname ? `<p class="join-srv">Server name: <b>${esc(info.srvname)}</b></p>` : ""}
       <p class="join-addr">Address: <code>${addr}</code></p>
@@ -153,6 +123,7 @@ const gamedash = (() => {
     if (!grid) return;
     if (data.public_host) PUBLIC_HOST = data.public_host;
     if (data.titles) GAME_TITLES = data.titles;
+    if (data.join_steps) JOIN_STEPS = data.join_steps;
     let lastGame = null;
     grid.innerHTML = data.servers.map((s) => {
       const game = s.name.split(" · ")[0];
@@ -229,21 +200,21 @@ const gamedash = (() => {
   };
 
   function controlsRow(v) {
-    const hasRcon = v.rcon_port != null;
+    const can = (action) => (v.actions || []).includes(action);   // what this game supports
     const btn = (action, label, cls) =>
       `<button class="ctl ${cls || ""}" data-action="${action}" title="${esc(ACTION_TITLES[action] || "")}">${label}</button>`;
-    // lifecycle group: Start / Stop / Restart (+ Kill), with Remove after
+    // Start, or Restart / Stop / Force stop; then Remove and Save
     const life = v.online ? [btn("restart", "Restart", "warn"), btn("stop", "Stop", "danger"),
                              btn("kill", "Force stop", "danger")]
                           : [btn("start", "Start", "go")];
     if (v.managed === "gamedash") life.push(btn("removesrv", "Remove", "danger"));
-    if (v.online && (hasRcon || v.kind === "satisfactory")) life.push(btn("save", "Save"));
-    // action group (separated by a thin divider): message / chat / logs
+    if (v.online && can("save")) life.push(btn("save", "Save"));
+    // the other buttons, after a thin divider
     const editBtn = v.managed === "gamedash" ? btn("editscript", "Launch script") : "";
     const bkBtn = `<a class="ctl" href="/admin/backups#bk-${esc(v.key)}" title="${esc(ACTION_TITLES.backups)}">Backups</a>`;
     const acts = (v.online
-      ? [hasRcon ? btn("broadcast", "Message") : "",
-         v.kind === "ark" ? btn("chat", "Chat") : "",
+      ? [can("broadcast") ? btn("broadcast", "Message") : "",
+         can("chat") ? btn("chat", "Chat") : "",
          btn("logs", "Logs"), bkBtn, editBtn, btn("reach", "Can friends connect?")]
       : [btn("logs", "Logs"), bkBtn, editBtn, btn("reach", "Can friends connect?")]).filter(Boolean);
     const divider = acts.length ? '<span class="ctl-divider"></span>' : "";
@@ -650,6 +621,7 @@ const gamedash = (() => {
     if (!grid) return;
     if (snap.public_host) PUBLIC_HOST = snap.public_host;
     if (snap.titles) GAME_TITLES = snap.titles;
+    if (snap.join_steps) JOIN_STEPS = snap.join_steps;
     let lastGame = null;
     grid.innerHTML = Object.values(snap.servers).map((v) => {
       const game = v.name.split(" · ")[0];
