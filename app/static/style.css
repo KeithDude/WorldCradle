@@ -48,7 +48,8 @@ main { padding: 1rem; max-width: 1100px; margin: 0 auto; }
   border-radius: .6rem; padding: .9rem 1rem;
 }
 .card.off { opacity: .65; }
-.card h2 { font-size: 1rem; margin: 0 0 .5rem; padding-right: 7rem; display: flex; align-items: center; gap: .5rem; }
+.card h2 { font-size: 1rem; margin: 0 0 .2rem; padding-right: 7rem; overflow-wrap: anywhere; }
+.card .state { display: flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--muted); margin-bottom: .45rem; }
 
 .dot { width: .7rem; height: .7rem; border-radius: 50%; flex: none; }
 .dot.on { background: var(--on); box-shadow: 0 0 6px var(--on); }
@@ -166,7 +167,6 @@ summary[title], .alerts-panel[title] > summary { cursor: help; }
 }
 .certnote-x:hover { color: #fff; }
 
-.srvname { color: var(--text); font-size: .95rem; font-weight: 600; margin: .15rem 0 .35rem; overflow-wrap: anywhere; }
 .joinbtn {
   position: absolute; top: .7rem; right: .8rem; z-index: 1;
   background: var(--panel2); color: var(--accent); border: 1px solid var(--accent);

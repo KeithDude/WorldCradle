@@ -11,9 +11,9 @@
         {% if s.join_port %}
           <button class="joinbtn" data-kind="{{ s.kind }}" data-name="{{ s.name }}" data-srvname="{{ s.server_name }}" data-port="{{ s.join_port }}">ⓘ How to join</button>
         {% endif %}
-        {# same as app.js: Online / Offline, the server's name, and players for games that report them #}
-        <h2><span class="dot {{ 'on' if s.online else 'off' }}"></span>{{ 'Online' if s.online else 'Offline' }}</h2>
-        <div class="srvname">🎮 {{ s.server_name or s.name.split(' · ', 1)[-1] }}</div>
+        {# same as app.js: the server's name, Online / Offline, and players for games that report them #}
+        <h2>🎮 {{ s.server_name or s.name.split(' · ', 1)[-1] }}</h2>
+        <div class="state"><span class="dot {{ 'on' if s.online else 'off' }}"></span>{{ 'Online' if s.online else 'Offline' }}</div>
         {% if s.players is not none %}
           <div class="players">{{ s.players }}<span class="max">{% if s.max_players %} / {{ s.max_players }}{% endif %} players</span></div>
         {% endif %}

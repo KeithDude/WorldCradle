@@ -113,15 +113,15 @@ const gamedash = (() => {
     });
   }
 
-  // ---- card heading: Online / Offline, then the server's name ----
+  // ---- card heading: the server's name, then Online / Offline ----
   // (cards sit under their game's heading, so the game isn't repeated here)
   const serverName = (v) => {
     if (v.server_name) return v.server_name;          // the name players see in the server list
     const i = v.name.indexOf(" · ");
     return i >= 0 ? v.name.slice(i + 3) : v.name;
   };
-  const cardHead = (v) => `<h2><span class="dot ${v.online ? "on" : "off"}"></span>${v.online ? "Online" : "Offline"}</h2>
-    <div class="srvname" title="The server's name, as players see it">🎮 ${esc(serverName(v))}</div>`;
+  const cardHead = (v) => `<h2 title="The server's name, as players see it">🎮 ${esc(serverName(v))}</h2>
+    <div class="state"><span class="dot ${v.online ? "on" : "off"}"></span>${v.online ? "Online" : "Offline"}</div>`;
 
   // only for games that report who is on
   const playersBlock = (v) => {
