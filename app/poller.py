@@ -273,10 +273,10 @@ class Poller:
             st["cpu_percent"], st["mem_mb"] = service_usage(s.unit, self._find_pid(s.proc_match, procs))
 
         # A server sharing a slot but not active: its sibling owns the port, so
-        # don't probe it (we'd attribute the sibling's data to the wrong map).
+        # don't probe it (we'd attribute the sibling's data to the wrong map). Its card just
+        # says "stopped" — starting it while the sibling runs is refused with the reason.
         if s.slot_group and not online:
             st["parked"] = True
-            st["note"] = "parked (shares ports with another server — only one runs at a time)"
         elif online:
             st["_probe"] = True
         return st
