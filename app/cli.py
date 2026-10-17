@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""gamedash — command-line tools for the person who runs GameDash.
+"""realmcradle — command-line tools for the person who runs RealmCradle.
 
-Usage: gamedash <command> [options]
+Usage: realmcradle <command> [options]
 
-  setup                      Set GameDash up for your account (after installing the package; safe to repeat)
+  setup                      Set RealmCradle up for your account (after installing the package; safe to repeat)
   status                     Is the dashboard running, where to open it, and each server's state
   address                    The web addresses to open the dashboard at
   qr                         A QR code to open the dashboard on a phone
@@ -23,14 +23,14 @@ Usage: gamedash <command> [options]
   backup restore <server> <number>   Put a backup back (a safety copy is made first)
   unban <address>            Let an address that mistyped the password too often sign in again
 
-  update                     Update GameDash itself (puts the old version back if the new one fails)
-  uninstall                  Remove GameDash (asks before each step; never deletes games or saves)
+  update                     Update RealmCradle itself (puts the old version back if the new one fails)
+  uninstall                  Remove RealmCradle (asks before each step; never deletes games or saves)
   test-alert                 Send a test alert to every place alerts are set up to go
   check                      Quick health check: service, disk space, certificate, admin password
-  version                    Which version of GameDash this is
+  version                    Which version of RealmCradle this is
   help                       This list
 
-Server names are the short keys shown by "gamedash servers".
+Server names are the short keys shown by "realmcradle servers".
 """
 from __future__ import annotations
 
@@ -41,11 +41,11 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault("GAMEDASH_QUIET_LOG", "1")   # log lines still go to the log files, not the screen
+os.environ.setdefault("REALMCRADLE_QUIET_LOG", "1")   # log lines still go to the log files, not the screen
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UNIT = os.environ.get("GAMEDASH_UNIT", "gamedash.service")   # overridable for testing
-DEFAULT_PORT = int(os.environ.get("GAMEDASH_PORT") or 8443)
+UNIT = os.environ.get("REALMCRADLE_UNIT", "realmcradle.service")   # overridable for testing
+DEFAULT_PORT = int(os.environ.get("REALMCRADLE_PORT") or 8443)
 # Installed from the package: the program folder belongs to the system, and the package manager
 # installs new versions. Otherwise this is a git checkout that updates itself with git.
 PACKAGED = not os.access(REPO, os.W_OK)
@@ -56,7 +56,7 @@ def _say(text: str = "") -> None:
 
 
 def _err(text: str) -> int:
-    print(f"gamedash: {text}", file=sys.stderr)
+    print(f"realmcradle: {text}", file=sys.stderr)
     return 1
 
 
@@ -90,7 +90,7 @@ def _lan_ip() -> str:
 def cmd_address(_args) -> int:
     import config
     port = _port()
-    _say("Open GameDash in a web browser at:")
+    _say("Open RealmCradle in a web browser at:")
     ip = _lan_ip()
     if ip:
         _say(f"  on your home network:   https://{ip}:{port}/")
@@ -133,9 +133,9 @@ def cmd_qr(_args) -> int:
 def cmd_status(_args) -> int:
     import config
     running = _active(UNIT)
-    _say(f"Dashboard: {'running' if running else 'NOT running — start it with: gamedash start'}")
+    _say(f"Dashboard: {'running' if running else 'NOT running — start it with: realmcradle start'}")
     if config.needs_setup():
-        _say("Admin password: not chosen yet — run: gamedash setup-code")
+        _say("Admin password: not chosen yet — run: realmcradle setup-code")
     _say()
     cmd_address(None)
     _say()
@@ -165,14 +165,14 @@ def cmd_reset_password(_args) -> int:
 def cmd_setup_code(_args) -> int:
     import config
     if not config.needs_setup():
-        return _err("an admin password is already set. To choose a new one, run: gamedash reset-password")
+        return _err("an admin password is already set. To choose a new one, run: realmcradle reset-password")
     _say("Open the dashboard in your browser and enter this one-time code:")
     _say(f"  {config.new_setup_code()}")
     return 0
 
 
 def cmd_setup(args) -> int:
-    """Run setup.sh (normally started straight from the `gamedash` command, before Python)."""
+    """Run setup.sh (normally started straight from the `realmcradle` command, before Python)."""
     os.execvp("bash", ["bash", os.path.join(REPO, "setup.sh"), *args])
 
 
@@ -182,7 +182,7 @@ def cmd_welcome(args) -> int:
     port = _port()
     ip = _lan_ip()
     _say()
-    _say("  GameDash is running.")
+    _say("  RealmCradle is running.")
     _say()
     _say("  1. On any computer or phone on your home network, open a web browser and go to:")
     _say()
@@ -207,7 +207,7 @@ def cmd_welcome(args) -> int:
         _say()
         _say(f"         {config.new_setup_code()}")
         _say()
-        _say("     (Lost it? Type:  gamedash setup-code)")
+        _say("     (Lost it? Type:  realmcradle setup-code)")
     else:
         _say("  2. Sign in with the admin password you already chose.")
     _say()
@@ -222,7 +222,7 @@ def cmd_welcome(args) -> int:
         _say(f"         {join}")
         _say()
         _say("     (Change it any time in the dashboard: Settings → Game passwords.")
-        _say("      To see it again later, type:  gamedash passwords)")
+        _say("      To see it again later, type:  realmcradle passwords)")
     if "--firewall" in args:
         _say()
         _say("  Note: this computer's firewall (ufw) is on. Each game server's ports also have")
@@ -268,13 +268,13 @@ def _server(key: str):
     from registry import by_key
     s = by_key().get(key)
     if s is None:
-        _err(f"no server called '{key}' — see: gamedash servers")
+        _err(f"no server called '{key}' — see: realmcradle servers")
     return s
 
 
 def cmd_server(args) -> int:
     if len(args) < 2:
-        return _err("usage: gamedash server <start|stop|restart|logs> <server>")
+        return _err("usage: realmcradle server <start|stop|restart|logs> <server>")
     action, key = args[0].lower(), args[1]
     s = _server(key)
     if s is None:
@@ -286,7 +286,7 @@ def cmd_server(args) -> int:
         _say("\n".join(text.splitlines()[-n:]) or "(no log lines)")
         return 0
     if action not in ("start", "stop", "restart"):
-        return _err("usage: gamedash server <start|stop|restart|logs> <server>")
+        return _err("usage: realmcradle server <start|stop|restart|logs> <server>")
     import controls
     try:
         r = controls.perform(key, action)
@@ -304,11 +304,11 @@ def cmd_server(args) -> int:
 
 def cmd_backup(args) -> int:
     if not args:
-        return _err("usage: gamedash backup <server|all> | backup list <server> | backup restore <server> <backup>")
+        return _err("usage: realmcradle backup <server|all> | backup list <server> | backup restore <server> <backup>")
     import backups
     if args[0] == "list":
         if len(args) < 2:
-            return _err("usage: gamedash backup list <server>")
+            return _err("usage: realmcradle backup list <server>")
         if _server(args[1]) is None:
             return 1
         items = backups.list_backups(args[1])
@@ -319,18 +319,18 @@ def cmd_backup(args) -> int:
         for n, b in enumerate(items, 1):
             when = time.strftime("%Y-%m-%d %H:%M", time.localtime(b["mtime"]))
             _say(f"  {n:>2}. {when}  {b['size_h']:>8}  {b['name']}")
-        _say("Restore one with: gamedash backup restore <server> <number>")
+        _say("Restore one with: realmcradle backup restore <server> <number>")
         return 0
     if args[0] == "restore":
         if len(args) < 3:
-            return _err("usage: gamedash backup restore <server> <number or file name>")
+            return _err("usage: realmcradle backup restore <server> <number or file name>")
         if _server(args[1]) is None:
             return 1
         key, which = args[1], args[2]
         items = backups.list_backups(key)
         name = items[int(which) - 1]["name"] if which.isdigit() and 0 < int(which) <= len(items) else which
         if not any(b["name"] == name for b in items):
-            return _err(f"no backup '{which}' for that server — see: gamedash backup list {key}")
+            return _err(f"no backup '{which}' for that server — see: realmcradle backup list {key}")
         s = _server(key)
         _say(f"This puts {s.name}'s saved world back to: {name}")
         _say("A safety copy of the current save is made first. If the server is running it is stopped,")
@@ -373,13 +373,13 @@ def cmd_check(_args) -> int:
         nonlocal problems
         problems += 0 if ok else 1
         _say(f"  {'OK     ' if ok else 'PROBLEM'}  {text}")
-    _say("GameDash health check")
-    line(_active(UNIT), "dashboard service running" if _active(UNIT) else "dashboard is not running — gamedash start")
+    _say("RealmCradle health check")
+    line(_active(UNIT), "dashboard service running" if _active(UNIT) else "dashboard is not running — realmcradle start")
     line(not config.needs_setup(), "admin password set" if not config.needs_setup()
-         else "no admin password yet — gamedash setup-code")
+         else "no admin password yet — realmcradle setup-code")
     free = shutil.disk_usage(os.path.expanduser("~")).free / 2**30
     line(free >= 10, f"{free:.0f} GB free disk space" + ("" if free >= 10 else " — game servers need room to update"))
-    cert = os.path.join(os.environ.get("GAMEDASH_HOME", os.path.expanduser("~/.config/gamedash")), "certs", "cert.pem")
+    cert = os.path.join(os.environ.get("REALMCRADLE_HOME", os.path.expanduser("~/.config/realmcradle")), "certs", "cert.pem")
     if os.path.isfile(cert):
         r = subprocess.run(["openssl", "x509", "-in", cert, "-noout", "-checkend", str(14 * 86400)],
                            capture_output=True, text=True)
@@ -423,8 +423,8 @@ def _answers(timeout: int = 60) -> bool:
 
 
 def _install_requirements() -> None:
-    """Bring the Python libraries in line with this version (see bin/gamedash-ensure-venv)."""
-    r = subprocess.run([os.path.join(REPO, "bin", "gamedash-ensure-venv")],
+    """Bring the Python libraries in line with this version (see bin/realmcradle-ensure-venv)."""
+    r = subprocess.run([os.path.join(REPO, "bin", "realmcradle-ensure-venv")],
                        capture_output=True, text=True, timeout=1200)
     if r.returncode != 0:
         raise RuntimeError("installing the Python libraries failed:\n" + (r.stderr or r.stdout).strip()[-1500:])
@@ -432,7 +432,7 @@ def _install_requirements() -> None:
 
 def _self_test() -> None:
     """The new code must at least load: the web app, every game type and every page."""
-    py = sys.executable   # this command runs in GameDash's own Python environment
+    py = sys.executable   # this command runs in RealmCradle's own Python environment
     code = ("import sys; sys.path.insert(0, '.'); import app, games\n"
             "[ (g.port_fields(), g.extra_fields) for g in games.all_types() if g.kind != 'custom' ]\n"
             "[ app.app.jinja_env.get_template(t) for t in ('admin.html', 'public.html', 'base.html', 'login.html') ]")
@@ -456,21 +456,21 @@ def _update_package(args) -> int:
     import release
     current = release.installed_version()
     if not current:
-        return _err("GameDash's package isn't installed on this computer — nothing to update.")
+        return _err("RealmCradle's package isn't installed on this computer — nothing to update.")
     _say("Checking for a new version…")
     try:
         new = release.latest()
     except release.ReleaseError as e:
         return _err(str(e))
     if not release.is_newer(new["version"], current):
-        _say(f"GameDash is up to date ({current}).")
+        _say(f"RealmCradle is up to date ({current}).")
         return 0
     _say(f"New version: {new['version']} (you have {current}). What's new:")
     for line in [ln for ln in new["notes"].splitlines() if ln.strip()][:30]:
         _say(f"  {line}")
     if not _confirm_update(args):
         return _err("cancelled — nothing changed")
-    folder = os.path.join(os.path.expanduser("~/.cache/gamedash"), "updates")
+    folder = os.path.join(os.path.expanduser("~/.cache/realmcradle"), "updates")
     try:
         _say("Downloading and checking it…")
         path = release.download(new, folder)
@@ -486,32 +486,32 @@ def _update_package(args) -> int:
     try:
         release.install(release.download(release.for_version(current), folder))
     except release.ReleaseError as e:
-        return _err(f"putting the previous version back failed too ({e}). Check: gamedash logs")
+        return _err(f"putting the previous version back failed too ({e}). Check: realmcradle logs")
     _say("The previous version is running again." if _answers(timeout=600) else
-         "The previous version is back, but the dashboard isn't answering yet — check: gamedash logs")
+         "The previous version is back, but the dashboard isn't answering yet — check: realmcradle logs")
     return 1
 
 
 def cmd_update(args) -> int:
-    """Update GameDash itself; roll back if the new version fails."""
+    """Update RealmCradle itself; roll back if the new version fails."""
     if PACKAGED:
         return _update_package(args)
     if not os.path.isdir(os.path.join(REPO, ".git")):
-        return _err("this copy of GameDash wasn't installed with git, so it can't update itself. "
+        return _err("this copy of RealmCradle wasn't installed with git, so it can't update itself. "
                     "Download the new version and run install.sh again.")
     if _git("status", "--porcelain"):
-        return _err("GameDash's files have been changed on this computer, so updating could lose those "
+        return _err("RealmCradle's files have been changed on this computer, so updating could lose those "
                     "changes. Nothing was done.")
     branch = _git("rev-parse", "--abbrev-ref", "HEAD")
     _say("Checking for a new version…")
     try:
         _git("fetch", "--quiet", "origin", branch)
     except RuntimeError as e:
-        return _err(f"couldn't reach GameDash's home on the internet: {e}")
+        return _err(f"couldn't reach RealmCradle's home on the internet: {e}")
     old = _git("rev-parse", "HEAD")
     new = _git("rev-parse", f"origin/{branch}")
     if old == new:
-        _say("GameDash is up to date.")
+        _say("RealmCradle is up to date.")
         return 0
     if subprocess.run(["git", "-C", REPO, "merge-base", "--is-ancestor", old, new]).returncode != 0:
         return _err("this copy has commits that aren't in the published version — not updating automatically.")
@@ -530,9 +530,9 @@ def cmd_update(args) -> int:
             _systemctl("restart", UNIT)
         except Exception as e:
             return _err(f"rolling back also failed ({e}). Run: git -C {REPO} reset --hard {old[:12]} "
-                        "and then: gamedash restart")
+                        "and then: realmcradle restart")
         _say("The previous version is running again." if _answers() else
-             "The previous version is back, but the dashboard isn't answering yet — check: gamedash logs")
+             "The previous version is back, but the dashboard isn't answering yet — check: realmcradle logs")
         return 1
 
     try:
@@ -562,7 +562,7 @@ def _yes(question: str, default: bool = False) -> bool:
 
 
 def cmd_uninstall(args) -> int:
-    """Remove GameDash from this computer, step by step, asking before anything that can't be undone.
+    """Remove RealmCradle from this computer, step by step, asking before anything that can't be undone.
     Game installs and saves are never deleted; backups and settings only if asked."""
     import config
     import paths
@@ -576,16 +576,16 @@ def cmd_uninstall(args) -> int:
     # where the games live — read now, while the settings still exist
     installs = sorted({config.install_dir(s.kind) for s in servers if s.kind != "custom"})
 
-    _say("This removes GameDash from this computer.")
+    _say("This removes RealmCradle from this computer.")
     _say("Your games and their saved worlds are NOT deleted. You'll be asked about anything else.")
     _say()
     if input('Type "uninstall" to continue: ').strip().lower() != "uninstall":
         return _err("cancelled — nothing changed")
 
-    # 1. game servers GameDash manages: they are background services that would otherwise keep running
+    # 1. game servers RealmCradle manages: they are background services that would otherwise keep running
     if servers:
         _say()
-        _say(f"GameDash manages {len(servers)} game server(s)" + (f", {len(running)} running now" if running else "") + ":")
+        _say(f"RealmCradle manages {len(servers)} game server(s)" + (f", {len(running)} running now" if running else "") + ":")
         for s in servers:
             _say(f"  {s.key:<16} {s.name}")
         if _yes("Stop them and remove them from the computer's start-up? (Their games and saves stay on disk.)", True):
@@ -605,32 +605,32 @@ def cmd_uninstall(args) -> int:
                 if s.key in keep:
                     continue
                 _systemctl("disable", "--now", s.unit)
-                # only service files GameDash wrote are deleted; hand-made ones are just switched off
+                # only service files RealmCradle wrote are deleted; hand-made ones are just switched off
                 path = os.path.join(units_dir, s.unit)
-                if os.path.basename(path).startswith("gamedash-") and os.path.isfile(path):
+                if os.path.basename(path).startswith("realmcradle-") and os.path.isfile(path):
                     os.remove(path)
                 _say(f"  removed {s.unit}")
 
     # 2. the dashboard itself
     _say()
-    for unit in ("gamedash-backup.timer", "gamedash-backup.service", UNIT, "gamedash-cert-renew.timer",
-                 "gamedash-cert-renew.service"):
+    for unit in ("realmcradle-backup.timer", "realmcradle-backup.service", UNIT, "realmcradle-cert-renew.timer",
+                 "realmcradle-cert-renew.service"):
         _systemctl("disable", "--now", unit)
         path = os.path.join(units_dir, unit)
         if os.path.isfile(path):
             os.remove(path)
     _systemctl("daemon-reload")
-    link = os.path.join(home, ".local", "bin", "gamedash")
+    link = os.path.join(home, ".local", "bin", "realmcradle")
     if os.path.islink(link):
         os.remove(link)
-    _say("Removed the dashboard service, the daily backup timer and the gamedash command.")
+    _say("Removed the dashboard service, the daily backup timer and the realmcradle command.")
 
     # 3. settings (dashboard password, game passwords, server list, certificate) — ask
-    if os.path.isdir(data) and _yes(f"Delete GameDash's settings too ({data})? This includes the game passwords."):
+    if os.path.isdir(data) and _yes(f"Delete RealmCradle's settings too ({data})? This includes the game passwords."):
         shutil.rmtree(data, ignore_errors=True)
         _say("Settings deleted.")
     elif os.path.isdir(data):
-        _say(f"Kept the settings in {data} (installing GameDash again will use them).")
+        _say(f"Kept the settings in {data} (installing RealmCradle again will use them).")
 
     # 4. backups — they hold copies of saves, so ask separately and default to keeping them
     if os.path.isdir(backups) and os.listdir(backups):
@@ -645,14 +645,14 @@ def cmd_uninstall(args) -> int:
     _say()
     _say("Done. Still on this computer, on purpose:")
     if PACKAGED:
-        _say("  • the GameDash program itself — remove it with:  sudo apt remove gamedash")
+        _say("  • the RealmCradle program itself — remove it with:  sudo apt remove realmcradle")
     else:
-        _say(f"  • the GameDash program folder: {REPO}  — delete it with:  rm -rf {REPO}")
+        _say(f"  • the RealmCradle program folder: {REPO}  — delete it with:  rm -rf {REPO}")
     if installs:
         _say("  • your games and saves: " + ", ".join(installs))
-    if os.path.isfile("/etc/fail2ban/jail.d/gamedash.conf"):
-        _say("  • the login-protection rule: sudo rm /etc/fail2ban/jail.d/gamedash.conf "
-             "/etc/fail2ban/filter.d/gamedash.conf && sudo systemctl reload fail2ban")
+    if os.path.isfile("/etc/fail2ban/jail.d/realmcradle.conf"):
+        _say("  • the login-protection rule: sudo rm /etc/fail2ban/jail.d/realmcradle.conf "
+             "/etc/fail2ban/filter.d/realmcradle.conf && sudo systemctl reload fail2ban")
     _say("  • system packages installed for the games (Wine, Java, …): remove with apt if you no longer need them.")
     return 0
 
@@ -661,15 +661,15 @@ def cmd_unban(args) -> int:
     """Lift a block on an address that mistyped the dashboard password too often."""
     import ipaddress
     if not args:
-        return _err("usage: gamedash unban <address>   (the address shown in: gamedash logs)")
+        return _err("usage: realmcradle unban <address>   (the address shown in: realmcradle logs)")
     try:
         ip = str(ipaddress.ip_address(args[0]))
     except ValueError:
         return _err(f"'{args[0]}' isn't an address like 203.0.113.7")
     done = False
-    if shutil.which("fail2ban-client") and os.path.isfile("/etc/fail2ban/jail.d/gamedash.conf"):
+    if shutil.which("fail2ban-client") and os.path.isfile("/etc/fail2ban/jail.d/realmcradle.conf"):
         _say("Removing the block in fail2ban (this needs your computer's admin password)…")
-        r = subprocess.run(["sudo", "fail2ban-client", "set", "gamedash", "unbanip", ip])
+        r = subprocess.run(["sudo", "fail2ban-client", "set", "realmcradle", "unbanip", ip])
         done = r.returncode == 0
     # the dashboard's own short lock-out after wrong passwords is kept in memory: a restart clears it
     _systemctl("restart", UNIT)
@@ -693,7 +693,7 @@ def cmd_version(_args) -> int:
     from version import version
     if PACKAGED:
         import release
-        _say(f"GameDash {release.installed_version() or version()}  (installed package)")
+        _say(f"RealmCradle {release.installed_version() or version()}  (installed package)")
         return 0
     try:
         r = subprocess.run(["git", "-C", REPO, "describe", "--always", "--dirty", "--tags"],
@@ -701,7 +701,7 @@ def cmd_version(_args) -> int:
         build = f" (build {r.stdout.strip()})" if r.returncode == 0 and r.stdout.strip() else ""
     except OSError:   # git isn't installed
         build = ""
-    _say(f"GameDash {version()}{build}  —  {REPO}")
+    _say(f"RealmCradle {version()}{build}  —  {REPO}")
     return 0
 
 

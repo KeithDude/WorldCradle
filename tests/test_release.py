@@ -30,7 +30,7 @@ def github(monkeypatch):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
     monkeypatch.setattr(release, "API", base + "/releases")
-    name = "gamedash_0.2.1-1_all.deb"
+    name = "realmcradle_0.2.1-1_all.deb"
     FILES.clear()
     FILES["/releases/latest"] = json.dumps({"tag_name": "v0.2.1", "body": "- better things", "assets": [
         {"name": name, "browser_download_url": f"{base}/dl/{name}"},

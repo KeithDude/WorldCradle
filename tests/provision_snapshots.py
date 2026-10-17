@@ -144,7 +144,7 @@ def record_all() -> dict[str, dict]:
 
 
 def _placeholders(value, root: str, lan_ip: str):
-    """The scratch folder, this Python, GameDash's own folder and this computer's home-network
+    """The scratch folder, this Python, RealmCradle's own folder and this computer's home-network
     address, as placeholders — paths in Linux and in Windows (Wine) form."""
     if isinstance(value, dict):
         return {k: _placeholders(v, root, lan_ip) for k, v in value.items()}
@@ -224,8 +224,8 @@ def save(records: dict) -> None:
 
 
 if __name__ == "__main__":
-    os.environ.setdefault("GAMEDASH_HOME", tempfile.mkdtemp(prefix="gdsnap-home-"))
-    os.environ.setdefault("GAMEDASH_QUIET_LOG", "1")
+    os.environ.setdefault("REALMCRADLE_HOME", tempfile.mkdtemp(prefix="gdsnap-home-"))
+    os.environ.setdefault("REALMCRADLE_QUIET_LOG", "1")
     records = record_all()
     for kind, r in records.items():
         if "error" in r["fields"]:

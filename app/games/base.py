@@ -134,7 +134,7 @@ class GameType:
     clone_clear_dirs: tuple[str, ...] = ()
     provision_note: str = ""        # caveat shown in the Add form for this game
     # False for servers that crash when a client connects and hangs up straight away (Terraria):
-    # GameDash then never tests them by connecting.
+    # RealmCradle then never tests them by connecting.
     survives_connect_test: bool = True
     # launch profiles offered at provision time (e.g. vanilla vs modded). The
     # first is the default. Empty/one entry → no profile picker shown.

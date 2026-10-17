@@ -1,5 +1,5 @@
 name: Game test report
-description: Tell us how a game worked when you ran its server with GameDash
+description: Tell us how a game worked when you ran its server with RealmCradle
 title: "[Test] <game name>"
 labels: ["test report"]
 body:
@@ -42,4 +42,4 @@ body:
       render: text
   - type: input
     id: system
-    attributes: {label: Your system, placeholder: "e.g. Ubuntu 24.04, 16 GB RAM, GameDash version from 'gamedash version'"}
+    attributes: {label: Your system, placeholder: "e.g. Ubuntu 24.04, 16 GB RAM, RealmCradle version from 'realmcradle version'"}

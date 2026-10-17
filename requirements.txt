@@ -1,4 +1,4 @@
-# GameDash Python dependencies (install into the venv: pip install -r requirements.txt)
+# RealmCradle Python dependencies (install into the venv: pip install -r requirements.txt)
 Flask>=3.0
 gunicorn>=21.0          # production WSGI server; terminates TLS directly
 bcrypt>=4.0             # dashboard login password hashing
@@ -10,4 +10,4 @@ python-a2s>=1.3         # Steam A2S server queries (player count / reachability)
 certbot>=2.9            # Let's Encrypt client for the trusted-certificate option (runs without root)
 gevent>=24              # event-based web worker: idle/slow clients cannot exhaust the dashboard
 packaging>=23           # needed by gunicorn's gevent worker
-segno>=1.6              # QR code on the installer's last screen / "gamedash qr"
+segno>=1.6              # QR code on the installer's last screen / "realmcradle qr"

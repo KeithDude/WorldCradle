@@ -4,12 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <title>{% block title %}GameDash{% endblock %}</title>
+  <title>{% block title %}RealmCradle{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="topbar">
-    <h1><a href="{{ url_for('index') }}">🎮 GameDash</a></h1>
+    <div class="brand">
+      <h1><a href="{{ url_for('index') }}">🎮 RealmCradle</a></h1>
+      <p class="byline">Where realms are born and raised</p>
+    </div>
     <nav>
       {% if session.get('admin') %}
         <span class="badge-admin">admin</span>
@@ -41,11 +44,11 @@
     (function () {
       var n = document.getElementById("certnote");
       var dismissed = false;
-      try { dismissed = !!localStorage.getItem("gd-certnote-dismissed"); } catch (e) {}
+      try { dismissed = !!localStorage.getItem("rc-certnote-dismissed"); } catch (e) {}
       if (!dismissed) n.hidden = false;
       document.getElementById("certnote-x").onclick = function () {
         n.hidden = true;
-        try { localStorage.setItem("gd-certnote-dismissed", "1"); } catch (e) {}
+        try { localStorage.setItem("rc-certnote-dismissed", "1"); } catch (e) {}
       };
     })();
   </script>
@@ -55,7 +58,7 @@
   </main>
   <footer class="foot">
     <span id="updated">updating…</span>
-    <div class="foot-links"><a href="{{ project_url }}" target="_blank" rel="noopener noreferrer">GameDash{% if session.get("admin") %} {{ gd_version }}{% endif %}</a>{% if support_url %} · <a class="support" href="{{ support_url }}" target="_blank" rel="noopener noreferrer">♥ {{ support_label }}</a>{% endif %}</div>
+    <div class="foot-links"><a href="{{ project_url }}" target="_blank" rel="noopener noreferrer">RealmCradle{% if session.get("admin") %} {{ rc_version }}{% endif %}</a>{% if support_url %} · <a class="support" href="{{ support_url }}" target="_blank" rel="noopener noreferrer">♥ {{ support_label }}</a>{% endif %}</div>
   </footer>
   {% block scripts %}{% endblock %}
 </body>

@@ -54,10 +54,10 @@ class BarotraumaGame(SimpleGame):
                 f'> "{self.log_file(server_dir, install)}" 2>&1 < /dev/null')
 
     def log_file(self, server_dir, install):
-        return os.path.join(install, "gamedash-console.log")
+        return os.path.join(install, "realmcradle-console.log")
 
     def save_dir(self, server_dir, install):
-        # The game saves every campaign here, whichever server played it; GameDash doesn't yet
+        # The game saves every campaign here, whichever server played it; RealmCradle doesn't yet
         # give each server its own folder (owners are told in provision_note; on the roadmap).
         return os.path.expanduser("~/.local/share/Daedalic Entertainment GmbH/Barotrauma/Multiplayer")
 

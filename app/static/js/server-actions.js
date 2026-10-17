@@ -33,7 +33,7 @@ const ACTIONS = {
     if (res) { report(res, "Update started.", "Update failed."); refreshSoon(1000); }
   },
   async removesrv(key, btn) {
-    if (!confirm(`Remove server "${cardName(btn, key)}"?\n\nStops it and deletes its gamedash unit. Save data on disk is left alone.`)) return;
+    if (!confirm(`Remove server "${cardName(btn, key)}"?\n\nStops it and deletes its realmcradle unit. Save data on disk is left alone.`)) return;
     const res = await api.post("/admin/servers/remove", { key });
     if (res) { report(res, "Removed.", "Remove failed."); refreshSoon(); }
   },
@@ -137,7 +137,7 @@ async function openReach(key) {
     <p><b>What your router needs.</b> For people outside your home to reach this server, your router has to pass these ports on to this computer${d.lan_ip ? ` (<code>${esc(d.lan_ip)}</code>)` : ""}. This is called <i>port forwarding</i>:</p>
     ${rows ? `<table class="reach-t"><tr><th>Port</th><th>Type</th><th>Used for</th></tr>${rows}</table>`
            : `<p class="muted">This server has no ports that need forwarding.</p>`}
-    ${(d.keep_closed || []).length ? `<div class="reach-v bad">🔒 <b>Never forward these:</b> ${d.keep_closed.map((c) => `<code>${esc(c.port)}</code> (${esc(c.what)})`).join(", ")}. They control the server itself. GameDash uses them only from inside this computer; if they were reachable from the internet, a stranger could try to take the server over. Leave them out of your router — always.</div>` : ""}
+    ${(d.keep_closed || []).length ? `<div class="reach-v bad">🔒 <b>Never forward these:</b> ${d.keep_closed.map((c) => `<code>${esc(c.port)}</code> (${esc(c.what)})`).join(", ")}. They control the server itself. RealmCradle uses them only from inside this computer; if they were reachable from the internet, a stranger could try to take the server over. Leave them out of your router — always.</div>` : ""}
     <ol class="join-steps">
       <li>Open your router's settings page${d.router_ip ? ` — usually by typing <code>${esc(d.router_ip)}</code> into a web browser's address bar` : ""}. The login is often printed on a sticker on the router.</li>
       <li>Find the section called <b>Port forwarding</b> (some routers call it <i>Virtual server</i>, <i>NAT</i> or <i>Applications &amp; gaming</i>).</li>

@@ -17,7 +17,7 @@ from games.base import empty_probe, opt_bool, safe_name
 from games.simple import RCON_PORT_HELP, SimpleGame
 
 LAUNCHER = "start-server.sh"
-SERVERNAME = "gamedash"   # names the settings/world files inside the server's own folder
+SERVERNAME = "realmcradle"   # names the settings/world files inside the server's own folder
 _NAME_RE = re.compile(r'^[^\r\n"\x00-\x1f]{1,64}$')
 
 class ZomboidGame(SimpleGame):

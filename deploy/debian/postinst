@@ -1,10 +1,10 @@
 #!/bin/sh
-# GameDash package: after installing or upgrading.
+# RealmCradle package: after installing or upgrading.
 set -e
 
-# Python can't write its byte-code cache into this system folder while GameDash runs as a normal
-# user, so make it now (the same Python the users' GameDash environments are built from).
-python3 -m compileall -q /usr/lib/gamedash/app >/dev/null 2>&1 || true
+# Python can't write its byte-code cache into this system folder while RealmCradle runs as a normal
+# user, so make it now (the same Python the users' RealmCradle environments are built from).
+python3 -m compileall -q /usr/lib/realmcradle/app >/dev/null 2>&1 || true
 
 if [ "$1" = configure ]; then
     if [ -n "$2" ]; then
@@ -14,16 +14,16 @@ if [ "$1" = configure ]; then
             [ -d "$dir" ] || continue
             user="$(getent passwd "${dir##*/}" | cut -d: -f1)"
             [ -n "$user" ] || continue
-            if systemctl --user -M "$user@" is-active --quiet gamedash.service 2>/dev/null; then
-                systemctl --user -M "$user@" restart --no-block gamedash.service 2>/dev/null \
-                    && echo "GameDash: restarting the dashboard for $user." || true
+            if systemctl --user -M "$user@" is-active --quiet realmcradle.service 2>/dev/null; then
+                systemctl --user -M "$user@" restart --no-block realmcradle.service 2>/dev/null \
+                    && echo "RealmCradle: restarting the dashboard for $user." || true
             fi
         done
     else
         echo
-        echo "GameDash is installed. To set it up, type this as your normal user (no 'sudo'):"
+        echo "RealmCradle is installed. To set it up, type this as your normal user (no 'sudo'):"
         echo
-        echo "    gamedash setup"
+        echo "    realmcradle setup"
         echo
     fi
 fi

@@ -140,7 +140,7 @@ def test_email():
     received = []
     port = _smtp_server(received)
     notifiers.send({"type": "email", "to_addr": "owner@example.org", "smtp_host": "127.0.0.1",
-                    "smtp_port": str(port), "security": "none", "from_addr": "gd@example.org"},
+                    "smtp_port": str(port), "security": "none", "from_addr": "rc@example.org"},
                    "🔴 Valheim is DOWN", "went offline", "bad")
     text = "\n".join(received)
     assert "To: owner@example.org" in text and "went offline" in text

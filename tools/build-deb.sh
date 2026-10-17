@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Build the GameDash .deb package:  tools/build-deb.sh [--worktree]
+# Build the RealmCradle .deb package:  tools/build-deb.sh [--worktree]
 #
 # Packs the committed version (HEAD) — or, with --worktree, the files as they are now (for testing
-# before a commit) — into dist/gamedash_<version>_all.deb plus a .sha256 checksum file.
+# before a commit) — into dist/realmcradle_<version>_all.deb plus a .sha256 checksum file.
 #
-# The package puts the program in /usr/lib/gamedash and the `gamedash` command in /usr/bin. It
+# The package puts the program in /usr/lib/realmcradle and the `realmcradle` command in /usr/bin. It
 # needs no compiling: each account's Python libraries are installed (pinned, checksum-verified, from
-# requirements.lock) when that account runs "gamedash setup". System packages come from
-# deploy/packages.conf: GameDash's own needs are "Depends", the rest "Recommends" (apt installs
+# requirements.lock) when that account runs "realmcradle setup". System packages come from
+# deploy/packages.conf: RealmCradle's own needs are "Depends", the rest "Recommends" (apt installs
 # those by default; --no-install-recommends gives a minimal install).
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NAME=gamedash
+NAME=realmcradle
 WORKTREE=0; [ "${1:-}" = --worktree ] && WORKTREE=1
 
 # --- version: 0.2.0 for a release; 0.2.0~dev+<date>.<commit> while VERSION says 0.2.0-dev ----
@@ -39,13 +39,13 @@ cp -r "$src/app" "$src/bin" "$lib/"
 cp -r "$src/deploy/systemd" "$src/deploy/fail2ban" "$src/deploy/examples" "$src/deploy/packages.conf" "$lib/deploy/"
 cp "$src/setup.sh" "$src/VERSION" "$src/requirements.txt" "$src/requirements.lock" "$lib/"
 find "$lib" -name __pycache__ -type d -prune -exec rm -rf {} +
-ln -s "../lib/$NAME/bin/gamedash" "$root/usr/bin/gamedash"
+ln -s "../lib/$NAME/bin/realmcradle" "$root/usr/bin/realmcradle"
 cp "$src/README.md" "$src/docs/GETTING_STARTED.md" "$doc/"
 gzip -9n -c "$src/CHANGELOG.md" > "$doc/changelog.gz"
 {
     echo "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/"
-    echo "Upstream-Name: GameDash"
-    echo "Source: https://github.com/KeithDude/GameDash"
+    echo "Upstream-Name: RealmCradle"
+    echo "Source: https://github.com/KeithDude/RealmCradle"
     echo
     echo "Files: *"
     sed -n 's/^Required Notice: /Copyright: /p' "$src/LICENSE.md"
@@ -58,7 +58,7 @@ gzip -9n -c "$src/CHANGELOG.md" > "$doc/changelog.gz"
 # permissions: everything readable, only the programs executable
 find "$root" -type d -exec chmod 755 {} +
 find "$root" -type f -exec chmod 644 {} +
-chmod 755 "$lib/setup.sh" "$lib"/bin/gamedash "$lib"/bin/gamedash-ensure-venv "$lib"/bin/gamedash-preflight
+chmod 755 "$lib/setup.sh" "$lib"/bin/realmcradle "$lib"/bin/realmcradle-ensure-venv "$lib"/bin/realmcradle-preflight
 
 # --- package information -------------------------------------------------------------
 group() { sed -n "s/^$1:[[:space:]]*//p" "$src/deploy/packages.conf"; }
@@ -77,14 +77,14 @@ Depends: $depends
 Recommends: $recommends
 Section: games
 Priority: optional
-Homepage: https://github.com/KeithDude/GameDash
+Homepage: https://github.com/KeithDude/RealmCradle
 Description: run and watch your own game servers from a web browser
- GameDash installs, runs and monitors dedicated game servers (Valheim, Palworld,
+ RealmCradle installs, runs and monitors dedicated game servers (Valheim, Palworld,
  Minecraft, ARK, Terraria and many more) on your own computer, with a web
  dashboard made for people who aren't technical: who is playing, start and stop,
  backups, alerts, and step-by-step help letting friends connect.
  .
- After installing, run "gamedash setup" as your normal user.
+ After installing, run "realmcradle setup" as your normal user.
  .
  Licence: PolyForm Noncommercial 1.0.0 — free for noncommercial use.
 CONTROL

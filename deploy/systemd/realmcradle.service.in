@@ -1,13 +1,13 @@
 [Unit]
-Description=GameDash — game-server dashboard
+Description=RealmCradle — game-server dashboard
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 # __VARS__ are filled in by setup.sh
-Environment=GAMEDASH_HOME=__DATA__
-Environment=GAMEDASH_VENV=__VENV__
+Environment=REALMCRADLE_HOME=__DATA__
+Environment=REALMCRADLE_VENV=__VENV__
 WorkingDirectory=__CODE__/app
 # gunicorn (production WSGI) terminating TLS directly on the dashboard's port.
 # ONE worker so there is a single background poller / alert engine. The gevent
@@ -15,8 +15,8 @@ WorkingDirectory=__CODE__/app
 # quiet (scanners, slow-request attacks) can't use up the dashboard's capacity.
 # Long timeout so slow systemctl stop/restart actions aren't killed.
 # Repairs the Python environment first if an OS upgrade changed Python, and installs the
-# libraries a new GameDash version needs (can take a few minutes).
-ExecStartPre=__CODE__/bin/gamedash-ensure-venv
+# libraries a new RealmCradle version needs (can take a few minutes).
+ExecStartPre=__CODE__/bin/realmcradle-ensure-venv
 TimeoutStartSec=900
 ExecStart=__VENV__/bin/gunicorn \
     --workers 1 --worker-class gevent --worker-connections 1000 --keep-alive 30 --timeout 300 \

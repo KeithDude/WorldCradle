@@ -1,10 +1,10 @@
 # Changelog
 
-What changed in each version of GameDash, written for the people who run it. The detailed history
+What changed in each version of RealmCradle, written for the people who run it. The detailed history
 of how it was built is in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md).
 
 Version numbers: `MAJOR.MINOR.PATCH`. Until 1.0, a new MINOR version can change how things work;
-these notes say what you need to do when it does. The version you have: `gamedash version`, or the
+these notes say what you need to do when it does. The version you have: `realmcradle version`, or the
 footer of the dashboard when signed in.
 
 ## 0.2.0 — Public preview (not released yet)
@@ -14,17 +14,17 @@ footer of the dashboard when signed in.
   plus any other server as a custom service. Which ones have been tried with real players:
   [docs/SUPPORTED_GAMES.md](docs/SUPPORTED_GAMES.md).
 - **One-step install** that asks no questions (only your computer's password) and checks first that
-  the computer can run GameDash. Shows a QR code to open the dashboard on a phone, and the password
+  the computer can run RealmCradle. Shows a QR code to open the dashboard on a phone, and the password
   your friends need to join.
-- **A GameDash package** (`.deb`) for Ubuntu and Debian: `sudo apt install ./gamedash_….deb`, then
-  `gamedash setup`. The one-line installer uses it, and `gamedash update` installs new versions
+- **A RealmCradle package** (`.deb`) for Ubuntu and Debian: `sudo apt install ./realmcradle_….deb`, then
+  `realmcradle setup`. The one-line installer uses it, and `realmcradle update` installs new versions
   of it (and puts the old one back if the new one doesn't start).
-- GameDash's Python libraries are **exact, checksum-verified versions**, so every install gets
+- RealmCradle's Python libraries are **exact, checksum-verified versions**, so every install gets
   exactly what was tested.
-- **The `gamedash` command** for everyday jobs: `status`, `passwords`, `reset-password`, `restart`,
+- **The `realmcradle` command** for everyday jobs: `status`, `passwords`, `reset-password`, `restart`,
   `logs`, `servers`, `server start|stop|restart <server>`, `backup`, `backup list|restore`, `unban`,
-  `update`, `uninstall`, `check`, `qr`. Type `gamedash help` for the list.
-- **Safe updates:** `gamedash update` installs the new version and puts the old one back by itself if
+  `update`, `uninstall`, `check`, `qr`. Type `realmcradle help` for the list.
+- **Safe updates:** `realmcradle update` installs the new version and puts the old one back by itself if
   the new one doesn't start.
 - **Repairs itself after an Ubuntu upgrade** that changes the Python version.
 - **Licence terms:** where a game's publisher requires it, you accept its EULA when adding a server.
@@ -33,7 +33,7 @@ footer of the dashboard when signed in.
 
 - **Alerts to the services you use:** Discord, Telegram, email, Slack, Microsoft Teams, Pushover,
   ntfy, Gotify, Matrix or a webhook — several at once, each with a Test button that tells you whether
-  it worked and, if not, why. Also `gamedash test-alert`.
+  it worked and, if not, why. Also `realmcradle test-alert`.
 
 ### Safer
 - New installs pick **random game passwords** instead of well-known placeholders.
@@ -44,12 +44,12 @@ footer of the dashboard when signed in.
   including two that could lose a world (Space Engineers reloaded its starting world on every
   restart; 7 Days to Die saved outside the backed-up folder) and one that left a server open to
   takeover (StarRupture).
-- **Terraria servers no longer crash every few minutes** — GameDash's "is it answering?" check used
+- **Terraria servers no longer crash every few minutes** — RealmCradle's "is it answering?" check used
   to connect to the game in a way Terraria's server can't handle. It now asks the computer instead.
 - The dashboard works properly on phones (the top menu used to run off the screen).
 - When you're signed out while the dashboard is open, it now goes to the login page instead of
   quietly showing old information.
-- `gamedash uninstall` now leaves a server running if you say so, and also offers to remove a
+- `realmcradle uninstall` now leaves a server running if you say so, and also offers to remove a
   backup folder you moved elsewhere.
 - Don't Starve Together servers now pick up a changed join password when they start.
 - **Servers can share ports and take turns:** type any ports when adding a server — even ones

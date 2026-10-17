@@ -17,6 +17,7 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5;
 }
 .topbar h1 { font-size: 1.1rem; margin: 0; }
+.topbar .byline { margin: .1rem 0 0; font-size: .75rem; color: var(--muted); font-style: italic; }
 .topbar h1 a { color: var(--text); }
 .topbar nav { display: flex; align-items: center; gap: 1rem; }
 .badge-admin {

@@ -153,7 +153,7 @@ class MinecraftGame(SimpleGame):
         opt_int(spec, "view_distance", 10, 3, 32, "View distance")
         ram = self.option(spec, "memory")
         # the -D label does nothing in the game; it lets the dashboard tell this server's process apart
-        return (f"java -Xms{ram}G -Xmx{ram}G -Dgamedash.server={self.proc_pattern(spec, ports, server_dir)} "
+        return (f"java -Xms{ram}G -Xmx{ram}G -Drealmcradle.server={self.proc_pattern(spec, ports, server_dir)} "
                 f'-jar "{os.path.join(install, self.exe)}" nogui')
 
     def write_files(self, spec: dict, ports: dict, name: str, server_dir: str, install: str) -> None:
@@ -178,19 +178,19 @@ class MinecraftGame(SimpleGame):
         common.write_private(os.path.join(server_dir, "server.properties"),   # will hold the RCON password
                              "".join(f"{k}={v}\n" for k, v in props.items()))
         with open(os.path.join(server_dir, "eula.txt"), "w", encoding="utf-8") as f:
-            f.write(f"# Accepted in GameDash's Add-a-server form by the operator ({EULA_URL})\neula=true\n")
+            f.write(f"# Accepted in RealmCradle's Add-a-server form by the operator ({EULA_URL})\neula=true\n")
         # PvP and command blocks stopped being server.properties settings (Minecraft 1.21.9);
         # they are game rules now, set through the admin console once the server is up (see probe).
-        with open(os.path.join(server_dir, "gamedash-gamerules.txt"), "w", encoding="utf-8") as f:
+        with open(os.path.join(server_dir, "realmcradle-gamerules.txt"), "w", encoding="utf-8") as f:
             f.write(f"gamerule pvp {b('pvp', True)}\n"
                     f"gamerule command_blocks_work {b('command_blocks', False)}\n")
         names = _whitelist_names(spec)
         if names:  # added through the admin console once the server is up (see probe)
-            with open(os.path.join(server_dir, "gamedash-whitelist.txt"), "w", encoding="utf-8") as f:
+            with open(os.path.join(server_dir, "realmcradle-whitelist.txt"), "w", encoding="utf-8") as f:
                 f.write("\n".join(names) + "\n")
 
     def pre(self, spec: dict, ports: dict, name: str, server_dir: str, install: str) -> str:
-        # the admin-console (RCON) password, from GameDash
+        # the admin-console (RCON) password, from RealmCradle
         return common.password_sync(os.path.join(server_dir, "server.properties"), [("rcon.password", "admin")])
 
     def work_dir(self, server_dir: str, install: str) -> str:
@@ -205,7 +205,7 @@ class MinecraftGame(SimpleGame):
     # ---- monitoring + controls (RCON) --------------------------------------
     def _apply_pending_whitelist(self, s) -> None:
         """First boot: add the names typed on the Add form, then forget the list."""
-        path = os.path.join(s.save_root or "", "gamedash-whitelist.txt")
+        path = os.path.join(s.save_root or "", "realmcradle-whitelist.txt")
         if not s.save_root or not os.path.isfile(path):
             return
         names = [n.strip() for n in open(path, encoding="utf-8") if _NAME_RE.match(n.strip())]
@@ -214,7 +214,7 @@ class MinecraftGame(SimpleGame):
 
     def _apply_pending_gamerules(self, s) -> None:
         """First boot: set the game rules chosen on the Add form, then forget the list."""
-        path = os.path.join(s.save_root or "", "gamedash-gamerules.txt")
+        path = os.path.join(s.save_root or "", "realmcradle-gamerules.txt")
         if not s.save_root or not os.path.isfile(path):
             return
         lines = [l.strip() for l in open(path, encoding="utf-8")

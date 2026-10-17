@@ -1,33 +1,33 @@
 #!/bin/sh
-# Make sure GameDash's Python environment works and has the libraries this version needs;
+# Make sure RealmCradle's Python environment works and has the libraries this version needs;
 # (re)build it if not.
 #
-# Runs before the dashboard starts (ExecStartPre) and from the `gamedash` command, so:
+# Runs before the dashboard starts (ExecStartPre) and from the `realmcradle` command, so:
 #   * an operating-system upgrade that changes Python (e.g. Ubuntu 22.04 -> 24.04, Python 3.10 ->
 #     3.12) and leaves the old environment broken is repaired by itself;
-#   * a new GameDash version that needs different libraries gets them on its first start.
+#   * a new RealmCradle version that needs different libraries gets them on its first start.
 # Settings, servers and saves are not touched.
-GAMEDASH_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
-. "$GAMEDASH_CODE/bin/gamedash-env.sh"
-VENV="$GAMEDASH_VENV"
-LOCK="$GAMEDASH_CODE/requirements.lock"
-[ -f "$LOCK" ] || LOCK="$GAMEDASH_CODE/requirements.txt"
-STAMP="$VENV/.gamedash-libraries"        # which library list the environment was built from
+REALMCRADLE_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
+. "$REALMCRADLE_CODE/bin/realmcradle-env.sh"
+VENV="$REALMCRADLE_VENV"
+LOCK="$REALMCRADLE_CODE/requirements.lock"
+[ -f "$LOCK" ] || LOCK="$REALMCRADLE_CODE/requirements.txt"
+STAMP="$VENV/.realmcradle-libraries"        # which library list the environment was built from
 WANT="$(sha256sum "$LOCK" | cut -d' ' -f1)"
 
 if "$VENV/bin/python" -c "import flask, gunicorn, gevent" >/dev/null 2>&1; then
     [ "$(cat "$STAMP" 2>/dev/null)" = "$WANT" ] && exit 0
-    echo "GameDash: updating its Python libraries for this version…"
+    echo "RealmCradle: updating its Python libraries for this version…"
 else
     if [ -e "$VENV/bin/python" ] || [ -L "$VENV/bin/python" ]; then
-        echo "GameDash: its Python environment doesn't work (probably a system upgrade changed Python) — rebuilding it…"
+        echo "RealmCradle: its Python environment doesn't work (probably a system upgrade changed Python) — rebuilding it…"
     else
-        echo "GameDash: setting up its Python environment…"
+        echo "RealmCradle: setting up its Python environment…"
     fi
     mkdir -p "$(dirname "$VENV")"
     python3 -m venv --clear "$VENV" >/dev/null 2>&1 || python3 -m venv --clear --without-pip "$VENV" || {
-        echo "GameDash: couldn't create a Python environment. Install the system package python3-venv"
-        echo "          (sudo apt install python3-venv), then run: gamedash restart"
+        echo "RealmCradle: couldn't create a Python environment. Install the system package python3-venv"
+        echo "          (sudo apt install python3-venv), then run: realmcradle restart"
         exit 1
     }
     if [ ! -x "$VENV/bin/pip" ]; then
@@ -38,8 +38,8 @@ urllib.request.urlretrieve("https://bootstrap.pypa.io/get-pip.py", sys.argv[1])
 GETPIP
         rm -f "$VENV/get-pip.py"
         [ -x "$VENV/bin/pip" ] || {
-            echo "GameDash: couldn't set up pip. Check the internet connection — or install the system"
-            echo "          package python3-venv (sudo apt install python3-venv) — then run: gamedash restart"
+            echo "RealmCradle: couldn't set up pip. Check the internet connection — or install the system"
+            echo "          package python3-venv (sudo apt install python3-venv) — then run: realmcradle restart"
             exit 1
         }
     fi
@@ -54,8 +54,8 @@ else
 fi
 if "$VENV/bin/pip" install -q --disable-pip-version-check "$@" -r "$LOCK"; then
     echo "$WANT" > "$STAMP"
-    echo "GameDash: Python environment ready."
+    echo "RealmCradle: Python environment ready."
 else
-    echo "GameDash: installing the Python libraries failed — check the internet connection, then run: gamedash restart"
+    echo "RealmCradle: installing the Python libraries failed — check the internet connection, then run: realmcradle restart"
     exit 1
 fi

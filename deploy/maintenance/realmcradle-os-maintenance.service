@@ -1,13 +1,13 @@
 [Unit]
-Description=gamedash: OS package maintenance (player-aware, reboots if required)
-Documentation=https://github.com/KeithDude/GameDash/blob/main/deploy/maintenance/install.md
+Description=realmcradle: OS package maintenance (player-aware, reboots if required)
+Documentation=https://github.com/KeithDude/RealmCradle/blob/main/deploy/maintenance/install.md
 # Needs the network for apt, and the dashboard up for the player check.
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/gamedash-os-maintenance.sh
+ExecStart=/usr/local/sbin/realmcradle-os-maintenance.sh
 # apt on a slow mirror plus a graceful ARK shutdown can legitimately take a
 # while; don't let systemd kill the run mid-dist-upgrade.
 TimeoutStartSec=3600

@@ -1,4 +1,4 @@
-"""ports.py — port allocation for provisioning new gamedash instances.
+"""ports.py — port allocation for provisioning new realmcradle instances.
 
 Each game template has a conventional start port per port class (game / query /
 rcon). A `port_pool` range in config.json is only used when the caller asks for

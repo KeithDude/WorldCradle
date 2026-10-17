@@ -29,7 +29,7 @@ from games.base import ActionError
 from registry import Server, by_key
 
 DISRUPTIVE = {"stop", "restart", "kill"}
-# How long to hold back "server is down" alerts after GameDash itself takes a server down
+# How long to hold back "server is down" alerts after RealmCradle itself takes a server down
 QUIET_AFTER_STOP = 180
 QUIET_AFTER_RESTART = 300
 QUIET_DURING_UPDATE = 3600
@@ -105,7 +105,7 @@ def start_update(app, confirm: bool = False) -> dict:
     except (TypeError, ValueError):
         raise ActionError("invalid app id")
     if _game_for_app(app) is None:
-        raise ActionError("GameDash doesn't know how to update that game.")
+        raise ActionError("RealmCradle doesn't know how to update that game.")
     import installs
     if installs.status().get("state") == "running":
         raise ActionError("A game is being installed — wait for it to finish, then update.")

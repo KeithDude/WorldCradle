@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Set up GameDash{% endblock %}
+{% block title %}Set up RealmCradle{% endblock %}
 {% block content %}
   <div class="login-wrap setup-wrap">
-    <h2>Welcome to GameDash</h2>
+    <h2>Welcome to RealmCradle</h2>
     {% if not has_code %}
       <p>This dashboard hasn't been set up yet, and it has no setup code to prove who you are.</p>
-      <p class="muted">On the computer GameDash is installed on, run the installer again — it prints a
+      <p class="muted">On the computer RealmCradle is installed on, run the installer again — it prints a
         setup code and the address of this page. Then come back here.</p>
     {% else %}
       <p>Let's create your admin password. You'll use it to sign in to this dashboard, so pick something
@@ -16,7 +16,7 @@
           <input type="text" name="code" placeholder="XXXX-XXXX-XXXX" autofocus required autocomplete="off"
                  autocapitalize="characters" spellcheck="false"></label>
         <p class="muted setup-note">The installer showed this code when it finished. It proves you're the
-          person who installed GameDash, and it stops working once you've used it.</p>
+          person who installed RealmCradle, and it stops working once you've used it.</p>
         <label>New admin password (at least 12 characters)
           <input type="password" name="password" minlength="12" required autocomplete="new-password"></label>
         <label>Type it again

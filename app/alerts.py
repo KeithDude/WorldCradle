@@ -67,7 +67,7 @@ def _send_one(dest: dict, title: str, message: str, level: str) -> dict:
         return {"service": label, "ok": False, "error": str(e)}
     except Exception as e:   # never let alerting break the poll loop
         app_log.warning("alert delivery to %s failed: %r", label, e)
-        return {"service": label, "ok": False, "error": "unexpected error — see the GameDash log"}
+        return {"service": label, "ok": False, "error": "unexpected error — see the RealmCradle log"}
 
 
 def _deliver(title: str, message: str, level: str) -> list[dict]:
@@ -84,7 +84,7 @@ def notify(title: str, message: str, level: str = "warn") -> None:
 def send_test(dest: dict | None = None) -> list[dict]:
     """Send a test alert to one destination, or to all of them. Returns what happened for each
     ([] when there is nowhere to send to) — the Settings page shows it."""
-    title, message = "🎮 GameDash test alert", "If you can read this, GameDash alerts reach you here."
+    title, message = "🎮 RealmCradle test alert", "If you can read this, RealmCradle alerts reach you here."
     if dest is None:
         return _deliver(title, message, "good")
     return [_send_one(dest, title, message, "good")]

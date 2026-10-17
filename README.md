@@ -1,4 +1,6 @@
-# GameDash
+# RealmCradle
+
+*Where realms are born and raised.*
 
 A self-hosted **web panel for running game dedicated servers** on a Linux machine —
 install a game, create servers, see who's online, start/stop, back up and restore,
@@ -38,13 +40,13 @@ full list and which games have been tested with real players.
 ## Quick start
 One line in a terminal (once the repository is public):
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+wget -qO- https://raw.githubusercontent.com/KeithDude/RealmCradle/main/get.sh | bash
 ```
-It installs the GameDash package (checked against its published checksum) and sets it up.
+It installs the RealmCradle package (checked against its published checksum) and sets it up.
 (`curl -fsSL … | bash` works too where curl is installed; a fresh Ubuntu desktop only has wget.)
 
-Or install the package yourself — `sudo apt install ./gamedash_<version>_all.deb`, then
-`gamedash setup` — or, from a downloaded copy of the source, run `bash install.sh` in its folder.
+Or install the package yourself — `sudo apt install ./realmcradle_<version>_all.deb`, then
+`realmcradle setup` — or, from a downloaded copy of the source, run `bash install.sh` in its folder.
 It prints the address to open and a one-time setup code. A step-by-step walk-through with
 screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
@@ -53,44 +55,44 @@ prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
 
 ## Layout
 ```
-gamedash/
+realmcradle/
 ├── app/          all application code (Flask app, games/, templates/, static/ — the page code is static/js/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
 ├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
 ├── get.sh        one-line download + install (the package, or the source before a release exists)
 ├── install.sh    install from the source: system packages, then setup.sh
-├── setup.sh      setup for your account (`gamedash setup`)
-├── bin/          the `gamedash` command, its self-repairing Python environment, the computer checks
+├── setup.sh      setup for your account (`realmcradle setup`)
+├── bin/          the `realmcradle` command, its self-repairing Python environment, the computer checks
 ├── tools/        pre-push checks, package builder, lock-file generator
 └── requirements.txt / requirements.lock   Python libraries (the lock pins them with checksums)
 ```
 Runtime data lives **outside the code** in the data root (so updating the code
 never touches your data); [deploy/SETUP.md](deploy/SETUP.md) says where everything goes:
 ```
-$GAMEDASH_HOME            (default ~/.config/gamedash)
+$REALMCRADLE_HOME            (default ~/.config/realmcradle)
 ├── config.json  servers.json  secrets.conf  certs/  logs/
-~/.local/share/gamedash/backups/     (override with $GAMEDASH_BACKUPS)
+~/.local/share/realmcradle/backups/     (override with $REALMCRADLE_BACKUPS)
 ```
 
 ## Running it
-The `gamedash` command covers the everyday jobs (`gamedash help` lists them all):
+The `realmcradle` command covers the everyday jobs (`realmcradle help` lists them all):
 ```
-gamedash status             is it running, where to open it, and each server's state
-gamedash reset-password     choose a new dashboard password
-gamedash restart            restart the dashboard
-gamedash logs               the dashboard's recent log
-gamedash servers            list the game servers
-gamedash server restart <server>
-gamedash backup all
-gamedash passwords          show the game passwords (the one friends need to join)
-gamedash update             update GameDash itself (rolls back if the new version fails)
-gamedash uninstall          remove GameDash (asks first; never deletes games or saves)
-gamedash qr                 a QR code to open the dashboard on a phone
-gamedash test-alert         send a test alert to every place alerts are set up to go
-gamedash check              quick health check
+realmcradle status             is it running, where to open it, and each server's state
+realmcradle reset-password     choose a new dashboard password
+realmcradle restart            restart the dashboard
+realmcradle logs               the dashboard's recent log
+realmcradle servers            list the game servers
+realmcradle server restart <server>
+realmcradle backup all
+realmcradle passwords          show the game passwords (the one friends need to join)
+realmcradle update             update RealmCradle itself (rolls back if the new version fails)
+realmcradle uninstall          remove RealmCradle (asks first; never deletes games or saves)
+realmcradle qr                 a QR code to open the dashboard on a phone
+realmcradle test-alert         send a test alert to every place alerts are set up to go
+realmcradle check              quick health check
 ```
-- Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `gamedash.log`.
-- Daily backups: `gamedash-backup.timer` (05:00). Run on demand from
+- Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `realmcradle.log`.
+- Daily backups: `realmcradle-backup.timer` (05:00). Run on demand from
   Settings/Backups → "Back up all servers now".
 
 ## Access tiers
@@ -114,13 +116,13 @@ the dashboard then shows the server as running without a player count.
 
 ## Support the project
 
-GameDash is free for noncommercial use. If it's useful to you, you can support its development on
+RealmCradle is free for noncommercial use. If it's useful to you, you can support its development on
 **[Patreon](https://www.patreon.com/KeithDude)**. The dashboard shows the same link at the bottom of
-each page; it only opens the Patreon page and nothing in GameDash depends on it.
+each page; it only opens the Patreon page and nothing in RealmCradle depends on it.
 
 ## License
 
-GameDash is released under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
+RealmCradle is released under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
 You may use, change and share it for any noncommercial purpose — running servers for
 yourself, your friends or your community, testing, learning. Commercial use (for
 example a hosting company offering it to paying customers) needs the author's

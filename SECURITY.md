@@ -1,13 +1,13 @@
 # Security
 
-GameDash is built to be reachable from the internet, so security reports are taken seriously.
+RealmCradle is built to be reachable from the internet, so security reports are taken seriously.
 
 ## Reporting a problem
 
 Please report security problems **privately**, not in a public issue:
 
 - On GitHub: the repository's **Security** tab → **Report a vulnerability**
-  (https://github.com/KeithDude/GameDash/security/advisories/new).
+  (https://github.com/KeithDude/RealmCradle/security/advisories/new).
 
 Include what you found, how to reproduce it, and what someone could do with it. You'll get a reply as
 soon as possible; please give a reasonable time for a fix before telling anyone else.
@@ -22,17 +22,17 @@ Anything that could let someone who isn't the owner:
 - read files they shouldn't, or trick the owner's browser into doing something (cross-site
   scripting, cross-site request forgery).
 
-Problems inside the game servers themselves belong to their publishers — but if GameDash sets a
+Problems inside the game servers themselves belong to their publishers — but if RealmCradle sets a
 game up in an unsafe way (for example exposes its admin console), that is in scope.
 
 ## Supported versions
 
-Fixes go into the latest version. Update with `gamedash update`.
+Fixes go into the latest version. Update with `realmcradle update`.
 
 ## Good practice for owners
 
-- Choose a strong dashboard password (`gamedash reset-password`).
+- Choose a strong dashboard password (`realmcradle reset-password`).
 - Forward only the ports listed under *Can friends connect?* — **never** an admin console (RCON) or
   other control port.
 - Install fail2ban when the installer offers it (it does by default) to block password guessing.
-- Keep GameDash and the computer updated.
+- Keep RealmCradle and the computer updated.

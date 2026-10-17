@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# GameDash — install from a downloaded copy (the GameDash package doesn't need this: after
-# installing it, run "gamedash setup").
+# RealmCradle — install from a downloaded copy (the RealmCradle package doesn't need this: after
+# installing it, run "realmcradle setup").
 #
 #   bash install.sh            install everything — no questions (it only asks for your password)
 #   bash install.sh --ask      ask before each optional extra (Java, Wine, fail2ban)
@@ -9,10 +9,10 @@
 #   bash install.sh --force    install even if the computer checks fail
 #
 # What it does, in order:
-#   1. checks this computer can run GameDash;
-#   2. installs the system packages GameDash and the game servers need (deploy/packages.conf) —
+#   1. checks this computer can run RealmCradle;
+#   2. installs the system packages RealmCradle and the game servers need (deploy/packages.conf) —
 #      the only part that needs your computer's admin password;
-#   3. sets GameDash up for your account and starts it (setup.sh), then shows the address to open
+#   3. sets RealmCradle up for your account and starts it (setup.sh), then shows the address to open
 #      in your browser and a one-time setup code.
 #
 # It is safe to run again at any time — nothing already set up is overwritten.
@@ -58,17 +58,17 @@ packages() {
     fi
 }
 
-# --- 1. Can this computer run GameDash? -------------------------------------------
+# --- 1. Can this computer run RealmCradle? -------------------------------------------
 if [ "$CHECK" = 1 ]; then
-    "$REPO/bin/gamedash-preflight" --check
+    "$REPO/bin/realmcradle-preflight" --check
 else
-    "$REPO/bin/gamedash-preflight" "${FORCE[@]}" || exit 1
+    "$REPO/bin/realmcradle-preflight" "${FORCE[@]}" || exit 1
 fi
 case "$REPO" in
     "$HOME/Downloads"/*|/tmp/*)
         note ""
-        note "⚠ GameDash will run from this folder: $REPO"
-        note "  Don't delete or move it later. (A tidier place is your home folder, e.g. ~/gamedash —"
+        note "⚠ RealmCradle will run from this folder: $REPO"
+        note "  Don't delete or move it later. (A tidier place is your home folder, e.g. ~/realmcradle —"
         note "  move the folder there now and run install.sh again from the new place, if you like.)"
         ;;
 esac
@@ -104,7 +104,7 @@ else
     note "To install: ${MISSING[*]}"
     note "This needs your computer's admin password (the one you log in with)."
     # apt prints thousands of lines; keep them in a log and show progress instead
-    APTLOG="$(mktemp /tmp/gamedash-install-XXXXXX.log)"
+    APTLOG="$(mktemp /tmp/realmcradle-install-XXXXXX.log)"
     sudo -v || { note "The admin password is needed to install the packages above."; exit 1; }
     note "Downloading and installing — this can take several minutes…"
     if ! { sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING[@]}"; } >"$APTLOG" 2>&1; then
@@ -115,9 +115,9 @@ else
     note "Done. (Full details: $APTLOG)"
 fi
 
-# --- 3. GameDash itself --------------------------------------------------------
+# --- 3. RealmCradle itself --------------------------------------------------------
 if [ "$CHECK" = 1 ]; then
     note "would run: setup.sh $FAIL2BAN   (nothing was changed)"
     exit 0
 fi
-GAMEDASH_FROM_INSTALLER=1 exec "$REPO/setup.sh" "$FAIL2BAN"
+REALMCRADLE_FROM_INSTALLER=1 exec "$REPO/setup.sh" "$FAIL2BAN"

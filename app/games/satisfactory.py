@@ -23,7 +23,7 @@ class SatisfactoryGame(SimpleGame):
     exe = "FactoryServer.sh"
     # Each server runs with its own HOME (this folder), so its saves and settings are its own and
     # several can run from one install.
-    servers_folder = "gamedash-homes"
+    servers_folder = "realmcradle-homes"
     has_query = False            # players and stats come from its HTTPS API
     stop_seconds = 90
     stop_only_saves = True       # saved through its admin API first: SIGINT alone doesn't save
@@ -62,7 +62,7 @@ class SatisfactoryGame(SimpleGame):
     def command(self, spec, ports, name, server_dir, install):
         flags = "" if self.option(spec, "seasonal") else " -DisableSeasonalEvents"
         return (f'./FactoryServer.sh -Port={ports["game"]} -ReliablePort={ports["query"]} '
-                f'-unattended -LOG=gamedash-{spec["key"]}.log \\\n'
+                f'-unattended -LOG=realmcradle-{spec["key"]}.log \\\n'
                 f"    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers={self.option(spec, 'maxplayers')}'{flags}")
 
     def stop_lines(self, spec, ports, name, server_dir, install):
@@ -76,7 +76,7 @@ class SatisfactoryGame(SimpleGame):
                 "token = config.load().get('satisfactory_api_token') or monitor.satisfactory_login(port, sys.argv[2])\n"
                 "if token:\n"
                 "    state = monitor.satisfactory_state(port, token) or {}\n"
-                "    monitor.satisfactory_save(port, token, state.get('activeSessionName') or 'gamedash_save')\n"
+                "    monitor.satisfactory_save(port, token, state.get('activeSessionName') or 'realmcradle_save')\n"
                 "SAVE\n")
 
     def pre(self, spec, ports, name, server_dir, install):
@@ -133,7 +133,7 @@ class SatisfactoryGame(SimpleGame):
         if not token:
             raise ActionError(f"{s.name}: no API token/password configured.")
         state = monitor.satisfactory_state(s.game_port, token) or {}
-        name = state.get("activeSessionName") or "gamedash_save"
+        name = state.get("activeSessionName") or "realmcradle_save"
         ok, msg = monitor.satisfactory_save(s.game_port, token, name)
         if not ok:
             raise ActionError(f"Save on {s.name} failed: {msg}")

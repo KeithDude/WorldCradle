@@ -1,6 +1,6 @@
 # Development log
 
-A running record of how GameDash has developed: what was built, what was found, and what is still
+A running record of how RealmCradle has developed: what was built, what was found, and what is still
 open. Newest entries first. Add an entry whenever something notable changes — a feature, a game, a
 bug found and fixed, or a decision and the reason for it.
 
@@ -54,12 +54,12 @@ All checked in a browser or on real servers on the test VM, and by a new safety 
 
 The owner made the package and the install/update process the priority before going public.
 
-- **`.deb` package** (`tools/build-deb.sh`). The program goes in `/usr/lib/gamedash`. Each account's
-  Python libraries live in its home folder (`~/.local/share/gamedash/venv`), not in the package:
+- **`.deb` package** (`tools/build-deb.sh`). The program goes in `/usr/lib/realmcradle`. Each account's
+  Python libraries live in its home folder (`~/.local/share/realmcradle/venv`), not in the package:
   the package stays `all`-architecture and small (~200 KB), and Python upgrades are handled by the
   existing self-repair.
   - System packages are listed once, in `deploy/packages.conf`. The package Depends only on what
-    GameDash itself needs; game libraries and extras are Recommends, so it still installs where a
+    RealmCradle itself needs; game libraries and extras are Recommends, so it still installs where a
     game library is missing.
   - postinst restarts every account's running dashboard after an upgrade. prerm stops them on
     removal; settings, servers and saves are always kept.
@@ -70,19 +70,19 @@ The owner made the package and the install/update process the priority before go
   - The pre-push check now checks the licence of every pinned library (it used to check only the
     direct ones) and that the lock matches `requirements.txt`.
 - **One setup:** `setup.sh` now does everything account-level, including the computer checks (now
-  `bin/gamedash-preflight`, shared with `install.sh`), linger, the firewall, fail2ban and the
-  final screen (now `gamedash welcome`).
+  `bin/realmcradle-preflight`, shared with `install.sh`), linger, the firewall, fail2ban and the
+  final screen (now `realmcradle welcome`).
   - `install.sh` is just: checks, system packages, setup.
-  - `gamedash setup` runs the same setup after installing the package.
-  - The dashboard's port is set in one place for the scripts (`bin/gamedash-env.sh`).
-- **Updates:** `gamedash update` on a package install finds the newest GitHub release, checks the
+  - `realmcradle setup` runs the same setup after installing the package.
+  - The dashboard's port is set in one place for the scripts (`bin/realmcradle-env.sh`).
+- **Updates:** `realmcradle update` on a package install finds the newest GitHub release, checks the
   download against its published SHA-256 checksum, installs it with apt, and reinstalls the
   previous release if the new one doesn't answer. `get.sh` installs the newest release's package
   (checksum-checked) and falls back to the source while none is published.
 - **Smaller fixes:**
   - The OS-maintenance script now backs up through the dashboard's own backup service instead
     of a hard-coded program path.
-  - `gamedash version` no longer crashes without git.
+  - `realmcradle version` no longer crashes without git.
 - Tested on the VM: the source install re-run (libraries moved to the pinned versions), and the
   package's files run as a package install would (libraries built in the home folder in 13 s;
   dashboard, backup service, `status`, `version`, `update`). `install.sh --check` too.
@@ -94,7 +94,7 @@ The owner made the package and the install/update process the priority before go
   - a reinstall that picked up the same settings and servers.
   
   All steps passed.
-- Found on the way: another product called "GameDash" exists — a commercial game-server control
+- Found on the way: another product called "RealmCradle" exists — a commercial game-server control
   panel. The owner was told before going public.
 
 ## 2026-10-16 — Alerts checked against each service's documentation; code clean-up
@@ -119,7 +119,7 @@ reviewed for dead code, duplication and comments that no longer matched the code
 - **Real bugs found by the review:**
   - The Getting-started "alerts" step could never be ticked.
   - A signed-out dashboard froze on stale data instead of returning to the login page.
-  - `gamedash uninstall` stopped a server the owner had chosen to leave running, and ignored a
+  - `realmcradle uninstall` stopped a server the owner had chosen to leave running, and ignored a
     custom backup folder.
   - Don't Starve Together never picked up a changed join password.
   - The lenient RCON client could hang on a malformed reply.
@@ -158,7 +158,7 @@ reviewed for dead code, duplication and comments that no longer matched the code
   saving. Tokens, passwords and webhook addresses are never sent back to the browser (shown as
   "saved"; kept unless replaced).
 - **Several destinations at once** (up to 10), each with its own Test button; "Save & test all";
-  `gamedash test-alert`. Older single-destination settings are read as one destination.
+  `realmcradle test-alert`. Older single-destination settings are read as one destination.
 - Tested: every service against stand-in servers on this machine (HTTP and a small SMTP server),
   including the failure messages (122 tests); the Settings page in a real browser on the test VM
   (webhook test reached a local receiver; a wrong Discord address was refused; secrets stayed hidden
@@ -169,7 +169,7 @@ reviewed for dead code, duplication and comments that no longer matched the code
 ## 2026-10-16 — Automated tests
 
 - `tests/` (pytest, a development-only dependency in `requirements-dev.txt`): 113 tests in half a
-  second — port allocation, GameDash's RCON client against a fake RCON server (multi-packet replies,
+  second — port allocation, RealmCradle's RCON client against a fake RCON server (multi-packet replies,
   wrong password, nothing listening), `port_listening` never connecting to the game, the
   never-forward rule and form for all 45 game types, EULA enforcement for every game that requires
   it, player-list parsers (Minecraft, ARK, Squad), the 7 Days to Die commented-setting fix, Terraria's
@@ -188,14 +188,14 @@ reviewed for dead code, duplication and comments that no longer matched the code
   killing a Terraria server twice: no warning after one crash, warning after the second, cleared by
   a normal restart. ARK's crash on a requested stop is not an automatic restart, so it doesn't count.
 
-## 2026-10-16 — Getting started guide; GameDash was crashing Terraria servers
+## 2026-10-16 — Getting started guide; RealmCradle was crashing Terraria servers
 
-- **`docs/GETTING_STARTED.md`** with six screenshots taken on the test VM's GameDash (public page,
+- **`docs/GETTING_STARTED.md`** with six screenshots taken on the test VM's RealmCradle (public page,
   dashboard, Games, Add a server, Can friends connect?, phone). The VM was given a placeholder public
   address first so no real address appears.
-- **Bug found while taking them: GameDash crashed Terraria servers.** The dashboard's "answering?"
+- **Bug found while taking them: RealmCradle crashed Terraria servers.** The dashboard's "answering?"
   check opened a TCP connection to the game and closed it straight away; Terraria's server dies on
-  that (`ObjectDisposedException` in `Netplay.UpdateConnectedClients`), so a GameDash-managed
+  that (`ObjectDisposedException` in `Netplay.UpdateConnectedClients`), so a RealmCradle-managed
   Terraria server crashed and restarted every minute or two (19 times in the test). The short tests
   done earlier ended before it showed. Fix: local checks now ask the operating system whether the
   port is listening (`monitor.port_listening`, no contact with the game) — used for Terraria,
@@ -212,7 +212,7 @@ reviewed for dead code, duplication and comments that no longer matched the code
 
 ## 2026-10-16 — Version number and release notes
 
-- `VERSION` (0.2.0-dev) read by `app/version.py`; `gamedash version` shows it with the git build,
+- `VERSION` (0.2.0-dev) read by `app/version.py`; `realmcradle version` shows it with the git build,
   and the dashboard footer shows it to signed-in admins only — the public page doesn't reveal the
   version, so it can't be used to look up known problems.
 - `CHANGELOG.md`: user-facing release notes (0.2.0 not yet released; 0.1.0 = private alpha), kept
@@ -224,26 +224,26 @@ reviewed for dead code, duplication and comments that no longer matched the code
   checked, a bug report, a game request; blank issues allowed; a link sends security reports to
   GitHub's private reporting. `CONTRIBUTING.md` (testing first, plain-language and internet-facing
   rules for code, no GPL dependencies, licence of contributions) and `SECURITY.md`.
-- `gamedash backup list <server>` and `gamedash backup restore <server> <number>`: on the test VM a
+- `realmcradle backup list <server>` and `realmcradle backup restore <server> <number>`: on the test VM a
   Terraria world was deliberately damaged (7 bytes), then restored byte-for-byte (same checksum);
   a safety copy of the damaged state was made first and the server restarted.
-- `gamedash unban <address>`: on the VM a test address was blocked in fail2ban and the command
+- `realmcradle unban <address>`: on the VM a test address was blocked in fail2ban and the command
   lifted it after one password prompt; it also clears the dashboard's own short lock-out.
-- The `gamedash` command no longer prints internal log lines on screen (they still go to the log
+- The `realmcradle` command no longer prints internal log lines on screen (they still go to the log
   files).
 
 ## 2026-10-16 — Ubuntu 26.04, uninstall, passwords on screen
 
-- **Upgrade 24.04 → 26.04** on the test VM with GameDash installed (Python 3.12 → 3.14): on the
+- **Upgrade 24.04 → 26.04** on the test VM with RealmCradle installed (Python 3.12 → 3.14): on the
   first boot the dashboard rebuilt its Python environment by itself and came back — no help needed
   this time. V Rising (Wine 10) and Terraria ran; a clean install on 26.04 passed too.
-- **`gamedash uninstall`:** confirms, offers to stop and unregister the game servers (asking per
+- **`realmcradle uninstall`:** confirms, offers to stop and unregister the game servers (asking per
   server when players are online), removes the dashboard service, backup timer, certificate-renewal
   timer and the command, asks separately before deleting settings and backups, and never deletes
   games or saves; ends with a list of what's left and how to remove it. A bug on the first try
   (the closing summary read the settings after they had been deleted) was fixed and the test
   repeated: the game and both world files were kept, everything else was gone.
-- **`gamedash passwords`**, and the installer's last screen now shows the join password (new
+- **`realmcradle passwords`**, and the installer's last screen now shows the join password (new
   installs pick a random one).
 - **Self-repair without internet** stops after a few seconds with a message naming both possible
   causes (no internet, or the python3-venv package missing).
@@ -255,16 +255,16 @@ reviewed for dead code, duplication and comments that no longer matched the code
 
 ## 2026-10-15 — Ubuntu 24.04: upgrade survival and clean install
 
-- **Upgrade test:** the test VM (GameDash installed) was upgraded 22.04 → 24.04.5 with
+- **Upgrade test:** the test VM (RealmCradle installed) was upgraded 22.04 → 24.04.5 with
   `do-release-upgrade`. Afterwards the dashboard was stuck in a restart loop (`No module named
-  'gunicorn'`) and the `gamedash` command crashed: the Python environment was tied to Python 3.10,
+  'gunicorn'`) and the `realmcradle` command crashed: the Python environment was tied to Python 3.10,
   which the upgrade replaced with 3.12. (The same had happened once on the maintainer's server.)
-- **Fix — self-repair:** `bin/gamedash-ensure-venv` checks the environment and rebuilds it with the
+- **Fix — self-repair:** `bin/realmcradle-ensure-venv` checks the environment and rebuilds it with the
   current Python (falling back to fetching pip when the venv module is missing). It runs before the
-  dashboard starts (`ExecStartPre`, with a 15-minute start allowance) and from the `gamedash`
+  dashboard starts (`ExecStartPre`, with a 15-minute start allowance) and from the `realmcradle`
   command, and setup.sh uses it too. On the upgraded VM, a restart rebuilt the environment and the
   dashboard was answering within 17 s.
-- **Clean install on 24.04** (GameDash and every package it installed removed first): 82 s; setup
+- **Clean install on 24.04** (RealmCradle and every package it installed removed first): 82 s; setup
   code, sign-in, Terraria and V Rising (Wine 9) installed, run, removed, uninstalled; no Wine
   environment left behind.
 - **Random game passwords:** a new install used to start with the example file's placeholder
@@ -278,13 +278,13 @@ reviewed for dead code, duplication and comments that no longer matched the code
 Installed from a downloaded copy on a clean Ubuntu 22.04.5 desktop VM (8 cores, 16 GB, 40 GB disk).
 The install took 1 min 45 s; first-visit setup with the code, sign-in, the dashboard, installing,
 running, messaging, saving, stopping and removing Terraria (Linux) and V Rising (Windows-only, under
-Wine 6.0) all worked, as did the `gamedash` command, the QR code and the CPU/RAM figures.
+Wine 6.0) all worked, as did the `realmcradle` command, the QR code and the CPU/RAM figures.
 Problems found and fixed:
 - A fresh Ubuntu desktop has **no curl**: the README's `curl … | bash` would fail → the README now
   uses `wget -qO- … | bash` (curl still mentioned), and get.sh says so.
 - The installer's **internet check used curl** and so reported "no internet" on such a machine →
   now uses Python, which every Ubuntu has.
-- A downloaded copy unpacks to `GameDash-main`, not `gamedash`, and GameDash then runs from wherever
+- A downloaded copy unpacks to `RealmCradle-main`, not `realmcradle`, and RealmCradle then runs from wherever
   it was unpacked → the README explains moving it to the home folder, and the installer warns when
   it is run from Downloads or /tmp.
 - **Old Wine on 22.04** (6.0; our Windows-only servers were tested with Wine 10) → the installer
@@ -292,14 +292,14 @@ Problems found and fixed:
 - apt printed ~1,900 lines → the installer shows "Downloading and installing…" / "Done" and keeps
   the full output in a log file (shown only if something fails).
 - setup.sh repeated an outdated, very long "get a setup code" command right before the installer's
-  own final screen → removed when run from the installer; standalone it says `gamedash setup-code`.
+  own final screen → removed when run from the installer; standalone it says `realmcradle setup-code`.
   pip's ~35 "Requirement already satisfied" lines → one "Python libraries ready." line.
 - **Removing a Windows-only server left its Wine environment** (~1 GB) behind → it is now deleted
   with the server (saves are still left alone).
 
-## 2026-10-15 — `gamedash update`
+## 2026-10-15 — `realmcradle update`
 
-- Updates GameDash from its repository: lists what's new, asks (or `--yes`), fast-forwards the code,
+- Updates RealmCradle from its repository: lists what's new, asks (or `--yes`), fast-forwards the code,
   installs the Python libraries, checks the new version loads (web app, every game type, pages),
   restarts the dashboard and waits for it to answer. If any step fails it resets to the previous
   version, reinstalls its libraries and restarts it. Refuses when the copy has local edits or
@@ -311,7 +311,7 @@ Problems found and fixed:
 
 ## 2026-10-15 — QR code for phones
 
-- The installer's last screen and the new `gamedash qr` command show a QR code of the dashboard's
+- The installer's last screen and the new `realmcradle qr` command show a QR code of the dashboard's
   home-network address, so it can be opened on a phone by pointing the camera at it. Uses `segno`
   (BSD). Checked by decoding the code with an independent reader (zxing-cpp).
 
@@ -322,7 +322,7 @@ Problems found and fixed:
   user), whether port 8443 is free, and internet access. Each result is one plain line (✓ / ⚠ / ✗);
   any ✗ stops the install with the reason (`--force` overrides). Tested here (all ✓) and with
   stand-in tools simulating an ARM processor, a full disk, no systemd and a busy port.
-- Roadmap: a *Packaging* plan (a `.deb` on GitHub Releases → a GameDash apt repository → possibly a
+- Roadmap: a *Packaging* plan (a `.deb` on GitHub Releases → a RealmCradle apt repository → possibly a
   Launchpad PPA).
 
 ## 2026-10-15 — Patreon support link
@@ -347,12 +347,12 @@ Problems found and fixed:
 
 ## 2026-10-15 — Command line, simpler install, accurate CPU figures
 
-- **`gamedash` command** (`bin/gamedash`, installed to `~/.local/bin` by setup): status, address,
+- **`realmcradle` command** (`bin/realmcradle`, installed to `~/.local/bin` by setup): status, address,
   reset-password, setup-code, start/stop/restart of the dashboard,
   logs, servers, `server start|stop|restart|logs <server>` (asks first when players are online),
   backup, check, version, help. Reset-password tested end to end on a copy of the settings.
 - **Installer:** no questions by default (it installs the optional extras too; `--ask` and
-  `--minimal` change that); `get.sh` downloads GameDash and runs the installer in one line.
+  `--minimal` change that); `get.sh` downloads RealmCradle and runs the installer in one line.
 - **CPU figures:** the top bar says *Total CPU usage* (the whole computer). Each server's CPU is now
   its share of the whole computer, and its RAM is the total of all its processes, measured from the
   server's systemd control group (game servers are often several processes, e.g. under Wine). On the
@@ -367,7 +367,7 @@ Problems found and fixed:
 - Licensed under the **PolyForm Noncommercial License 1.0.0** (`LICENSE.md`): free for any
   noncommercial use; commercial use needs the author's permission.
 - Removed the only GPL-licensed dependency (the `rcon` package), whose licence could not be combined
-  with a noncommercial licence. GameDash now has its own Source RCON client (`monitor.source_rcon`),
+  with a noncommercial licence. RealmCradle now has its own Source RCON client (`monitor.source_rcon`),
   used by the player lists, controls, the ARK stop helper and generated stop scripts. Checked on live
   ARK servers (player list, world save) and on Minecraft (player list, save, messages, long
   multi-part replies, graceful stop) with identical results to the old library.

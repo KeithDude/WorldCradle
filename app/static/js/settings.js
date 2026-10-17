@@ -219,7 +219,7 @@ async function initCert() {
     const job = document.getElementById("cert-job"), j = d.job || {};
     const go = document.getElementById("cert-go");
     go.disabled = j.state === "running" || !d.available;
-    if (!d.available) { job.hidden = false; job.textContent = "The certificate tool isn't installed yet — run the GameDash installer again to add it."; }
+    if (!d.available) { job.hidden = false; job.textContent = "The certificate tool isn't installed yet — run the RealmCradle installer again to add it."; }
     else if (j.state === "running") { job.hidden = false; job.textContent = `⏳ ${j.step || "Working"}…`; }
     else if (j.state === "done" || j.state === "failed") { job.hidden = false; job.textContent = (j.state === "done" ? "✅ " : "✗ ") + (j.message || ""); }
     else job.hidden = true;

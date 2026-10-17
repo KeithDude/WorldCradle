@@ -30,7 +30,7 @@ UDP_SPAN = 10   # UDP ports reserved per server for player connections
 _OWN = {"server.properties", "allowlist.json", "permissions.json", "worlds", "valid_known_packs.json"}
 _TAG_RE = re.compile(r"^[A-Za-z0-9 _]{1,16}$")   # Xbox gamertags
 _EVENTS = re.compile(r"Player connected: (?P<joined>[^,\r\n]+), xuid|Player disconnected: (?P<left>[^,\r\n]+), xuid")
-_UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) GameDash", "Accept-Language": "en-US,en;q=0.8"}
+_UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) RealmCradle", "Accept-Language": "en-US,en;q=0.8"}
 
 def _tags(spec: dict) -> list[str]:
     return [n.strip() for n in (spec.get("allowlist_names") or "").split(",") if n.strip()]
@@ -152,7 +152,7 @@ class BedrockGame(SimpleGame):
             props = pat.sub(lambda m: line, props) if pat.search(props) else props + line + "\n"
         os.makedirs(os.path.join(server_dir, "worlds"), exist_ok=True)
         for entry in os.listdir(install):   # link the shared game files into the server's folder
-            if entry in _OWN or entry.startswith("gamedash-") or entry in ("version.txt",):
+            if entry in _OWN or entry.startswith("realmcradle-") or entry in ("version.txt",):
                 continue
             link = os.path.join(server_dir, entry)
             if not os.path.lexists(link):

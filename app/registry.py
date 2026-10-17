@@ -89,7 +89,7 @@ class Server:
     join_port: int | None = None  # the port friends connect to (ARK: query; else game)
     steam_app: int | None = None  # Steam dedicated-server app id (for update checks)
     install_dir: str = ""         # game install dir (contains steamapps/appmanifest)
-    managed: str = "legacy"       # "legacy" (hand-made unit) | "gamedash" (provisioned)
+    managed: str = "legacy"       # "legacy" (hand-made unit) | "realmcradle" (provisioned)
     # ---- save-location fields (drive backup/restore via GameType.save_paths) --
     save_root: str = ""           # absolute base save dir (Valheim savedir / Satisfactory SaveGames / custom folder)
     world: str = ""               # Valheim world name (its save files are <world>.db/.fwl)
@@ -141,7 +141,7 @@ def _load_store(secrets: dict) -> list[Server]:
                 steam_app=e.get("steam_app"),
                 install_dir=_expand(e.get("install_dir", "")),
                 log_path=_expand(e.get("log_path", "")),
-                managed=e.get("managed", "gamedash"),
+                managed=e.get("managed", "realmcradle"),
                 save_dir=e.get("save_dir", ""),
                 save_root=_expand(e.get("save_root", "")),
                 world=e.get("world", ""),

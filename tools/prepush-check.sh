@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GameDash pre-push checks. Run by .git/hooks/pre-push (see tools/install-hooks.sh) and
+# RealmCradle pre-push checks. Run by .git/hooks/pre-push (see tools/install-hooks.sh) and
 # can be run by hand: tools/prepush-check.sh
 # Any failure stops the push. Nothing here changes files or touches running servers.
 set -uo pipefail
@@ -8,7 +8,7 @@ PY="$REPO/venv/bin/python"
 fail=0
 ok()   { printf '  \033[32mOK\033[0m   %s\n' "$*"; }
 bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$*"; fail=1; }
-echo "GameDash pre-push checks"
+echo "RealmCradle pre-push checks"
 
 # 1. Everything is committed (what is pushed is what was tested)
 if [ -z "$(git -C "$REPO" status --porcelain)" ]; then ok "working tree clean"; else bad "uncommitted changes:"; git -C "$REPO" status --short | sed 's/^/         /'; fi
@@ -74,8 +74,8 @@ done; [ $sh_fail = 0 ] && ok "shell scripts parse"
 
 # 6. No secrets or personal data in tracked files
 files=$(git -C "$REPO" ls-files)
-SECRETS="${GAMEDASH_HOME:-$HOME/.config/gamedash}/secrets.conf"
-[ -f "$SECRETS" ] || SECRETS="$(grep -ho '^\. [^ ]*secrets[^ ]*' "$REPO"/../*server/gamedash-*-run.sh 2>/dev/null | head -1 | cut -c3-)"
+SECRETS="${REALMCRADLE_HOME:-$HOME/.config/realmcradle}/secrets.conf"
+[ -f "$SECRETS" ] || SECRETS="$(grep -ho '^\. [^ ]*secrets[^ ]*' "$REPO"/../*server/realmcradle-*-run.sh 2>/dev/null | head -1 | cut -c3-)"
 leak=0
 if [ -n "$SECRETS" ] && [ -f "$SECRETS" ]; then
   while IFS='=' read -r k v; do
@@ -124,8 +124,8 @@ if command -v dpkg-deb >/dev/null 2>&1; then
   if out=$(bash "$REPO/tools/build-deb.sh" 2>&1); then
     deb=$(ls -t "$REPO"/dist/*.deb | head -1)
     missing=""; listing=$(dpkg-deb -c "$deb")
-    for f in ./usr/bin/gamedash ./usr/lib/gamedash/setup.sh ./usr/lib/gamedash/requirements.lock \
-             ./usr/lib/gamedash/bin/gamedash-ensure-venv ./usr/lib/gamedash/app/app.py ./usr/share/doc/gamedash/copyright; do
+    for f in ./usr/bin/realmcradle ./usr/lib/realmcradle/setup.sh ./usr/lib/realmcradle/requirements.lock \
+             ./usr/lib/realmcradle/bin/realmcradle-ensure-venv ./usr/lib/realmcradle/app/app.py ./usr/share/doc/realmcradle/copyright; do
       grep -q " $f\( \|$\)" <<< "$listing" || missing="$missing $f"
     done
     [ -z "$missing" ] && ok "package builds: dist/$(basename "$deb")" || bad "package is missing:$missing"
@@ -135,7 +135,7 @@ if command -v dpkg-deb >/dev/null 2>&1; then
 fi
 
 # 8. The running dashboard still answers (when it runs here)
-if systemctl --user is-active -q gamedash 2>/dev/null; then
+if systemctl --user is-active -q realmcradle 2>/dev/null; then
   code=$(curl -sk -o /dev/null -w '%{http_code}' https://127.0.0.1:8443/ || true)
   [ "$code" = 200 ] && ok "running dashboard answers" || bad "running dashboard returned HTTP $code"
 fi

@@ -1,4 +1,4 @@
-"""notifiers.py — the services GameDash can send alerts to.
+"""notifiers.py — the services RealmCradle can send alerts to.
 
 Each service has a plain-language form (SERVICES[...]["fields"]) and a sender. A sender raises
 NotifyError with a message the owner can act on when delivery fails; otherwise the message
@@ -172,7 +172,7 @@ def _ntfy(d, title, message, level):
     # priority go in headers; tags that name an emoji are shown as that emoji.
     tag = {"bad": "rotating_light", "good": "white_check_mark", "warn": "warning"}.get(level, "video_game")
     prio = {"bad": "high", "warn": "high"}.get(level, "default")
-    clean_title = title.lstrip("🔴🟢🟠🎮 ").strip() or "GameDash"   # the tag already shows the emoji
+    clean_title = title.lstrip("🔴🟢🟠🎮 ").strip() or "RealmCradle"   # the tag already shows the emoji
     headers = {"Title": _header_text(clean_title[:250]), "Priority": prio, "Tags": tag}
     if d.get("token"):
         headers["Authorization"] = f"Bearer {d['token']}"
@@ -189,7 +189,7 @@ def _gotify(d, title, message, level):
 def _matrix(d, title, message, level):
     # https://spec.matrix.org/latest/client-server-api/#put_matrixclientv3roomsroomidsendeventtypetxnid
     room = urllib.parse.quote(d["room_id"], safe="")
-    txn = f"gamedash-{time.time_ns()}"   # must be unique for each message sent with this token
+    txn = f"realmcradle-{time.time_ns()}"   # must be unique for each message sent with this token
     _http("PUT", f"{d['homeserver'].rstrip('/')}/_matrix/client/v3/rooms/{room}/send/m.room.message/{txn}",
           headers={"Authorization": f"Bearer {d['access_token']}"},
           json={"msgtype": "m.text", "body": f"{title}\n{message}"})
@@ -211,7 +211,7 @@ def _email(d, title, message, level):
     msg["To"] = d["to_addr"]
     msg["Date"] = formatdate(localtime=True)
     msg["Message-ID"] = make_msgid(domain=sender.rpartition("@")[2] or None)
-    msg.set_content(message + "\n\n— sent by GameDash")
+    msg.set_content(message + "\n\n— sent by RealmCradle")
     host = d["smtp_host"]
     port = int(d.get("smtp_port") or SMTP_DEFAULT_PORT.get(security, "587"))
     try:
@@ -233,7 +233,7 @@ def _email(d, title, message, level):
 
 
 def _webhook(d, title, message, level):
-    # GameDash's own format, described to the owner in the form's help.
+    # RealmCradle's own format, described to the owner in the form's help.
     _http("POST", d["url"], json={"title": title, "message": message, "level": level})
 
 
@@ -291,7 +291,7 @@ SERVICES: dict[str, dict] = {
               "secret", r"^[A-Za-z0-9]{30}$")]},
     "ntfy": {"label": "ntfy (free phone push)", "send": _ntfy, "fields": [
         Field("url", "Topic address", "Install the ntfy app, subscribe to a topic with a hard-to-guess name, "
-              "and enter its address here, e.g. https://ntfy.sh/gamedash-x7k2p9.", "secret", _HTTP_ANY),
+              "and enter its address here, e.g. https://ntfy.sh/realmcradle-x7k2p9.", "secret", _HTTP_ANY),
         Field("token", "Access token (optional)", "Only needed for a protected topic or your own ntfy server.",
               "secret", r"^(\S{1,500})?$", optional=True)]},
     "gotify": {"label": "Gotify (self-hosted push)", "send": _gotify, "fields": [
@@ -308,7 +308,7 @@ SERVICES: dict[str, dict] = {
         Field("room_id", "Room ID", "Room settings → Advanced → Internal room ID (starts with !). Invite the "
               "account into the room first.", "text", r"^!\S{1,255}$")]},
     "webhook": {"label": "Another service (webhook)", "send": _webhook, "fields": [
-        Field("url", "Webhook address", "GameDash sends a JSON message with title, message and level to this "
+        Field("url", "Webhook address", "RealmCradle sends a JSON message with title, message and level to this "
               "address.", "secret", _HTTP_ANY)]},
 }
 

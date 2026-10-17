@@ -191,7 +191,7 @@ class ValheimGame(SimpleGame):
         return doorstop + "export LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH\nexport SteamAppID=892970\n"
 
     def log_file(self, server_dir, install):
-        return os.path.join(install, f"gamedash-{os.path.basename(server_dir)}.log")
+        return os.path.join(install, f"realmcradle-{os.path.basename(server_dir)}.log")
 
     def proc_pattern(self, spec, ports, server_dir):
         return f"-port {ports['game']}"

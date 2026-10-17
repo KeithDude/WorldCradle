@@ -95,7 +95,7 @@ def test_card_rows_depend_on_the_game_not_on_running(g):
     """A server card's rows come from the game (and its ports), so starting or stopping a server
     never changes the card's layout."""
     from registry import Server
-    s = Server(key="t", name="T", kind=g.kind, unit="gamedash-t.service", game_port=7000, query_port=7001)
+    s = Server(key="t", name="T", kind=g.kind, unit="realmcradle-t.service", game_port=7000, query_port=7001)
     rows = g.card_rows(s)
     assert set(rows) == {"players", "answering", "server_stats"}
     assert all(isinstance(v, bool) for v in rows.values())
@@ -135,7 +135,7 @@ def test_status_check_of_a_stopped_server_is_a_plain_result(g, tmp_path, monkeyp
     for name in ("A2S_TIMEOUT", "RCON_TIMEOUT"):     # nothing will answer: don't wait long
         monkeypatch.setattr(monitor, name, 0.2)
     s0 = socket.socket(); s0.bind(("127.0.0.1", 0)); free = s0.getsockname()[1]; s0.close()
-    s = Server(key="t", name="T", kind=g.kind, unit="gamedash-t.service", game_port=free, query_port=free,
+    s = Server(key="t", name="T", kind=g.kind, unit="realmcradle-t.service", game_port=free, query_port=free,
                rcon_port=free, rcon_password="pw", log_path=str(tmp_path / "none.log"),
                save_root=str(tmp_path), install_dir=str(tmp_path))
     out = g.probe(s)

@@ -1,10 +1,10 @@
 """certs.py — a browser-trusted HTTPS certificate from Let's Encrypt.
 
-GameDash ships with a self-signed certificate, which makes browsers show a
+RealmCradle ships with a self-signed certificate, which makes browsers show a
 warning. This module replaces it with a free, trusted one — without needing
 root:
 
-  * certbot (installed in GameDash's own Python environment) proves control of
+  * certbot (installed in RealmCradle's own Python environment) proves control of
     the domain over HTTP on a high port; the operator's router forwards the
     internet's port 80 to that port;
   * the issued certificate is copied over the files gunicorn already serves
@@ -84,7 +84,7 @@ def info() -> dict:
     cfg = config.load()
     out["domain"] = cfg.get("cert_domain", "")
     out["http_port"] = _http_port(cfg)
-    out["auto_renew"] = os.path.isfile(os.path.join(UNITS, "gamedash-cert-renew.timer"))
+    out["auto_renew"] = os.path.isfile(os.path.join(UNITS, "realmcradle-cert-renew.timer"))
     return out
 
 
@@ -120,7 +120,7 @@ def install_issued(domain: str) -> None:
 def restart_dashboard() -> None:
     """Restart the web service so it serves the new certificate. Detached, so
     the request that triggered it can finish first."""
-    subprocess.Popen(["systemctl", "--user", "restart", "--no-block", "gamedash.service"],
+    subprocess.Popen(["systemctl", "--user", "restart", "--no-block", "realmcradle.service"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -128,15 +128,15 @@ def _write_renew_units(http_port: int) -> None:
     py = sys.executable
     manage = os.path.join(os.path.dirname(os.path.abspath(__file__)), "manage.py")
     svc = f"""[Unit]
-Description=gamedash: renew the HTTPS certificate (Let's Encrypt)
+Description=realmcradle: renew the HTTPS certificate (Let's Encrypt)
 
 [Service]
 Type=oneshot
-Environment=GAMEDASH_HOME={paths.HOME}
+Environment=REALMCRADLE_HOME={paths.HOME}
 ExecStart={certbot_path()} renew --non-interactive --http-01-port {http_port} {' '.join(_dirs())} --deploy-hook "{py} {manage} install-cert"
 """
     timer = """[Unit]
-Description=gamedash: check the HTTPS certificate twice a day
+Description=realmcradle: check the HTTPS certificate twice a day
 
 [Timer]
 OnCalendar=*-*-* 04,16:30:00
@@ -147,11 +147,11 @@ Persistent=true
 WantedBy=timers.target
 """
     os.makedirs(UNITS, exist_ok=True)
-    for name, text in (("gamedash-cert-renew.service", svc), ("gamedash-cert-renew.timer", timer)):
+    for name, text in (("realmcradle-cert-renew.service", svc), ("realmcradle-cert-renew.timer", timer)):
         with open(os.path.join(UNITS, name), "w", encoding="utf-8") as f:
             f.write(text)
     systemd.run("daemon-reload", timeout=30)
-    systemd.run("enable", "--now", "gamedash-cert-renew.timer", timeout=30)
+    systemd.run("enable", "--now", "realmcradle-cert-renew.timer", timeout=30)
 
 
 def _explain(output: str) -> str:
@@ -194,7 +194,7 @@ def start(domain: str, email: str, agree: bool, dashboard_port: int = 8443) -> d
         raise ActionError(f"Please read Let's Encrypt's terms ({TERMS_URL}) and tick the box to "
                           f"agree — they require it before issuing a certificate.")
     if not certbot_path():
-        raise ActionError("The certificate tool (certbot) isn't installed. Run the GameDash "
+        raise ActionError("The certificate tool (certbot) isn't installed. Run the RealmCradle "
                           "installer again, then retry.")
     http_port = _http_port()
     if not _port_free(http_port):

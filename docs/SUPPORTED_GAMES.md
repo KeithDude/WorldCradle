@@ -1,9 +1,9 @@
 # Supported games
 
-GameDash can install, create and run servers for the 45 games below, plus any other server
+RealmCradle can install, create and run servers for the 45 games below, plus any other server
 through **Custom service**.
 
-**Tested** means real players have joined and played on a server run by GameDash.
+**Tested** means real players have joined and played on a server run by RealmCradle.
 **Not Tested** means the server has been tested on the server side only: it installs, starts, takes
 its settings from the Add-a-server form and stops cleanly, but nobody has joined it from the game yet.
 The maintainer doesn't own all of these games, so help is welcome (see *How to help test* below).
@@ -61,7 +61,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 
 ## How to help test
 
-1. Install the game in GameDash (Games → Install) and add a server with the default settings.
+1. Install the game in RealmCradle (Games → Install) and add a server with the default settings.
 2. Join it from the game — ideally once from your own home network and once from outside it.
    To test "outside" yourself: turn on your phone's **Mobile Hotspot**, connect the computer you
    play on to that hotspot (not to your home Wi-Fi), and join using the server's public address

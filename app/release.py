@@ -1,7 +1,7 @@
-"""release.py — GameDash's published versions, for `gamedash update` when GameDash was installed
+"""release.py — RealmCradle's published versions, for `realmcradle update` when RealmCradle was installed
 from its package.
 
-Each release on GitHub carries the package (gamedash_<version>_all.deb) and its SHA-256 checksum
+Each release on GitHub carries the package (realmcradle_<version>_all.deb) and its SHA-256 checksum
 (<package>.sha256). A download is used only if it matches that checksum.
 """
 from __future__ import annotations
@@ -15,12 +15,12 @@ import requests
 
 import project
 
-PACKAGE = "gamedash"
-# GitHub's list of releases. GAMEDASH_RELEASES_URL points it at a stand-in instead, to test
+PACKAGE = "realmcradle"
+# GitHub's list of releases. REALMCRADLE_RELEASES_URL points it at a stand-in instead, to test
 # updates before anything is published (tools/test-releases.py).
-API = os.environ.get("GAMEDASH_RELEASES_URL") or \
+API = os.environ.get("REALMCRADLE_RELEASES_URL") or \
     project.PROJECT_URL.replace("https://github.com/", "https://api.github.com/repos/") + "/releases"
-DEB_RE = re.compile(r"^gamedash_(?P<version>[A-Za-z0-9.+~-]+)_all\.deb$")
+DEB_RE = re.compile(r"^realmcradle_(?P<version>[A-Za-z0-9.+~-]+)_all\.deb$")
 TIMEOUT = 30
 
 
@@ -29,7 +29,7 @@ class ReleaseError(Exception):
 
 
 def installed_version() -> str | None:
-    """The installed package's version, or None when GameDash didn't come from the package."""
+    """The installed package's version, or None when RealmCradle didn't come from the package."""
     try:
         r = subprocess.run(["dpkg-query", "-W", "-f=${Version}", PACKAGE],
                            capture_output=True, text=True, timeout=30)

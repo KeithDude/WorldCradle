@@ -21,7 +21,7 @@ def test_uninstall_leaves_a_busy_server_alone_when_asked(monkeypatch, tmp_path):
     import builtins
     import controls
     import registry
-    servers = {k: SimpleNamespace(key=k, name=k.title(), unit=f"gamedash-{k}.service", kind="custom")
+    servers = {k: SimpleNamespace(key=k, name=k.title(), unit=f"realmcradle-{k}.service", kind="custom")
                for k in ("busy", "idle")}
     calls = []
     monkeypatch.setattr(registry, "by_key", lambda: servers)
@@ -34,7 +34,7 @@ def test_uninstall_leaves_a_busy_server_alone_when_asked(monkeypatch, tmp_path):
     monkeypatch.setattr(builtins, "input", lambda *a: next(answers, "n"))
     assert cli.cmd_uninstall([]) == 0
     stopped = [a[-1] for a in calls if a[:2] == ("disable", "--now")]
-    assert "gamedash-idle.service" in stopped and "gamedash-busy.service" not in stopped
+    assert "realmcradle-idle.service" in stopped and "realmcradle-busy.service" not in stopped
 
 
 def test_uninstall_finishes_even_if_deleting_stops_part_way(tmp_path, monkeypatch):
@@ -57,6 +57,6 @@ def test_uninstall_finishes_even_if_deleting_stops_part_way(tmp_path, monkeypatc
     monkeypatch.setattr(installs.shutil, "rmtree", flaky)
     r = installs.uninstall("necesse")
     assert r["ok"] and "next time" in r["message"]
-    assert not installs.is_installed(game)                     # gone from GameDash already
+    assert not installs.is_installed(game)                     # gone from RealmCradle already
     assert installs._clear_leftovers(str(folder))             # and the rest clears next time
     assert not list(tmp_path.iterdir())

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# GameDash setup for your user account: the Python environment, the settings folder, the
+# RealmCradle setup for your user account: the Python environment, the settings folder, the
 # dashboard's certificate, the background services, and the final "here's how to open it" screen.
 #
-#   gamedash setup              after installing the GameDash package
+#   realmcradle setup              after installing the RealmCradle package
 #   ./install.sh                from a downloaded copy (installs the system packages, then runs this)
 #
 # Options:  --fail2ban / --no-fail2ban   set up (or skip) blocking of password guessers; the
@@ -10,14 +10,14 @@
 #           --force                      carry on even if the computer checks fail
 #
 # Safe to run again at any time: it never overwrites existing settings, passwords, certificate
-# or server list. Data: $GAMEDASH_HOME (default ~/.config/gamedash). Backups: $GAMEDASH_BACKUPS
-# (default ~/.local/share/gamedash/backups).
+# or server list. Data: $REALMCRADLE_HOME (default ~/.config/realmcradle). Backups: $REALMCRADLE_BACKUPS
+# (default ~/.local/share/realmcradle/backups).
 set -euo pipefail
 
-GAMEDASH_CODE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-. "$GAMEDASH_CODE/bin/gamedash-env.sh"
-CODE="$GAMEDASH_CODE"; VENV="$GAMEDASH_VENV"; DATA="$GAMEDASH_HOME"; PORT="$GAMEDASH_PORT"
-BACKUPS="${GAMEDASH_BACKUPS:-$HOME/.local/share/gamedash/backups}"
+REALMCRADLE_CODE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+. "$REALMCRADLE_CODE/bin/realmcradle-env.sh"
+CODE="$REALMCRADLE_CODE"; VENV="$REALMCRADLE_VENV"; DATA="$REALMCRADLE_HOME"; PORT="$REALMCRADLE_PORT"
+BACKUPS="${REALMCRADLE_BACKUPS:-$HOME/.local/share/realmcradle/backups}"
 UNITS="$HOME/.config/systemd/user"
 PACKAGED=0; [ -w "$CODE" ] || PACKAGED=1      # the package's program folder belongs to the system
 FAIL2BAN=auto; FORCE=()
@@ -30,19 +30,19 @@ for arg in "$@"; do
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
-FROM_INSTALLER="${GAMEDASH_FROM_INSTALLER:-0}"
+FROM_INSTALLER="${REALMCRADLE_FROM_INSTALLER:-0}"
 say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 
-# --- 0. Can this computer run GameDash? (install.sh has already checked) ----------
+# --- 0. Can this computer run RealmCradle? (install.sh has already checked) ----------
 if [ "$FROM_INSTALLER" != 1 ]; then
-    "$CODE/bin/gamedash-preflight" "${FORCE[@]}" || exit 1
+    "$CODE/bin/realmcradle-preflight" "${FORCE[@]}" || exit 1
 fi
 
 # --- 1. Python environment ---------------------------------------------------------
 say "Python libraries"
 # creates the environment, or rebuilds it if it's missing or broken (e.g. after a Python upgrade)
-"$CODE/bin/gamedash-ensure-venv" || exit 1
+"$CODE/bin/realmcradle-ensure-venv" || exit 1
 
 # --- 2. Settings folder ------------------------------------------------------------
 say "Settings: $DATA"
@@ -92,22 +92,22 @@ fi
 say "Background services"
 mkdir -p "$UNITS"
 subst() { sed -e "s#__CODE__#$CODE#g" -e "s#__VENV__#$VENV#g" -e "s#__DATA__#$DATA#g" -e "s#__PORT__#$PORT#g" "$1"; }
-subst "$CODE/deploy/systemd/gamedash.service.in"        > "$UNITS/gamedash.service"
-subst "$CODE/deploy/systemd/gamedash-backup.service.in" > "$UNITS/gamedash-backup.service"
-cp    "$CODE/deploy/systemd/gamedash-backup.timer"        "$UNITS/gamedash-backup.timer"
+subst "$CODE/deploy/systemd/realmcradle.service.in"        > "$UNITS/realmcradle.service"
+subst "$CODE/deploy/systemd/realmcradle-backup.service.in" > "$UNITS/realmcradle-backup.service"
+cp    "$CODE/deploy/systemd/realmcradle-backup.timer"        "$UNITS/realmcradle-backup.timer"
 systemctl --user daemon-reload
-systemctl --user enable --quiet gamedash.service gamedash-backup.timer
-systemctl --user restart gamedash.service       # picks up a new version on re-runs
-systemctl --user start gamedash-backup.timer
+systemctl --user enable --quiet realmcradle.service realmcradle-backup.timer
+systemctl --user restart realmcradle.service       # picks up a new version on re-runs
+systemctl --user start realmcradle-backup.timer
 note "The dashboard and the daily 05:00 backup are running."
 
-# The `gamedash` command. The package installs it for everyone; a downloaded copy links it here.
+# The `realmcradle` command. The package installs it for everyone; a downloaded copy links it here.
 if [ "$PACKAGED" = 0 ]; then
     mkdir -p "$HOME/.local/bin"
-    ln -sfn "$CODE/bin/gamedash" "$HOME/.local/bin/gamedash"
+    ln -sfn "$CODE/bin/realmcradle" "$HOME/.local/bin/realmcradle"
     case ":$PATH:" in
         *":$HOME/.local/bin:"*) ;;
-        *) note "The gamedash command works in new terminal windows (or after logging in again)." ;;
+        *) note "The realmcradle command works in new terminal windows (or after logging in again)." ;;
     esac
 fi
 
@@ -115,9 +115,9 @@ fi
 if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -q 'Linger=yes'; then
     :
 elif loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER"; then
-    note "GameDash keeps running after you log out and starts with the computer."
+    note "RealmCradle keeps running after you log out and starts with the computer."
 else
-    note "⚠ Couldn't set GameDash to start with the computer. Run: sudo loginctl enable-linger $USER"
+    note "⚠ Couldn't set RealmCradle to start with the computer. Run: sudo loginctl enable-linger $USER"
 fi
 
 # --- 6. The computer's firewall, if it has one switched on ------------------------------
@@ -133,20 +133,20 @@ if [ "$FAIL2BAN" = auto ]; then
     command -v fail2ban-client >/dev/null 2>&1 && FAIL2BAN=yes || FAIL2BAN=no
 fi
 if [ "$FAIL2BAN" = yes ]; then
-    jail="$(sed -e "s#__GAMEDASH_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/gamedash-jail.conf")"
+    jail="$(sed -e "s#__REALMCRADLE_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/realmcradle-jail.conf")"
     settings() { grep -v '^[[:space:]]*\(#\|$\)'; }    # compare what fail2ban reads, not the comments
-    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/gamedash.conf 2>/dev/null)" ] \
-       && [ "$(settings < "$CODE/deploy/fail2ban/gamedash-filter.conf")" = \
-            "$(settings < /etc/fail2ban/filter.d/gamedash.conf 2>/dev/null)" ]; then
+    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/realmcradle.conf 2>/dev/null)" ] \
+       && [ "$(settings < "$CODE/deploy/fail2ban/realmcradle-filter.conf")" = \
+            "$(settings < /etc/fail2ban/filter.d/realmcradle.conf 2>/dev/null)" ]; then
         :   # already set up
     else
         note "Setting up protection against password guessing (fail2ban) — this asks for your password."
-        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/gamedash.conf >/dev/null \
-           && sudo cp "$CODE/deploy/fail2ban/gamedash-filter.conf" /etc/fail2ban/filter.d/gamedash.conf \
+        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/realmcradle.conf >/dev/null \
+           && sudo cp "$CODE/deploy/fail2ban/realmcradle-filter.conf" /etc/fail2ban/filter.d/realmcradle.conf \
            && sudo systemctl enable --quiet --now fail2ban && sudo systemctl restart fail2ban; then
             note "Done: an address that gets the dashboard password wrong 4 times is blocked for an hour."
         else
-            note "⚠ Couldn't set up fail2ban. GameDash still slows down password guessing by itself."
+            note "⚠ Couldn't set up fail2ban. RealmCradle still slows down password guessing by itself."
         fi
     fi
 fi

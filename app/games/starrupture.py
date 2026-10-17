@@ -36,15 +36,15 @@ class StarRuptureGame(WineGame):
 
     @staticmethod
     def _session(server_dir):
-        return ("gd" + "".join(c for c in os.path.basename(server_dir) if c.isalnum()))[:20]
+        return ("rc" + "".join(c for c in os.path.basename(server_dir) if c.isalnum()))[:20]
 
     def command(self, spec, ports, name, server_dir, install):
         self.option(spec, "autosave")
         # The two RCWeb switches turn off the engine's remote-control web interface, which
         # otherwise answers on the game port with no login at all.
-        # -gamedash=… means nothing to the game; it lets the dashboard tell this server's process apart.
+        # -realmcradle=… means nothing to the game; it lets the dashboard tell this server's process apart.
         return ('wine ./StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe '
-                f'-gamedash={os.path.basename(server_dir)} -Log '
+                f'-realmcradle={os.path.basename(server_dir)} -Log '
                 f'-Port={ports["game"]} -RCWebControlDisable -RCWebInterfaceDisable')
 
     def sync_lines(self, spec, ports, name, server_dir, install):
@@ -71,4 +71,4 @@ class StarRuptureGame(WineGame):
         return os.path.join(install, "StarRupture", "Saved", "Logs", "StarRupture.log")
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"-gamedash={spec['key']} -Log"
+        return f"-realmcradle={spec['key']} -Log"

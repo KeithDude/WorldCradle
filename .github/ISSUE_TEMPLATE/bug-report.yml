@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in GameDash doesn't work as it should
+description: Something in RealmCradle doesn't work as it should
 labels: ["bug"]
 body:
   - type: markdown
@@ -18,8 +18,8 @@ body:
     id: log
     attributes:
       label: Log
-      description: "From a terminal: gamedash logs  (or the server card → Logs). Check for passwords first."
+      description: "From a terminal: realmcradle logs  (or the server card → Logs). Check for passwords first."
       render: text
   - type: input
     id: system
-    attributes: {label: Your system, placeholder: "Output of: gamedash version — and your Linux version"}
+    attributes: {label: Your system, placeholder: "Output of: realmcradle version — and your Linux version"}

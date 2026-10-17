@@ -5,9 +5,9 @@ import os
 import re
 
 # ---- the shared passwords, written into a game's settings at every start ---------------------
-# The join and admin passwords are set once in GameDash (the secrets file). A game's launch
+# The join and admin passwords are set once in RealmCradle (the secrets file). A game's launch
 # script reads them and writes them into the game's own settings file just before it starts, so
-# a password changed in GameDash reaches every server on its next start. Settings files hold a
+# a password changed in RealmCradle reaches every server on its next start. Settings files hold a
 # placeholder until then.
 
 # which value an entry gets, as the Python name in the generated script
@@ -157,7 +157,7 @@ def link_farm(install: str, server_dir: str, own: set[str]) -> None:
     servers from one download."""
     os.makedirs(server_dir, exist_ok=True)
     for entry in os.listdir(install):
-        if entry in own or entry.startswith("gamedash-") or entry in ("steamapps", "version.txt"):
+        if entry in own or entry.startswith("realmcradle-") or entry in ("steamapps", "version.txt"):
             continue
         link = os.path.join(server_dir, entry)
         if not os.path.lexists(link):
@@ -167,4 +167,4 @@ def link_farm(install: str, server_dir: str, own: set[str]) -> None:
 def wine_prefix(kind: str, key: str) -> str:
     """Each Wine server gets its own prefix: a shared one shares a single
     wineserver, so stopping one server would take the others down with it."""
-    return os.path.expanduser(f"~/.wine-gd-{kind}-{key}")
+    return os.path.expanduser(f"~/.wine-rc-{kind}-{key}")

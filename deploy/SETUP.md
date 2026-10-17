@@ -1,4 +1,4 @@
-# Installing GameDash — the details
+# Installing RealmCradle — the details
 
 Most people only need the one line in [docs/GETTING_STARTED.md](../docs/GETTING_STARTED.md). This
 page explains what installing does, the other ways to install, updating, removing, and the
@@ -8,16 +8,16 @@ manual route for systems the installer doesn't cover.
 
 **1. The one line** (Ubuntu 22.04+ / Debian 12+):
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/GameDash/main/get.sh | bash
+wget -qO- https://raw.githubusercontent.com/KeithDude/RealmCradle/main/get.sh | bash
 ```
-It downloads the newest GameDash package from GitHub Releases, checks it against its published
-checksum, installs it with apt (asks for your computer's password), then runs `gamedash setup`.
+It downloads the newest RealmCradle package from GitHub Releases, checks it against its published
+checksum, installs it with apt (asks for your computer's password), then runs `realmcradle setup`.
 Add `-s -- --minimal` after `bash` to leave out the optional extras (Java, Wine, fail2ban).
 
-**2. The package by hand:** download `gamedash_<version>_all.deb` from the Releases page, then
+**2. The package by hand:** download `realmcradle_<version>_all.deb` from the Releases page, then
 ```
-sudo apt install ./gamedash_<version>_all.deb
-gamedash setup                     # as your normal user, not with sudo
+sudo apt install ./realmcradle_<version>_all.deb
+realmcradle setup                     # as your normal user, not with sudo
 ```
 
 **3. From the source** (for development, or before a release exists): clone or download the
@@ -31,33 +31,33 @@ setup code for choosing your password in the browser, and the password friends n
 
 | What | Package install | Source install |
 |---|---|---|
-| The program | `/usr/lib/gamedash` (the `gamedash` command in `/usr/bin`) | the folder you put it in |
-| Its Python libraries | `~/.local/share/gamedash/venv` | `venv/` in that folder |
-| Settings, passwords, server list, certificate, logs | `~/.config/gamedash` | same |
-| Save backups | `~/.local/share/gamedash/backups` | same |
+| The program | `/usr/lib/realmcradle` (the `realmcradle` command in `/usr/bin`) | the folder you put it in |
+| Its Python libraries | `~/.local/share/realmcradle/venv` | `venv/` in that folder |
+| Settings, passwords, server list, certificate, logs | `~/.config/realmcradle` | same |
+| Save backups | `~/.local/share/realmcradle/backups` | same |
 | Game servers | each game's folder in your home folder (e.g. `~/valheimserver`) | same |
-| Background services | `gamedash.service`, `gamedash-backup.timer` (your account's systemd) | same |
+| Background services | `realmcradle.service`, `realmcradle-backup.timer` (your account's systemd) | same |
 
 The Python libraries are exact versions with checksums (`requirements.lock`); pip refuses
-anything that doesn't match. If an operating-system upgrade changes the Python version, GameDash
+anything that doesn't match. If an operating-system upgrade changes the Python version, RealmCradle
 rebuilds its libraries by itself the next time it starts.
 
-**System packages** — listed once in [packages.conf](packages.conf): GameDash itself needs Python
+**System packages** — listed once in [packages.conf](packages.conf): RealmCradle itself needs Python
 (with `venv`), openssl and curl. Game servers need a few libraries (32-bit support for Steam's
 downloader, plus some that particular games load). Optional extras: Java (Minecraft), Wine
 (Windows-only servers), winetricks + cabextract (Space Engineers), fail2ban. The package lists the
 optional ones as "recommended", which apt installs unless you add `--no-install-recommends`.
 
-**What setup does** (`gamedash setup`, or the last step of `install.sh`; safe to repeat): checks the
+**What setup does** (`realmcradle setup`, or the last step of `install.sh`; safe to repeat): checks the
 computer, builds the Python libraries, creates the settings folder with random game passwords and a
-self-signed certificate, starts the dashboard and the daily 05:00 backup, lets GameDash keep running
+self-signed certificate, starts the dashboard and the daily 05:00 backup, lets RealmCradle keep running
 after you log out (linger), lets the dashboard through the `ufw` firewall if it's on, and sets up
 fail2ban if it's installed. It never overwrites existing settings, passwords, certificate or
 servers. Options: `--no-fail2ban`, `--force` (carry on despite failed checks).
 
 ## Updating
 
-`gamedash update` — shows what's new, installs it, checks the new version answers, and puts the
+`realmcradle update` — shows what's new, installs it, checks the new version answers, and puts the
 previous version back by itself if it doesn't. Game servers keep running throughout.
 - Package install: downloads the newest release's package, checks its checksum, installs it with apt.
 - Source install: fetches the newest code with git.
@@ -66,13 +66,13 @@ Your settings, servers and saves are never touched by an update.
 
 ## Removing
 
-`gamedash uninstall` stops and removes your game servers' background services (asking first if
+`realmcradle uninstall` stops and removes your game servers' background services (asking first if
 players are online), the dashboard, and the daily backup, and asks before deleting settings or
 backups. Game installs and their saves are never deleted. For a package install, finish with
-`sudo apt remove gamedash`.
+`sudo apt remove realmcradle`.
 
 Removing the package alone stops the dashboard but leaves your settings and your game servers
-running; installing GameDash again picks up where you left off.
+running; installing RealmCradle again picks up where you left off.
 
 ## Letting friends in: router port forwarding
 
@@ -82,10 +82,10 @@ to this computer, with the type (UDP/TCP) of each, and step-by-step instructions
 Forward those and nothing else.
 
 > 🔒 **Never forward an admin console (RCON) or any other control port.**
-> These ports let GameDash control a server: see the players, send messages, save,
+> These ports let RealmCradle control a server: see the players, send messages, save,
 > kick, ban, shut it down. Their passwords travel unencrypted and they are not built to
 > face the internet, so if one were reachable from outside your home, a stranger could
-> try passwords until one works and take the server over. GameDash only ever uses them
+> try passwords until one works and take the server over. RealmCradle only ever uses them
 > from inside this computer.
 >
 > You will see them marked **“🔒 keep closed, never forward”** on the Add-a-server form,
@@ -96,9 +96,9 @@ Which games have been tried with real players: [docs/SUPPORTED_GAMES.md](../docs
 
 ## Passwords
 
-- **Dashboard password** — chosen in the browser on first visit; forgot it? `gamedash reset-password`.
+- **Dashboard password** — chosen in the browser on first visit; forgot it? `realmcradle reset-password`.
 - **Game passwords** — one that friends type to join, one private admin password. Random ones are
-  picked at setup; see them with `gamedash passwords`, change them in **Settings → Game passwords**
+  picked at setup; see them with `realmcradle passwords`, change them in **Settings → Game passwords**
   (restart the servers afterwards).
 
 ## Certificate
@@ -127,10 +127,10 @@ is playing, after backing up every save.
 
 The installer and package are for Ubuntu and Debian. Elsewhere: install the equivalents of the
 packages in [packages.conf](packages.conf) with your package manager, download the source into your
-home folder and run `./setup.sh` in it. GameDash needs systemd user services.
+home folder and run `./setup.sh` in it. RealmCradle needs systemd user services.
 
 ## Building the package
 
-`tools/build-deb.sh` builds `dist/gamedash_<version>_all.deb` (and its `.sha256`) from the
+`tools/build-deb.sh` builds `dist/realmcradle_<version>_all.deb` (and its `.sha256`) from the
 committed code; `--worktree` builds from the files as they are now, for testing. A release
 attaches both files to a GitHub release tagged `v<version>`.

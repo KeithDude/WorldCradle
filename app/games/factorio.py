@@ -22,7 +22,7 @@ DOWNLOAD_URL = "https://factorio.com/get-download/stable/headless/linux64"
 RELEASES_URL = "https://factorio.com/api/latest-releases"
 EXE = "bin/x64/factorio"
 _NAME_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,60}$")   # factorio.com usernames
-_UA = {"User-Agent": "Mozilla/5.0 (GameDash)"}
+_UA = {"User-Agent": "Mozilla/5.0 (RealmCradle)"}
 
 class FactorioGame(SimpleGame):
     kind = "factorio"

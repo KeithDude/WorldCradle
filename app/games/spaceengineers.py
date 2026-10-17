@@ -22,7 +22,7 @@ WORLDS = [["Star System", "Star System (planets and moons)"], ["Earth Planet", "
           ["Empty World", "Empty space"]]
 MODES = [["Survival", "Survival"], ["Creative", "Creative"]]
 
-# keep the join password in step with the ones set in GameDash (the game stores it salted and hashed)
+# keep the join password in step with the ones set in RealmCradle (the game stores it salted and hashed)
 _SYNC = """python3 - "{cfg}" "$GAME_SERVER_PASSWORD" <<'SYNC'
 import base64, hashlib, os, re, sys
 p, pw = sys.argv[1], sys.argv[2]
@@ -37,18 +37,18 @@ SYNC
 """
 
 _RUNTIMES = """export WINEDLLOVERRIDES=""        # this server needs the .NET runtime (mscoree) left enabled
-if [ ! -f "$WINEPREFIX/.gamedash-runtimes" ]; then
+if [ ! -f "$WINEPREFIX/.realmcradle-runtimes" ]; then
     # One-off, 10-30 minutes: put Microsoft's .NET 4.8 and Visual C++ runtimes into
     # this server's Wine environment. The server refuses to start without them.
-    echo "gamedash: preparing the Wine environment (.NET 4.8 + Visual C++) — this takes a while the first time"
+    echo "realmcradle: preparing the Wine environment (.NET 4.8 + Visual C++) — this takes a while the first time"
     xvfb-run -a winetricks -q dotnet48 || exit 1
     # the Visual C++ runtime straight from Microsoft (winetricks' copy installed
     # files for the wrong processor type in testing)
-    mkdir -p "$WINEPREFIX/drive_c/gamedash" || exit 1
-    curl -fsSL -o "$WINEPREFIX/drive_c/gamedash/vc_redist.x64.exe" https://aka.ms/vs/17/release/vc_redist.x64.exe || exit 1
-    xvfb-run -a wine "$WINEPREFIX/drive_c/gamedash/vc_redist.x64.exe" /quiet /norestart || exit 1
+    mkdir -p "$WINEPREFIX/drive_c/realmcradle" || exit 1
+    curl -fsSL -o "$WINEPREFIX/drive_c/realmcradle/vc_redist.x64.exe" https://aka.ms/vs/17/release/vc_redist.x64.exe || exit 1
+    xvfb-run -a wine "$WINEPREFIX/drive_c/realmcradle/vc_redist.x64.exe" /quiet /norestart || exit 1
     wineserver -w
-    touch "$WINEPREFIX/.gamedash-runtimes"
+    touch "$WINEPREFIX/.realmcradle-runtimes"
 fi
 """
 
@@ -146,4 +146,4 @@ class SpaceEngineersGame(WineGame):
         return os.path.join(server_dir, "Saves")
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"gamedash-servers\\{spec['key']}"     # its -path argument
+        return f"realmcradle-servers\\{spec['key']}"     # its -path argument

@@ -1,6 +1,6 @@
 # Roadmap
 
-Where GameDash is heading. This is a living document: update it whenever priorities change,
+Where RealmCradle is heading. This is a living document: update it whenever priorities change,
 something is finished (tick it, move it to **Done** with the date, and record the details in
 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md)), or a new idea comes up. Game-by-game test status is
 tracked in [SUPPORTED_GAMES.md](SUPPORTED_GAMES.md).
@@ -9,7 +9,7 @@ Last updated: 2026-10-15
 
 ---
 
-## What GameDash is for
+## What RealmCradle is for
 
 - **Anyone can run it.** Someone with almost no technical knowledge should be able to install it,
   add a game server and have friends playing — without editing files or typing commands, unless
@@ -36,16 +36,16 @@ Last updated: 2026-10-15
 ### Installing should be as simple as possible
 - [x] One-step installer that asks **no questions** by default (only the computer's password); `--ask`
       to choose extras, `--minimal` to skip them. *(2026-10-15)*
-- [x] One-line "get and install": `curl -fsSL …/get.sh | bash` downloads GameDash and runs the
+- [x] One-line "get and install": `curl -fsSL …/get.sh | bash` downloads RealmCradle and runs the
       installer. *(2026-10-15 — works once the repository is public)*
 - [x] **Fresh-machine test, Ubuntu 22.04 desktop** — full install in 1 min 45 s, first-visit setup,
       sign-in, installing / running / removing a Linux game (Terraria) and a Windows-only one
       (V Rising, under 22.04's Wine 6.0) all worked. Seven problems found and fixed (see the
       development log). *(2026-10-15)*
-- [x] **Ubuntu 24.04:** upgrading 22.04 → 24.04 with GameDash installed broke it (Python 3.10 → 3.12)
-      → GameDash now repairs its Python environment by itself; then a clean install on 24.04 passed
+- [x] **Ubuntu 24.04:** upgrading 22.04 → 24.04 with RealmCradle installed broke it (Python 3.10 → 3.12)
+      → RealmCradle now repairs its Python environment by itself; then a clean install on 24.04 passed
       the same tests as 22.04. *(2026-10-15)*
-- [x] **Ubuntu 26.04:** upgrading 24.04 → 26.04 (Python 3.12 → 3.14) — GameDash repaired itself on
+- [x] **Ubuntu 26.04:** upgrading 24.04 → 26.04 (Python 3.12 → 3.14) — RealmCradle repaired itself on
       the first boot with no help; V Rising (Wine 10) and Terraria ran; clean install passed.
       *(2026-10-16)*
 - [ ] A Debian 12 / 13 run.
@@ -55,24 +55,24 @@ Last updated: 2026-10-15
       explained in plain words; serious problems stop the install (`--force` to go ahead anyway).
       *(2026-10-15)*
 - [x] The installer's last screen: the address to open, the setup code, and a QR code for opening it
-      on a phone (also `gamedash qr`). *(2026-10-15)*
+      on a phone (also `realmcradle qr`). *(2026-10-15)*
 - [x] **Getting started** guide with screenshots: `docs/GETTING_STARTED.md`. *(2026-10-16)*
 
-### Command line (`gamedash …`)
-- [x] `gamedash` command installed for the owner: `status`, `address`, `reset-password`,
+### Command line (`realmcradle …`)
+- [x] `realmcradle` command installed for the owner: `status`, `address`, `reset-password`,
       `setup-code`, `start` / `stop` / `restart`, `logs`, `servers`,
       `server start|stop|restart|logs <server>` (asks first when players are online),
       `backup <server|all>`, `check`, `version`, `help`. *(2026-10-15)*
-- [x] `gamedash update` — update GameDash itself safely: shows what's new, downloads it, installs
+- [x] `realmcradle update` — update RealmCradle itself safely: shows what's new, downloads it, installs
       libraries, checks the new version loads, restarts, and puts the old version back if anything
       fails. *(2026-10-15)*
-- [x] `gamedash backup list|restore <server> <backup>` from the terminal. *(2026-10-16)*
-- [x] `gamedash unban <address>` — lifts a fail2ban block (asks for the admin password) and the
+- [x] `realmcradle backup list|restore <server> <backup>` from the terminal. *(2026-10-16)*
+- [x] `realmcradle unban <address>` — lifts a fail2ban block (asks for the admin password) and the
       dashboard's own short lock-out. *(2026-10-16)*
-- [x] `gamedash uninstall` — removes GameDash step by step; stops and unregisters the game servers
+- [x] `realmcradle uninstall` — removes RealmCradle step by step; stops and unregisters the game servers
       after asking (checking for players), asks separately about settings and backups, never
       deletes games or saves, and lists what's left. *(2026-10-16)*
-- [x] The installer's last screen shows the (random) join password; `gamedash passwords` shows both
+- [x] The installer's last screen shows the (random) join password; `realmcradle passwords` shows both
       game passwords any time. *(2026-10-16)*
 - [ ] Tab completion for commands and server names.
 
@@ -86,15 +86,15 @@ Last updated: 2026-10-15
 - [ ] Screenshots in the README.
 - [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
       section in the README, and a GitHub *Sponsor* button (`.github/FUNDING.yml`). *(2026-10-15)*
-- [x] Version number (`VERSION`, now 0.2.0-dev) shown by `gamedash version` and in the dashboard
+- [x] Version number (`VERSION`, now 0.2.0-dev) shown by `realmcradle version` and in the dashboard
       footer for signed-in admins (hidden from the public page); release notes in `CHANGELOG.md`.
       *(2026-10-16)*
-- [ ] **Before the public release: remove the update test switch** (`GAMEDASH_RELEASES_URL` in
+- [ ] **Before the public release: remove the update test switch** (`REALMCRADLE_RELEASES_URL` in
       `app/release.py` and `tools/test-releases.py`), used only to test updates before anything is
       published. The release workflow refuses to build while it's still there.
 - [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, commit, then
       `git tag v0.2.0 && git push origin v0.2.0` — the release workflow builds and publishes the
-      package. Then check the one-line installer and `gamedash update` against the real release.
+      package. Then check the one-line installer and `realmcradle update` against the real release.
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44
@@ -206,7 +206,7 @@ nothing for any game; a step that changes them needs trying on real servers.
       email, Slack, Microsoft Teams, Pushover, ntfy, Gotify, Matrix, generic webhook. *(2026-10-16)*
 - [x] Several destinations at once, each with its own **Test** button showing sent / the reason it
       failed. *(2026-10-16)*
-- [x] `gamedash test-alert`. *(2026-10-16)*
+- [x] `realmcradle test-alert`. *(2026-10-16)*
 
 ### Security
 - [x] Idle or slow connections can no longer lock everyone out of the dashboard (event-based web
@@ -214,31 +214,31 @@ nothing for any game; a step that changes them needs trying on real servers.
 - [ ] Limit how many connections a single address may hold open, and show repeated offenders in
       the dashboard (the event worker absorbs them, but a cap is a second line of defence).
 - [ ] Optional two-factor sign-in (authenticator app) for the dashboard.
-- [ ] Automatic HTTPS certificate renewal check in `gamedash check` and on the dashboard.
+- [ ] Automatic HTTPS certificate renewal check in `realmcradle check` and on the dashboard.
 - [ ] Periodic review against the "safe on the open internet" principle, with the findings logged.
 
 ---
 
-## Packaging — making GameDash a "real" package
+## Packaging — making RealmCradle a "real" package
 
-Goal: install and update GameDash like any other program, with no scripts to download.
+Goal: install and update RealmCradle like any other program, with no scripts to download.
 **Priority for going public** (2026-10-16): the package and the install/update process must be
 right before the repository is made public.
 
-1. [x] **`.deb` package** — `tools/build-deb.sh` → `gamedash_<version>_all.deb` + `.sha256`.
-       Program in `/usr/lib/gamedash`, `gamedash` command in `/usr/bin`; system packages declared
-       from `deploy/packages.conf` (GameDash's own needs as Depends, game libraries and extras as
-       Recommends); each account's Python libraries built by `gamedash setup` from
-       `requirements.lock` (pinned, checksum-verified) in `~/.local/share/gamedash/venv`; an upgrade
+1. [x] **`.deb` package** — `tools/build-deb.sh` → `realmcradle_<version>_all.deb` + `.sha256`.
+       Program in `/usr/lib/realmcradle`, `realmcradle` command in `/usr/bin`; system packages declared
+       from `deploy/packages.conf` (RealmCradle's own needs as Depends, game libraries and extras as
+       Recommends); each account's Python libraries built by `realmcradle setup` from
+       `requirements.lock` (pinned, checksum-verified) in `~/.local/share/realmcradle/venv`; an upgrade
        restarts every account's dashboard; removal stops them and keeps all data. *(2026-10-16)*
-   - [x] `gamedash setup` (same setup as `install.sh`), `gamedash update` installs the newest
+   - [x] `realmcradle setup` (same setup as `install.sh`), `realmcradle update` installs the newest
          release's package after checking its checksum and rolls back to the previous release if
-         the new one doesn't answer; `gamedash uninstall` and `gamedash version` know about the
+         the new one doesn't answer; `realmcradle uninstall` and `realmcradle version` know about the
          package; `get.sh` installs the package when a release exists. *(2026-10-16)*
    - [x] Tested on the VM: the package's files run as a package install would (libraries built in
          the home folder, dashboard and backup services, every command). *(2026-10-16)*
-   - [x] **Tested with apt for real** on the Ubuntu 26.04 VM: `apt install`, `gamedash setup`
-         (libraries in the home folder), `gamedash update` to a newer package (dashboard restarted
+   - [x] **Tested with apt for real** on the Ubuntu 26.04 VM: `apt install`, `realmcradle setup`
+         (libraries in the home folder), `realmcradle update` to a newer package (dashboard restarted
          by the package), a broken update rolled back to the previous version by itself,
          `apt remove` (dashboard stopped, settings and game server kept), reinstall + setup picked
          up the same settings and servers. *(2026-10-16)*
@@ -248,21 +248,21 @@ right before the repository is made public.
          CHANGELOG notes (`release.yml`). The tests workflow passes on GitHub (first run
          2026-10-17); the release workflow runs for the first time with the first tag. *(2026-10-16)*
    - [ ] **Sign releases** (beyond the checksum, which only proves the download is complete): sign
-         the package / checksum file so `gamedash update` and `get.sh` can tell it came from the
+         the package / checksum file so `realmcradle update` and `get.sh` can tell it came from the
          maintainer even if GitHub were compromised.
-   - [ ] A desktop shortcut ("GameDash") that opens the dashboard, and running `gamedash setup` for
+   - [ ] A desktop shortcut ("RealmCradle") that opens the dashboard, and running `realmcradle setup` for
          you when the package is installed from the Ubuntu App Center (no terminal at all).
-2. [ ] **GameDash apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
-       `apt install gamedash` after adding the repository once, and updates arrive with the
+2. [ ] **RealmCradle apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
+       `apt install realmcradle` after adding the repository once, and updates arrive with the
        computer's normal system updates (`apt upgrade`).
-3. [ ] **Launchpad PPA** (`sudo add-apt-repository ppa:…/gamedash`) — the most familiar route for
+3. [ ] **Launchpad PPA** (`sudo add-apt-repository ppa:…/realmcradle`) — the most familiar route for
        Ubuntu users; Launchpad builds from source, which takes more packaging work.
 
-Things a package has to get right: GameDash runs as a *user* service (not as root), its data lives in
-the user's home folder and must survive upgrades and removal, the `gamedash update` command and the
+Things a package has to get right: RealmCradle runs as a *user* service (not as root), its data lives in
+the user's home folder and must survive upgrades and removal, the `realmcradle update` command and the
 package manager must not fight over updates, and the noncommercial licence must be shown.
 Not a good fit: Snap and Flatpak (sandboxed apps can't manage background services and game servers
-the way GameDash needs). A Docker image is possible later for people who prefer containers, but game
+the way RealmCradle needs). A Docker image is possible later for people who prefer containers, but game
 servers in containers add networking and storage steps that work against the "easy for anyone" goal.
 
 ## Open problems (need research or outside help)
@@ -272,7 +272,7 @@ servers in containers add networking and storage steps that work against the "ea
 - [ ] **Astroneer under Wine** — community reports say players can only join with Wine 10.6 or
       newer (the game's connection encryption); Ubuntu currently ships 10.0.
 - [ ] **StarRupture passwords** — stored in an encrypted form only the game client (or a third-party
-      website) can produce, so GameDash cannot apply the shared password.
+      website) can produce, so RealmCradle cannot apply the shared password.
 - [ ] **s&box** — the server can't start its Steam session; not added yet.
 - [ ] **ARK: Survival Ascended** — stopping takes about 2½ minutes under Wine (the world is saved
       first).
@@ -287,12 +287,12 @@ servers in containers add networking and storage steps that work against the "ea
       exports.
 - [ ] ARK automatic mod downloads done the documented way (Game.ini `[ModInstaller]`).
 - [ ] **A real package** — see *Packaging* below.
-- [ ] Several machines in one dashboard (one GameDash, servers on more than one computer).
+- [ ] Several machines in one dashboard (one RealmCradle, servers on more than one computer).
 - [ ] Translations of the dashboard.
 
 ## Considered
 
-- **Rewriting parts in C++** (2026-10-15): not worthwhile at this stage. GameDash spends almost all of
+- **Rewriting parts in C++** (2026-10-15): not worthwhile at this stage. RealmCradle spends almost all of
   its time waiting — on game servers, the network and the disk — not computing; the game servers
   themselves are what use the processor (the dashboard uses well under 1% of it). Python keeps the
   code short, safe from memory bugs on an internet-facing service, and easy for contributors to
@@ -300,7 +300,7 @@ servers in containers add networking and storage steps that work against the "ea
 
 ## Not planned (decided)
 
-- **Restricting the dashboard to the home network or a VPN** — GameDash is built to be safe when
+- **Restricting the dashboard to the home network or a VPN** — RealmCradle is built to be safe when
   reachable from the internet; owners who want it private simply don't forward its port.
 - **Automatic stop-when-empty / start-on-join** — investigated and deliberately not built.
 - **Showing test status inside the dashboard** — test status is project documentation
@@ -308,9 +308,9 @@ servers in containers add networking and storage steps that work against the "ea
 
 ## Done
 
-- 2026-10-15 — `gamedash` command line; installer with no questions by default and a one-line
+- 2026-10-15 — `realmcradle` command line; installer with no questions by default and a one-line
   get-and-install script; per-server CPU/RAM measured for all of a server's processes; licensed
-  under PolyForm Noncommercial 1.0.0 (GPL dependency replaced by GameDash's own RCON client);
+  under PolyForm Noncommercial 1.0.0 (GPL dependency replaced by RealmCradle's own RCON client);
   pre-push checks; this roadmap.
 - 2026-10-14 — Supported-games list and development log; never-forward rule for control ports in the
   form, the connection panel and the setup guide; RAM / storage figures in binary units.

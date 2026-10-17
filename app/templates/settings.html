@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Settings · GameDash{% endblock %}
+{% block title %}Settings · RealmCradle{% endblock %}
 {% block content %}
   <meta name="csrf" content="{{ csrf }}">
   <div id="toast" class="toast" hidden></div>
@@ -9,9 +9,9 @@
     <h3>General</h3>
     <div class="alerts-form">
       <label title="The internet address your friends type to connect — a name like mygames.example.net or your public IP. It's shown in each server's “How to join”. Leave blank to use whatever address this page was opened with.">Your public address (what friends connect to) <input type="text" id="gen-public-host" placeholder="your-host.example.com" autocomplete="off"></label>
-      <label title="ARK maps that share this name are one “cluster”: players can move their characters and dinos between them. Letters, digits and underscores only.">ARK cluster name <input type="text" id="gen-cluster" placeholder="gamedash" autocomplete="off"></label>
+      <label title="ARK maps that share this name are one “cluster”: players can move their characters and dinos between them. Letters, digits and underscores only.">ARK cluster name <input type="text" id="gen-cluster" placeholder="realmcradle" autocomplete="off"></label>
       <label title="Optional text put in front of each new ARK server's name in the in-game list (for example “MyCrew-”), so yours are easy to spot.">Prefix for ARK server names — optional <input type="text" id="gen-prefix" placeholder="(none)" autocomplete="off"></label>
-      <label title="Advanced. The file where the two game passwords below are kept. Leave it alone unless you know you need to move it.">Password file location (advanced) <input type="text" id="gen-secrets" placeholder="~/.config/gamedash/secrets.conf" autocomplete="off"></label>
+      <label title="Advanced. The file where the two game passwords below are kept. Leave it alone unless you know you need to move it.">Password file location (advanced) <input type="text" id="gen-secrets" placeholder="~/.config/realmcradle/secrets.conf" autocomplete="off"></label>
       <label title="Advanced and optional. Lets the dashboard talk to a Satisfactory server with an access token instead of the admin password.">Satisfactory access token — optional (advanced) <input type="password" id="gen-sf-token" autocomplete="off"></label>
       <fieldset class="settings-fs"><legend>Where each game's files live (advanced — set automatically when you install a game)</legend>
         <label>ARK <input type="text" id="gen-dir-ark" placeholder="~/arkserver" autocomplete="off"></label>

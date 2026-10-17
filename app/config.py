@@ -39,7 +39,7 @@ DEFAULTS = {
     "cert_domain": "",             # name on the Let's Encrypt certificate ("" = self-signed)
     "cert_http_port": 8080,        # local port certbot answers on (router: internet 80 → this)
     # Only used by the built-in dev server (`python app.py`). The real service
-    # is gunicorn, whose address/port/TLS come from gamedash.service.
+    # is gunicorn, whose address/port/TLS come from realmcradle.service.
     "bind_host": "0.0.0.0",
     "bind_port": 8770,
     "satisfactory_api_token": "",       # optional static Bearer token override; otherwise the
@@ -55,8 +55,8 @@ DEFAULTS = {
     # --- deployment-specific (so this isn't tied to one machine) ----------
     "public_host": "",                       # join address; "" → use the browser's hostname
     "secrets_conf": paths.SECRETS_FILE,      # central password file (the 2 game passwords)
-    "backups_dir": "",                       # save-backup root ("" → ~/.local/share/gamedash/backups)
-    "ark_cluster_id": "gamedash",            # shared cluster id for ARK maps (transfer between maps)
+    "backups_dir": "",                       # save-backup root ("" → ~/.local/share/realmcradle/backups)
+    "ark_cluster_id": "realmcradle",            # shared cluster id for ARK maps (transfer between maps)
     "server_name_prefix": "",                # optional prefix prepended to ARK session names
     "port_pool": {},                         # optional {game/query/rcon: [low, high]} ranges
                                              # for NEW instances; empty → use each game
@@ -112,7 +112,7 @@ def load() -> dict:
             except (OSError, ValueError) as e:
                 if not _warned_unreadable:
                     _warned_unreadable = True
-                    logging.getLogger("gamedash").error(
+                    logging.getLogger("realmcradle").error(
                         "config file %s is unreadable (%s) — NOT overwriting it; login is "
                         "disabled until it is repaired or removed.", CONFIG_PATH, e)
                 cfg["secret_key"] = _EPHEMERAL_KEY
@@ -169,7 +169,7 @@ _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # no 0/O/1/I to misread
 
 
 def new_setup_code() -> str:
-    """Create (and store) the one-time code that lets whoever installed GameDash
+    """Create (and store) the one-time code that lets whoever installed RealmCradle
     choose the admin password in the browser. 12 characters ≈ 60 bits; guesses
     are also rate-limited by the login lockout."""
     raw = "".join(secrets.choice(_CODE_ALPHABET) for _ in range(12))

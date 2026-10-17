@@ -1,6 +1,6 @@
 """installs.py — install a game's dedicated server from the dashboard.
 
-A catalog of the games GameDash knows how to run (what each needs, whether it
+A catalog of the games RealmCradle knows how to run (what each needs, whether it
 is installed) and a single background job that downloads one with steamcmd,
 reporting progress for the admin page.
 """
@@ -65,14 +65,14 @@ def catalog() -> list[dict]:
 def start(kind: str) -> dict:
     game = games.get(kind)
     if game is None or game not in _installable():
-        raise ActionError("That isn't a game GameDash can install.")
+        raise ActionError("That isn't a game RealmCradle can install.")
     import controls
     if controls.update_status().get("state") == "running":
         raise ActionError("A game update is running — wait for it to finish, then try again.")
     missing = _missing(game)
     if missing:
         raise ActionError(f"{game.label} needs {', '.join(missing)} on this computer first. "
-                          f"Run the GameDash installer again with that option, then come back.")
+                          f"Run the RealmCradle installer again with that option, then come back.")
     if is_installed(game):
         raise ActionError(f"{game.label} is already installed. To get a newer version, use "
                           f"“Update now” on one of its servers.")
@@ -137,7 +137,7 @@ def uninstall(kind: str) -> dict:
     import registry
     game = games.get(kind)
     if game is None or game not in _installable():
-        raise ActionError("That isn't a game GameDash installed.")
+        raise ActionError("That isn't a game RealmCradle installed.")
     if not is_installed(game):
         raise ActionError(f"{game.label} isn't installed.")
     using = [s.name for s in registry.load_servers() if s.kind == kind]
@@ -151,9 +151,9 @@ def uninstall(kind: str) -> dict:
     # only ever delete a real game folder that sits inside the home directory
     if not d.startswith(home + os.sep) or d.count(os.sep) < home.count(os.sep) + 1 \
             or not os.path.exists(os.path.join(d, game.install_marker)):
-        raise ActionError(f"Refusing to delete {d}: it doesn't look like a game folder GameDash manages.")
+        raise ActionError(f"Refusing to delete {d}: it doesn't look like a game folder RealmCradle manages.")
     # Move it out of the way first (one step), then delete: if deleting stops part-way, the game
-    # is already gone from GameDash and the rest is cleared up next time (_clear_leftovers).
+    # is already gone from RealmCradle and the rest is cleared up next time (_clear_leftovers).
     leftovers = d + LEFTOVER_SUFFIX
     _clear_leftovers(d)
     os.rename(d, leftovers)
@@ -164,7 +164,7 @@ def uninstall(kind: str) -> dict:
     return {"ok": True, "message": f"{game.label} was uninstalled and its files deleted."}
 
 
-LEFTOVER_SUFFIX = ".gamedash-removing"
+LEFTOVER_SUFFIX = ".realmcradle-removing"
 
 
 def _clear_leftovers(install_dir: str) -> bool:
