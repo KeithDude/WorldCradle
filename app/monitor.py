@@ -265,6 +265,16 @@ def port_listening(port: int) -> bool:
         return False
 
 
+def ports_in_use() -> set[int]:
+    """Every port a program on this computer is using to accept players or connections (TCP
+    listening, or UDP bound). Asks the operating system; nothing is contacted."""
+    try:
+        return {c.laddr.port for c in psutil.net_connections(kind="inet")
+                if c.laddr and (c.type == socket.SOCK_DGRAM or c.status == psutil.CONN_LISTEN)}
+    except (psutil.Error, OSError):
+        return set()
+
+
 def tcp_open(port: int, host: str = HOST, timeout: float = 2.0) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):

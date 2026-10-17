@@ -89,9 +89,8 @@ Servers are discovered at runtime from `systemctl --user`, so servers added or
 removed via the dashboard are picked up automatically. `gamedash.service` (the
 dashboard itself) is not a `gamedash-*` unit and is never stopped.
 
-**`gamedash-aberration` and `gamedash-island` are `disabled`** and will NOT come
-back after a reboot — that is intentional (Island is parked; Aberration was
-stopped 2026-07-08). If you want Aberration running again, enable it separately.
+Servers you stopped in the dashboard are not set to start with the computer, so they stay
+stopped after a reboot — on purpose. Servers that were running come back.
 
 ## Log
 

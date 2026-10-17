@@ -7,7 +7,8 @@ The poller calls AlertEngine.process(snapshot) each cycle. We alert on:
 
 False-positive avoidance: when the dashboard itself stops/restarts a server it
 calls suppress(key, secs); a down inside that window is expected and skipped.
-Disabled (intentionally parked) servers don't alert unless alert_on_disabled.
+A server that isn't set to start with the computer (the owner stopped it) doesn't alert unless
+alert_on_disabled.
 
 Alerts go to every destination set up in Settings → Alerts (the services are in
 notifiers.py). Sending is best-effort and never raises into the poller.
@@ -110,7 +111,7 @@ class AlertEngine:
 
             # online -> offline
             if prev is not None and prev["online"] and not online:
-                if not _is_suppressed(key) and not v.get("parked") and (v.get("enabled") or on_disabled):
+                if not _is_suppressed(key) and (v.get("enabled") or on_disabled):
                     _deliver(f"🔴 {v['name']} is DOWN",
                              f"{v['name']} went offline at {_now()}.", "bad")
 

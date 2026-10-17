@@ -43,16 +43,6 @@ class ProvisionConfirm(Exception):
         super().__init__("confirmation required")
 
 
-class PortShareConfirm(Exception):
-    """The operator typed a port that another configured server already uses.
-    That is allowed (two servers can take turns on one set of forwarded ports)
-    but only on purpose — carries what clashes so the UI can explain it.
-    `conflicts` = [{"port": int, "label": str, "servers": [display names]}]."""
-    def __init__(self, conflicts: list[dict]):
-        self.conflicts = conflicts
-        super().__init__("port sharing needs confirmation")
-
-
 def _unit_name(key: str) -> str:
     return f"gamedash-{key}.service"
 
@@ -83,68 +73,23 @@ def used_ports() -> set[int]:
     return used
 
 
-def port_owners() -> dict[int, list]:
-    """port -> the configured servers set up to use it (game/query/rcon, plus
-    ARK's raw socket on game port + 1)."""
-    owners: dict[int, list] = {}
-    for s in registry.load_servers():
-        for p in s.all_ports():
-            owners.setdefault(p, []).append(s)
-    return owners
+def _port_plan(requests: list[tuple]) -> set[int]:
+    """The taken-port set to allocate against, with the ports the operator typed released from it.
 
-
-def _port_plan(spec: dict, requests: list[tuple]) -> tuple[set[int], list]:
-    """Work out what the typed ports collide with before anything is created.
-
-    `requests` = [(label, typed value, span)] for the boxes the operator filled
-    in. Returns (used, siblings): the taken-port set to allocate against, and
-    the servers the new one will share ports with.
-
-    A typed port that belongs to another configured server is a *shareable*
-    clash: it raises PortShareConfirm until the request carries share_ports,
-    after which those ports are released from `used` so they can be claimed.
-    A port held by anything else (another program, a reserved port) stays in
-    `used` and is refused as before."""
-    used, owners = used_ports(), port_owners()
-    conflicts, siblings = [], {}
-    for label, raw, span in requests:
+    `requests` = [(label, typed value, span)] for the boxes the operator filled in. Any port may be
+    typed — even one another server uses, so servers can take turns on one set of router ports;
+    Start refuses while the ports are in use (controls.port_clash). Only the reserved ports
+    (the dashboard's own, SSH, …) stay refused. Blank boxes are allocated from free ports."""
+    used = used_ports()
+    for _label, raw, span in requests:
         try:
             first = int(str(raw).strip())
         except (TypeError, ValueError):
             continue  # not a number — ports.claim reports it properly
         for q in range(first, first + span):
-            if q in owners:
-                conflicts.append({"port": q, "label": label,
-                                  "servers": [s.name for s in owners[q]]})
-                for s in owners[q]:
-                    siblings[s.key] = s
-    if conflicts and not spec.get("share_ports"):
-        raise PortShareConfirm(conflicts)
-    for c in conflicts:
-        used.discard(c["port"])
-    return used, list(siblings.values())
-
-
-def _join_slot_group(key: str, siblings: list) -> None:
-    """Put the new server and everything it shares ports with into one slot
-    group, so the dashboard starts only one of them at a time. Reuses a group a
-    sibling is already in; members of any other sibling group are folded in."""
-    if not siblings:
-        return
-    groups = [s.slot_group for s in siblings if s.slot_group]
-    group = groups[0] if groups else f"port-{min(int(s.game_port) for s in siblings)}"
-    members = {s.key for s in siblings} | {key}
-    for e in store.load():   # fold in the rest of any group a sibling belonged to
-        if e.get("slot_group") and e["slot_group"] in groups:
-            members.add(e["key"])
-    for k in members:
-        store.update(k, slot_group=group)
-    audit_log.info("server PORT-SHARE key=%s group=%s members=%s", key, group, ",".join(sorted(members)))
-
-
-def _running(siblings: list) -> list:
-    import monitor
-    return [s for s in siblings if monitor.unit_active(s.unit)]
+            if q not in RESERVED:
+                used.discard(q)
+    return used
 
 
 def _custom_fields(spec: dict, use_pool: bool) -> tuple[str, dict]:
@@ -159,7 +104,6 @@ def _custom_fields(spec: dict, use_pool: bool) -> tuple[str, dict]:
         # operator opted into the pool → allocate instead of using the textbox
         import ports
         u = used_ports()
-        siblings = []
         gp = ports.alloc("game", 7100, u, use_pool=True)
         qp = ports.alloc("query", 27030, u, use_pool=True) if spec.get("query_port") else None
     else:
@@ -169,7 +113,7 @@ def _custom_fields(spec: dict, use_pool: bool) -> tuple[str, dict]:
         requests = [("Game port", spec.get("game_port"), 1)]
         if spec.get("query_port"):
             requests.append(("Query port", spec.get("query_port"), 1))
-        u, siblings = _port_plan(spec, requests)
+        u = _port_plan(requests)
         gp = ports.claim(spec.get("game_port"), u, 1, "Game port")
         qp = ports.claim(spec.get("query_port"), u, 1, "Query port") if spec.get("query_port") else None
     # optional save folder so backups know what to archive for this custom service
@@ -183,7 +127,6 @@ def _custom_fields(spec: dict, use_pool: bool) -> tuple[str, dict]:
         "server_name": (spec.get("server_name") or name).strip(),
         "join_port": gp, "install_dir": wd, "steam_app": spec.get("steam_app"),
         "save_root": save_root,
-        "_siblings": siblings if not use_pool else [],
     }
     return name, fields
 
@@ -206,10 +149,9 @@ def _template_fields(kind: str, spec: dict, use_pool: bool) -> tuple[str, dict]:
     game = games.get(kind)
     if not game or not getattr(game, "provisionable", False):
         raise ActionError(f"Auto-provisioning isn't available for '{kind}' yet — use Custom service.")
-    used, siblings = _port_plan(spec, _port_requests(game, spec))
+    used = _port_plan(_port_requests(game, spec))
     ports = game.provision_ports(used, use_pool, _wanted_ports(spec))
     fields = game.provision(spec, ports)  # writes config/launch files
-    fields["_siblings"] = siblings
     fields["port_map"] = dict(ports)
     display = (spec.get("name") or fields.get("server_name") or "").strip()
     return f"{game.label} · {display}", fields
@@ -268,15 +210,13 @@ def _register(key: str, kind: str, name: str, fields: dict, start: bool) -> str:
     _systemctl("daemon-reload")
     store.add(_store_entry(key, kind, name, fields))
     audit_log.info("server CREATED key=%s kind=%s name=%r unit=%s", key, kind, name, _unit_name(key))
-    siblings = fields.get("_siblings") or []
-    _join_slot_group(key, siblings)
-    busy = _running(siblings)
-    if start and busy:
-        # its ports are in use right now — creating it is fine, starting it isn't
-        return (f" Not started: {busy[0].name} is running on the shared ports. "
-                f"Stop it first, then start this one.")
-    if start:
-        _systemctl("enable", "--now", _unit_name(key), timeout=130)
+    if not start:
+        return ""
+    import controls
+    clash = controls.port_clash(registry.by_key()[key])
+    if clash:   # creating it is fine; starting it has to wait until its ports are free
+        return f" Not started: its ports are in use — {clash}"
+    _systemctl("enable", "--now", _unit_name(key), timeout=130)
     return ""
 
 
@@ -352,9 +292,7 @@ def _create_cloned(spec: dict, key: str, game, use_pool: bool) -> dict:
         if _provision_job.get("state") == "running":
             raise ActionError("Another server is already being provisioned — wait for it to finish.")
 
-    # Port sharing is confirmed first: it can change which ports the operator
-    # wants, and there is no point pricing a multi-GB copy before that is settled.
-    used, siblings = _port_plan(spec, _port_requests(game, spec))
+    used = _port_plan(_port_requests(game, spec))
     needed = _dir_size(src)
     free = shutil.disk_usage(os.path.dirname(dst)).free
     if not spec.get("confirm"):
@@ -370,7 +308,7 @@ def _create_cloned(spec: dict, key: str, game, use_pool: bool) -> dict:
         _provision_job.update({"state": "running", "key": key, "kind": game.kind,
                                "step": "preparing", "started_ts": time.time()})
     threading.Thread(target=_run_clone_job, name=f"provision-{key}",
-                     args=(spec, key, game, src, dst, ports, siblings),
+                     args=(spec, key, game, src, dst, ports),
                      daemon=True).start()
     return {"ok": True, "message": f"Provisioning '{spec.get('name') or key}' — "
             f"cloning a ~{needed // 2**30} GB install in the background. "
@@ -383,7 +321,7 @@ def _set_step(step: str):
     app_log.info("provision: %s", step)
 
 
-def _run_clone_job(spec, key, game, src, dst, ports, siblings=()):
+def _run_clone_job(spec, key, game, src, dst, ports):
     try:
         _set_step("cloning install (copying files)")
         # cp -a: preserve perms/symlinks/timestamps. Copy into a temp then rename
@@ -402,7 +340,6 @@ def _run_clone_job(spec, key, game, src, dst, ports, siblings=()):
         spec = dict(spec)
         spec["install_dir"] = dst
         fields = game.provision(spec, ports)
-        fields["_siblings"] = list(siblings)
         fields["port_map"] = dict(ports)
         display = (spec.get("name") or fields.get("server_name") or key).strip()
         name = f"{game.label} · {display}"
@@ -544,12 +481,7 @@ def destroy(key: str) -> dict:
     if os.path.exists(path):
         os.remove(path)
     _systemctl("daemon-reload")
-    group = e.get("slot_group")
     store.remove(key)
-    if group:   # a "shared" group of one would show its last member as parked forever
-        left = [x["key"] for x in store.load() if x.get("slot_group") == group]
-        if len(left) == 1:
-            store.update(left[0], slot_group="")
     # A Windows-only server's private Wine environment (~1 GB) holds no saves — remove it too.
     extra = ""
     from games import common

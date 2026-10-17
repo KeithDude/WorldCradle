@@ -260,20 +260,6 @@ a.ctl { text-decoration: none; display: inline-flex; align-items: center; }
 /* Add-server: the per-game options are rendered into #as-extra */
 #as-extra { display: flex; flex-direction: column; gap: .6rem; }
 #as-extra:empty { display: none; }
-/* Shared-ports confirmation (Add a server) */
-#ports-modal {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 30;
-  display: flex; align-items: center; justify-content: center; padding: 1rem;
-}
-#ports-modal .join-box { max-width: 560px; }
-#ports-modal .join-body p { margin: 0 0 .7rem; line-height: 1.5; }
-#ports-modal ul { margin: 0 0 .8rem; padding-left: 1.2rem; }
-#ports-modal li { margin: .3rem 0; line-height: 1.45; }
-.ports-list { background: var(--panel2); border: 1px solid var(--line); border-radius: .4rem;
-  padding: .5rem .8rem .5rem 1.6rem !important; }
-.ports-actions { display: flex; gap: .6rem; justify-content: flex-end; flex-wrap: wrap;
-  padding: .7rem 1rem; border-top: 1px solid var(--line); }
-
 /* Games panel (install a game) */
 .games-list { display: flex; flex-direction: column; gap: .5rem; margin-top: .7rem; max-width: 760px; }
 .game-row { display: flex; gap: .8rem; align-items: center; justify-content: space-between;

@@ -1314,51 +1314,6 @@ const gamedash = (() => {
     const val = (id) => { const e = document.getElementById(id); return e ? e.value.trim() : ""; };
     // Shared-ports confirmation. Resolves true ("continue") or false ("go back").
     // `conflicts` = [{port, label, servers:[names]}] from the server.
-    const confirmSharedPorts = (newName, conflicts) => new Promise((resolve) => {
-      let m = document.getElementById("ports-modal");
-      if (m) m.remove();
-      m = document.createElement("div");
-      m.id = "ports-modal";
-      const others = [...new Set(conflicts.flatMap((c) => c.servers))];
-      const who = others.map((n) => `<b>${esc(n)}</b>`).join(", ");
-      const rows = conflicts.map((c) =>
-        `<li>${esc(c.label)} <code>${esc(c.port)}</code> — assigned to ${c.servers.map((n) => `<b>${esc(n)}</b>`).join(", ")}</li>`).join("");
-      m.innerHTML = `
-        <div class="join-box" role="dialog" aria-modal="true" aria-labelledby="ports-title">
-          <div class="join-head"><b id="ports-title">⚠ These ports are already assigned</b></div>
-          <div class="join-body">
-            <p>${conflicts.length > 1 ? "Some of the ports" : "A port"} you entered for <b>${esc(newName || "this server")}</b>
-              ${conflicts.length > 1 ? "are" : "is"} already assigned to another server on this dashboard:</p>
-            <ul class="ports-list">${rows}</ul>
-            <p>Two servers cannot listen on the same port at the same time. If you continue, the new server
-              and ${who} will share these ports, which means:</p>
-            <ul>
-              <li><b>Only one of them can run at a time.</b> The dashboard will refuse to start one while
-                another is running — stop the running server first, then start the other.</li>
-              <li>The new server is created but <b>not started</b> if one of the others is running now.</li>
-              <li>Set only one of them to start at boot. If more than one starts automatically, whichever
-                starts first takes the ports and the rest will fail to start.</li>
-              <li>Your router's forwarding for these ports serves whichever server is currently running.</li>
-            </ul>
-            <p>This is the right setup when you intend to swap between servers on one set of forwarded
-              ports. If that is not what you want, go back and enter different ports — or leave the port
-              boxes blank and free ports will be chosen for you.</p>
-          </div>
-          <div class="ports-actions">
-            <button class="ctl" id="ports-back">Go back and change ports</button>
-            <button class="ctl warn" id="ports-go">Continue with shared ports</button>
-          </div>
-        </div>`;
-      document.body.appendChild(m);
-      const done = (v) => { m.remove(); document.removeEventListener("keydown", onKey); resolve(v); };
-      const onKey = (e) => { if (e.key === "Escape") done(false); };
-      document.addEventListener("keydown", onKey);
-      m.querySelector("#ports-back").onclick = () => done(false);
-      m.querySelector("#ports-go").onclick = () => done(true);
-      m.addEventListener("click", (e) => { if (e.target === m) done(false); });
-      m.querySelector("#ports-back").focus();   // the safe choice is the default
-    });
-
     const postAdd = (spec) => api.post("/admin/servers/add", spec);
     b.onclick = async () => {
       const t = types.find((x) => x.kind === kindSel.value) || { custom: true };
@@ -1381,15 +1336,6 @@ const gamedash = (() => {
       try {
         let res = await postAdd(spec);
         if (!res) return;
-        // a typed port that another server already uses → explain, then share on request
-        if (res.status === 409 && res.data.confirm_required && res.data.port_conflict) {
-          if (!(await confirmSharedPorts(spec.name, res.data.port_conflict))) {
-            toast("Nothing was created — change the ports and try again.", true); return;
-          }
-          spec.share_ports = true;
-          res = await postAdd(spec);
-          if (!res) return;
-        }
         // clone-install games (Palworld) ask to confirm the disk cost first
         if (res.status === 409 && res.data.confirm_required && res.data.provision) {
           const p = res.data.provision;

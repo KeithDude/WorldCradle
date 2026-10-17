@@ -52,6 +52,9 @@ footer of the dashboard when signed in.
 - `gamedash uninstall` now leaves a server running if you say so, and also offers to remove a
   backup folder you moved elsewhere.
 - Don't Starve Together servers now pick up a changed join password when they start.
+- **Servers can share ports and take turns:** type any ports when adding a server — even ones
+  another server uses. Pressing Start checks the ports first and, if they're in use, says which
+  server (or that another program) has them. No more "parked" servers or extra questions.
 - **Stop means stopped:** a server you stop stays stopped when the computer restarts, and one you
   start comes back by itself. (Before, a stopped server started again after a reboot.)
 - Alerts follow each service's own documentation: new Matrix rooms can be used, email over "SSL"

@@ -289,13 +289,12 @@ class Poller:
             "server_name": s.server_name, "join_port": s.join_port,
             "steam_app": s.steam_app, "managed": s.managed,
             "game_port": s.game_port, "query_port": s.query_port,
-            "rcon_port": s.rcon_port, "slot_group": s.slot_group,
+            "rcon_port": s.rcon_port,
             "online": online,
             "enabled": monitor.unit_enabled(s.unit),
             "cpu_percent": None, "mem_mb": None,
             "players": None, "player_names": [], "player_detail": [], "max_players": None,
             "reachable": None, "note": "",  # reachable: True / False / None=unknown
-            "parked": False,  # shares its ports with another server, which has them now
             "sf": None,  # Satisfactory extra state (tick rate, phase, uptime, …)
             # which rows the card shows: they depend on the game, not on whether it's running
             "rows": game.card_rows(s) if game else {"players": False, "answering": False, "server_stats": False},
@@ -308,13 +307,6 @@ class Poller:
             # share of the whole computer's processor, and RAM in binary MB, for all of
             # this server's processes together
             st["cpu_percent"], st["mem_mb"] = service_usage(s.unit, self._find_pid(s.proc_match, procs))
-
-        # A server sharing a slot but not active: its sibling owns the port, so
-        # don't probe it (we'd attribute the sibling's data to the wrong map). Its card just
-        # says "stopped" — starting it while the sibling runs is refused with the reason.
-        if s.slot_group and not online:
-            st["parked"] = True
-        elif online:
             st["_probe"] = True
         return st
 

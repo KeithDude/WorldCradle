@@ -779,9 +779,6 @@ def admin_servers_add():
             audit_log.info("EULA accepted: game=%s server=%s terms=%s ip=%s", game.kind,
                            str(spec.get("key", ""))[:31], eula["url"], _client_ip())
         return jsonify(result)
-    except provision.PortShareConfirm as c:
-        return jsonify({"ok": False, "confirm_required": True,
-                        "port_conflict": c.conflicts}), 409
     except provision.ProvisionConfirm as c:
         return jsonify({"ok": False, "confirm_required": True, "provision": {
             "needed_gb": round(c.needed / 2**30, 1),

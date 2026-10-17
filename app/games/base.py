@@ -153,8 +153,8 @@ class GameType:
     def provision_ports(self, used: set[int], use_pool: bool = False,
                         wanted: dict | None = None) -> dict:
         """Settle this game's ports, avoiding `used` (mutated). A port the
-        operator typed on the form (`wanted[name]`) is used if it is free;
-        the rest are allocated — from the config port pool when `use_pool`,
+        operator typed on the form (`wanted[name]`) is used as typed — it may be
+        another server's too (Start refuses while it's in use); the rest are allocated — from the config port pool when `use_pool`,
         else upward from each port's conventional start."""
         import ports
         wanted = wanted or {}
@@ -212,7 +212,7 @@ class GameType:
     def probe(self, s) -> dict:
         """Return a partial snapshot dict: any of players, player_names,
         player_detail, max_players, reachable, sf. Called only when the server
-        is online (and not a parked slot)."""
+        is online."""
         return {}
 
     # ---- controls (override the ones in `actions`) ------------------------

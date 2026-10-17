@@ -267,15 +267,22 @@ def _redact(text: str) -> str:
     return text
 
 
-def _running_sibling(s: Server) -> Server | None:
-    """A server sharing s's port-slot that is currently active, if any."""
-    if not s.slot_group:
-        return None
+def port_clash(s: Server) -> str:
+    """'' when s's ports are free; otherwise why it can't start, in plain words. Servers may be
+    set up on the same ports (to take turns on one set of router ports): only one of them can
+    run at a time, and this is where that is enforced."""
+    mine = s.all_ports()
     for other in by_key().values():
-        if other.key != s.key and other.slot_group == s.slot_group:
-            if monitor.unit_active(other.unit):
-                return other
-    return None
+        if other.key != s.key and monitor.unit_active(other.unit):
+            shared = sorted(mine & other.all_ports())
+            if shared:
+                return (f"{other.name} is running on the same port{'s' if len(shared) > 1 else ''} "
+                        f"({', '.join(map(str, shared))}). Stop {other.name} first, then start this one.")
+    taken = sorted(mine & monitor.ports_in_use())
+    if taken:
+        return (f"port{'s' if len(taken) > 1 else ''} {', '.join(map(str, taken))} "
+                f"{'are' if len(taken) > 1 else 'is'} being used by another program on this computer.")
+    return ""
 
 
 def perform(key: str, action: str, message: str = "", confirm: bool = False,
@@ -306,17 +313,13 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
         return {"ok": True, "chat": game.chat(s)}
 
     if action == "start":
-        sib = _running_sibling(s)
-        if sib is not None:
-            raise ActionError(
-                f"Can't start {s.name}: it shares ports with {sib.name}, "
-                f"which is running. Stop {sib.name} first.")
+        if monitor.unit_active(s.unit):
+            raise ActionError(f"{s.name} is already running.")
+        clash = port_clash(s)
+        if clash:
+            raise ActionError(f"Can't start {s.name}: its ports are in use — {clash}")
         _systemctl("start", s.unit)
         _starts_with_computer(s, True)
-        # servers sharing its ports must not also start with the computer
-        for other in by_key().values():
-            if other.key != s.key and s.slot_group and other.slot_group == s.slot_group:
-                _starts_with_computer(other, False)
         return {"ok": True, "message": f"Started {s.name}."}
 
     if action in DISRUPTIVE:

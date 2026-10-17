@@ -83,9 +83,6 @@ class Server:
     rcon_password: str | None = None
     a2s: bool = False             # does this server actually answer A2S queries?
     proc_match: str = ""          # substring expected in the process cmdline
-    # ARK maps that reuse the same ports are mutually exclusive. Servers that
-    # share a slot carry the same non-empty group id; only one runs at a time.
-    slot_group: str = ""
     save_dir: str = ""            # ARK save dir (info only)
     log_path: str = ""            # log file to parse for players (Valheim)
     server_name: str = ""         # the actual in-game/session name players see
@@ -145,7 +142,6 @@ def _load_store(secrets: dict) -> list[Server]:
                 install_dir=_expand(e.get("install_dir", "")),
                 log_path=_expand(e.get("log_path", "")),
                 managed=e.get("managed", "gamedash"),
-                slot_group=e.get("slot_group", ""),
                 save_dir=e.get("save_dir", ""),
                 save_root=_expand(e.get("save_root", "")),
                 world=e.get("world", ""),
@@ -177,7 +173,6 @@ def by_key() -> dict[str, Server]:
 
 if __name__ == "__main__":
     for s in load_servers():
-        slot = f"  [slot {s.slot_group}]" if s.slot_group else ""
         rc = f"rcon {s.rcon_port}" if s.has_rcon else "no-rcon"
         a2 = f"a2s {s.query_port}" if s.has_a2s else "no-a2s"
-        print(f"{s.key:12} {s.kind:12} {s.unit:22} game {s.game_port:5}  {rc:10} {a2}{slot}")
+        print(f"{s.key:12} {s.kind:12} {s.unit:22} game {s.game_port:5}  {rc:10} {a2}")
