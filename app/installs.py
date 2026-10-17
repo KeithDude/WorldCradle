@@ -77,6 +77,7 @@ def start(kind: str) -> dict:
         raise ActionError(f"{game.label} is already installed. To get a newer version, use "
                           f"“Update now” on one of its servers.")
     d = config.install_dir(kind)
+    _clear_leftovers(d)   # an earlier uninstall that couldn't finish
     try:
         free = shutil.disk_usage(os.path.dirname(d.rstrip("/")) or "/").free
     except OSError:
@@ -151,6 +152,27 @@ def uninstall(kind: str) -> dict:
     if not d.startswith(home + os.sep) or d.count(os.sep) < home.count(os.sep) + 1 \
             or not os.path.exists(os.path.join(d, game.install_marker)):
         raise ActionError(f"Refusing to delete {d}: it doesn't look like a game folder GameDash manages.")
-    shutil.rmtree(d)
+    # Move it out of the way first (one step), then delete: if deleting stops part-way, the game
+    # is already gone from GameDash and the rest is cleared up next time (_clear_leftovers).
+    leftovers = d + LEFTOVER_SUFFIX
+    _clear_leftovers(d)
+    os.rename(d, leftovers)
     audit_log.info("game UNINSTALL kind=%s dir=%s", kind, d)
+    if not _clear_leftovers(d):
+        return {"ok": True, "message": f"{game.label} was uninstalled. Some of its files couldn't be "
+                                       f"deleted yet ({leftovers}); they'll be removed next time."}
     return {"ok": True, "message": f"{game.label} was uninstalled and its files deleted."}
+
+
+LEFTOVER_SUFFIX = ".gamedash-removing"
+
+
+def _clear_leftovers(install_dir: str) -> bool:
+    """Delete what an earlier uninstall left behind for this folder. True when nothing is left."""
+    leftovers = install_dir + LEFTOVER_SUFFIX
+    if os.path.isdir(leftovers):
+        try:
+            shutil.rmtree(leftovers)
+        except OSError as e:
+            app_log.warning("couldn't delete %s yet: %s", leftovers, e)
+    return not os.path.exists(leftovers)

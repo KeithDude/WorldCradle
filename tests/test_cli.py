@@ -35,3 +35,28 @@ def test_uninstall_leaves_a_busy_server_alone_when_asked(monkeypatch, tmp_path):
     assert cli.cmd_uninstall([]) == 0
     stopped = [a[-1] for a in calls if a[:2] == ("disable", "--now")]
     assert "gamedash-idle.service" in stopped and "gamedash-busy.service" not in stopped
+
+
+def test_uninstall_finishes_even_if_deleting_stops_part_way(tmp_path, monkeypatch):
+    import config
+    import games
+    import installs
+    game = games.get("necesse")
+    folder = tmp_path / "necesseserver"
+    (folder / "deep").mkdir(parents=True)
+    (folder / game.install_marker).write_text("")
+    monkeypatch.setattr(config, "install_dir", lambda kind: str(folder))
+    monkeypatch.setattr(os.path, "expanduser", lambda p: str(tmp_path) if p == "~" else p)
+    real = installs.shutil.rmtree
+    calls = []
+    def flaky(path, *a, **kw):          # the first delete stops part-way, like a full file table
+        calls.append(path)
+        if len(calls) == 1:
+            raise OSError(24, "Too many open files")
+        return real(path, *a, **kw)
+    monkeypatch.setattr(installs.shutil, "rmtree", flaky)
+    r = installs.uninstall("necesse")
+    assert r["ok"] and "next time" in r["message"]
+    assert not installs.is_installed(game)                     # gone from GameDash already
+    assert installs._clear_leftovers(str(folder))             # and the rest clears next time
+    assert not list(tmp_path.iterdir())

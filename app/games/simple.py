@@ -34,6 +34,9 @@ class SimpleGame(GameType):
     # `quit_command` — which saves, then quits — before systemd's own stop signal.
     console_commands: dict[str, str] = {}
     quit_command = ""
+    # The same for a game whose admin commands go over its admin console port (RCON), with the
+    # shared admin password: e.g. {"save": "/server-save", "kick": "/kick {target}"}.
+    rcon_commands: dict[str, str] = {}
 
     @property
     def install_marker(self) -> str:
@@ -41,8 +44,9 @@ class SimpleGame(GameType):
 
     @property
     def actions(self) -> set[str]:
-        """The buttons it gets: what its console can do (a subclass may list its own instead)."""
-        return set(self.console_commands)
+        """The buttons it gets: what its console or admin console can do (a subclass may list
+        its own instead)."""
+        return set(self.console_commands) | set(self.rcon_commands)
 
     # ---- for subclasses ---------------------------------------------------
     def command(self, spec: dict, ports: dict, name: str, server_dir: str, install: str) -> str:
@@ -151,25 +155,34 @@ class SimpleGame(GameType):
     # ---- the buttons, for a console game ---------------------------------------------------
     _WHAT = {"save": "Save", "broadcast": "Message", "kick": "Kick", "ban": "Ban"}
 
-    def _console(self, s, action: str, **values) -> str:
-        line = self.console_commands[action].format(**values)
-        if not common.console_send(s, line):
-            raise ActionError(f"{self._WHAT[action]} on {s.name} failed — the server's console isn't available.")
-        return "sent"
+    def _command(self, s, action: str, **values) -> str:
+        """Do an action by typing its command into the console, or sending it over RCON."""
+        if action in self.console_commands:
+            if not common.console_send(s, self.console_commands[action].format(**values)):
+                raise ActionError(f"{self._WHAT[action]} on {s.name} failed — the server's console isn't available.")
+            return "sent"
+        reply = monitor.rcon_run(s.rcon_port, s.rcon_password, self.rcon_commands[action].format(**values))
+        if reply is None:
+            raise ActionError(f"{self._WHAT[action]} on {s.name} failed (the admin console didn't answer).")
+        return reply.strip() or "ok"
+
+    def _has(self, action: str) -> bool:
+        return action in self.console_commands or action in self.rcon_commands
 
     def save(self, s) -> str:
-        return self._console(s, "save") if "save" in self.console_commands else super().save(s)
+        return self._command(s, "save") if self._has("save") else super().save(s)
 
     def broadcast(self, s, message: str) -> str:
-        if "broadcast" not in self.console_commands:
+        if not self._has("broadcast"):
             return super().broadcast(s, message)
-        return self._console(s, "broadcast", message=message[:200])
+        # one line; never starting with "/", so a message can't be taken as a command
+        return self._command(s, "broadcast", message=message.replace("\n", " ").lstrip("/")[:200])
 
     def kick(self, s, target: str) -> str:
-        return self._console(s, "kick", target=target) if "kick" in self.console_commands else super().kick(s, target)
+        return self._command(s, "kick", target=target) if self._has("kick") else super().kick(s, target)
 
     def ban(self, s, target: str) -> str:
-        return self._console(s, "ban", target=target) if "ban" in self.console_commands else super().ban(s, target)
+        return self._command(s, "ban", target=target) if self._has("ban") else super().ban(s, target)
 
     def probe(self, s) -> dict:
         out = empty_probe()

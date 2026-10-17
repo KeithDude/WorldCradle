@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import functools
 import re
+import resource
 import secrets
 import threading
 import time
@@ -39,6 +40,22 @@ from applog import access_log, app_log, audit_log
 from poller import poller
 
 cfg = config.load()
+
+
+def _raise_open_file_limit() -> None:
+    """Use all the open files the system allows this service, not the default 1,024: deleting a
+    game's install (Python 3.13+ keeps one handle per folder still to visit — Factorio's has
+    thousands) and many browser connections at once both need more."""
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        target = 65536 if hard == resource.RLIM_INFINITY else hard
+        if soft < target:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+    except (ValueError, OSError):
+        pass
+
+
+_raise_open_file_limit()
 
 # The footer's "support the developer" link; only ever a plain https address.
 _SUPPORT_URL = project.SUPPORT_URL if re.match(r"^https://[^\s\"'<>]+$", project.SUPPORT_URL or "") else ""
