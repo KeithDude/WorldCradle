@@ -21,6 +21,11 @@ jobs:
           [ "$(tr -d '[:space:]' < VERSION)" = "$version" ] \
             || { echo "VERSION says $(cat VERSION), the tag says $version"; exit 1; }
           grep -q "^## $version\b" CHANGELOG.md || { echo "CHANGELOG.md has no '## $version' section"; exit 1; }
+      - name: No test-only switches left in the program
+        run: |
+          if grep -rn "GAMEDASH_RELEASES_URL" app/; then
+            echo "Remove the update test switch before releasing (see docs/ROADMAP.md)"; exit 1
+          fi
       - name: Python libraries and test tools
         run: |
           python3 -m venv venv
