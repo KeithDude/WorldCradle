@@ -16,7 +16,10 @@ import requests
 import project
 
 PACKAGE = "gamedash"
-API = project.PROJECT_URL.replace("https://github.com/", "https://api.github.com/repos/") + "/releases"
+# GitHub's list of releases. GAMEDASH_RELEASES_URL points it at a stand-in instead, to test
+# updates before anything is published (tools/test-releases.py).
+API = os.environ.get("GAMEDASH_RELEASES_URL") or \
+    project.PROJECT_URL.replace("https://github.com/", "https://api.github.com/repos/") + "/releases"
 DEB_RE = re.compile(r"^gamedash_(?P<version>[A-Za-z0-9.+~-]+)_all\.deb$")
 TIMEOUT = 30
 
