@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/icarus/gamedash-servers/test/Saved/Config/WindowsServer/ServerSettings.ini": "[/Script/Icarus.DedicatedServerSettings]\nSessionName=Test World\nJoinPassword=NewJoin2\nMaxPlayers=8\nAdminPassword=NewAdmin2\nShutdownIfNotJoinedFor=-1.000000\nShutdownIfEmptyFor=-1.000000\nAllowNonAdminsToLaunchProspects=True\nAllowNonAdminsToDeleteProspects=False\nResumeProspect=True\n"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/icarus/gamedash-test-run.sh",

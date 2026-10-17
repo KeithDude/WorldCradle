@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/nera/gamedash-servers/test/Saved/PersistedData/nera_dedicatedserver/CustomConfig/CustomHostServerUserSettings.ini": "[/Script/BoatGame.BGCustomHostServerSettings]\nHostServerDisplayName=Test World\nHostServerPassword=NewJoin2\nMaxPlayers=10\nAutosaveTimerSeconds=300\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/nera/gamedash-test-run.sh",

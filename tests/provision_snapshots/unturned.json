@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/unturned/Servers/gd_test/Server/Commands.dat": "Name Test World\nPort 27200\nPassword NewJoin2\nMaxPlayers 12\nMap PEI\nMode Normal\nPVE\nPerspective Both\n"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/unturned/gamedash-test-run.sh",

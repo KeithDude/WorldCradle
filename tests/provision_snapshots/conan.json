@@ -1,4 +1,8 @@
 {
+ "after_password_change": {
+  "installs/conan/gamedash-servers/test/Saved/Config/WindowsServer/Game.ini": "[RconPlugin]\nRconEnabled=1\nRconPort=25620\nRconPassword=NewAdmin2\nRconMaxKarma=60\n",
+  "installs/conan/gamedash-servers/test/Saved/Config/WindowsServer/ServerSettings.ini": "[ServerSettings]\nPVPEnabled=False\nAdminPassword=NewAdmin2\n"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/conan/gamedash-test-run.sh",

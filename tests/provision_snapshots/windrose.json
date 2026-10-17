@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/windrose/R5/ServerDescription.json": "{\n  \"Version\": 1,\n  \"ServerDescription_Persistent\": {\n    \"InviteCode\": \"y0cq65zt\",\n    \"IsPasswordProtected\": true,\n    \"Password\": \"NewJoin2\",\n    \"ServerName\": \"Test World\",\n    \"MaxPlayerCount\": 4,\n    \"UseDirectConnection\": false,\n    \"DirectConnectionServerPort\": 7777,\n    \"DirectConnectionProxyAddress\": \"0.0.0.0\",\n    \"AutoLoadLatestBackupIfHasBroken\": true,\n    \"CanLaunchMultipleServerInstances\": true,\n    \"P2pProxyAddress\": \"<LAN-IP>\"\n  }\n}"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/windrose/gamedash-test-run.sh",

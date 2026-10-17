@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/squad/SquadGame/ServerConfig/Rcon.cfg": "IP=127.0.0.1\nPort=21114\nPassword=NewAdmin2\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/squad/gamedash-test-run.sh",

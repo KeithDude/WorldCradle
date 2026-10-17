@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/astroneer/gamedash-servers/test/Saved/Config/WindowsServer/AstroServerSettings.ini": "[/Script/Astro.AstroServerSettings]\nPublicIP=\nServerName=Test World\nOwnerName=\nServerPassword=NewJoin2\nConsolePassword=NewAdmin2\nConsolePort=8778\nMaximumPlayerCount=8\nAutoSaveGameInterval=600\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/astroneer/gamedash-test-run.sh",

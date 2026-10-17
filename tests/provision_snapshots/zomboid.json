@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/zomboid/gamedash-servers/test/Server/gamedash.ini": "DefaultPort=16261\nUDPPort=16262\nMaxPlayers=8\nPublicName=Test World\nPublicDescription=\nPublic=false\nPVP=false\nPauseEmpty=true\nOpen=true\nPassword=NewJoin2\nRCONPort=27060\nRCONPassword=NewAdmin2\nUPnP=false\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/zomboid/gamedash-test-run.sh",

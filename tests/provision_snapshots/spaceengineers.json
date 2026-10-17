@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/spaceengineers/gamedash-servers/test/SpaceEngineers-Dedicated.cfg": "<?xml version=\"1.0\"?>\n<MyConfigDedicated xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n  <SessionSettings>\n    <GameMode>Survival</GameMode>\n    <MaxPlayers>4</MaxPlayers>\n    <OnlineMode>PUBLIC</OnlineMode>\n    <AutoSaveInMinutes>5</AutoSaveInMinutes>\n    <EnableSpectator>false</EnableSpectator>\n  </SessionSettings>\n  <LoadWorld />\n  <IP>0.0.0.0</IP>\n  <SteamPort>8780</SteamPort>\n  <ServerPort>27500</ServerPort>\n  <AsteroidAmount>4</AsteroidAmount>\n  <Administrators />\n  <Banned />\n  <GroupID>0</GroupID>\n  <ServerName>Test World</ServerName>\n  <WorldName>Test World</WorldName>\n  <PauseGameWhenEmpty>true</PauseGameWhenEmpty>\n  <IgnoreLastSession>false</IgnoreLastSession>\n  <PremadeCheckpointPath>Z:<WINROOT>\\installs\\spaceengineers\\Content\\CustomWorlds\\Star System</PremadeCheckpointPath>\n  <ServerDescription></ServerDescription>\n  <ServerPasswordHash><hash of the new join password></ServerPasswordHash>\n  <ServerPasswordSalt><random salt></ServerPasswordSalt>\n  <RemoteApiEnabled>false</RemoteApiEnabled>\n</MyConfigDedicated>\n"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/spaceengineers/gamedash-test-run.sh",

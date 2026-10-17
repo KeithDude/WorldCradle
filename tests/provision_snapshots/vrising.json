@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/vrising/gamedash-servers/test/Settings/ServerHostSettings.json": "{\n  \"Name\": \"Test World\",\n  \"Description\": \"\",\n  \"Port\": 9876,\n  \"QueryPort\": 9877,\n  \"MaxConnectedUsers\": 10,\n  \"Password\": \"NewJoin2\",\n  \"Rcon\": {\n    \"Enabled\": true,\n    \"Port\": 25600,\n    \"Password\": \"NewAdmin2\"\n  },\n  \"SaveName\": \"world\",\n  \"ListOnSteam\": true,\n  \"ListOnEOS\": true,\n  \"GameSettingsPreset\": \"StandardPvE\"\n}"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/vrising/gamedash-test-run.sh",

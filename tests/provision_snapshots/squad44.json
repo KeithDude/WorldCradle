@@ -1,4 +1,8 @@
 {
+ "after_password_change": {
+  "installs/squad44/PostScriptum/ServerConfig/Rcon.cfg": "IP=127.0.0.1\nPort=21124\nPassword=NewAdmin2\n",
+  "installs/squad44/PostScriptum/ServerConfig/Server.cfg": "ServerName=\"Test World\"\nMaxPlayers=40\nServerPassword=\"NewJoin2\"\nShouldAdvertise=true\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/squad44/gamedash-test-run.sh",

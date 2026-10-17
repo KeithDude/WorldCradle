@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/minecraft/servers/test/server.properties": "motd=Test World\nserver-port=25565\nmax-players=10\ngamemode=survival\ndifficulty=easy\nhardcore=false\nwhite-list=true\nenforce-whitelist=true\nlevel-type=minecraft\\:normal\nlevel-seed=\nview-distance=10\nonline-mode=true\nenable-rcon=true\nrcon.port=25585\nrcon.password=NewAdmin2\nenable-query=false\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/minecraft/gamedash-test-run.sh",

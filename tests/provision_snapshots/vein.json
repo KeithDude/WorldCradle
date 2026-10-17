@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/vein/gamedash-servers/test/Saved/Config/LinuxServer/Game.ini": "[/Script/Engine.GameSession]\nMaxPlayers=8\n\n[/Script/Vein.VeinGameSession]\nbPublic=True\nServerName=Test World\nServerDescription=\nBindAddr=0.0.0.0\nPassword=NewJoin2\n\n[OnlineSubsystemSteam]\nGameServerQueryPort=27200\n"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/vein/gamedash-test-run.sh",

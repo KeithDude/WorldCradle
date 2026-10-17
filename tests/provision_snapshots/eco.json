@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/eco/Configs/Network.eco": "{\n  \"Description\": \"\",\n  \"GameServerPort\": 3000,\n  \"WebServerPort\": 3001,\n  \"Password\": \"NewJoin2\",\n  \"PublicServer\": false,\n  \"MaxConnections\": -1,\n  \"Name\": \"Test World\",\n  \"DetailedDescription\": \"\",\n  \"RconServerPort\": 3002,\n  \"SteamServerPort\": 3003,\n  \"RconPassword\": \"NewAdmin2\",\n  \"UPnPEnabled\": false,\n  \"RconIPAddress\": \"127.0.0.1\",\n  \"DefaultSlots\": -1\n}"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/eco/gamedash-test-run.sh",

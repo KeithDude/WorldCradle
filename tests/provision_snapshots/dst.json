@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "home/.klei/DoNotStarveTogether/gd_test/cluster.ini": "[GAMEPLAY]\ngame_mode = survival\nmax_players = 6\npvp = false\npause_when_empty = true\nvote_enabled = true\n\n[NETWORK]\ncluster_name = Test World\ncluster_description = \ncluster_password = NewJoin2\ncluster_intention = cooperative\nlan_only_cluster = false\noffline_cluster = false\n\n[MISC]\nconsole_enabled = true\n\n[SHARD]\nshard_enabled = true\nbind_ip = 127.0.0.1\nmaster_ip = 127.0.0.1\nmaster_port = 10888\ncluster_key = hex0001\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/dst/gamedash-test-run.sh",

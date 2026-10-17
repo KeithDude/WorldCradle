@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/dragonwilds/gamedash-servers/test/Saved/Config/LinuxServer/DedicatedServer.ini": "[/Script/Dominion.DedicatedServerSettings]\nOwnerId=0123456789abcdef0123456789abcdef\nServerName=Test World\nWorldPassword=NewJoin2\nDefaultWorldName=Test World\nPlatformPolicy=Crossplay\nbAllowSendingCrashDumps=False\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/dragonwilds/gamedash-test-run.sh",

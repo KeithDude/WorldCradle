@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/humanitz/HumanitZServer/GameServerSettings.ini": "ServerName=\"Test World\"\nPassword=\"NewJoin2\"\nRCONEnabled=true\nRConPort=8890\nRCONPass=\"NewAdmin2\"\nMaxPlayers=8\nAdminPass=\"NewAdmin2\"\nPVP=false\nPermaDeath=false\nLootRespawn=true\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/humanitz/gamedash-test-run.sh",

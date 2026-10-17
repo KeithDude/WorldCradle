@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/sdtd/gamedash-servers/test/serverconfig.xml": "<?xml version=\"1.0\"?>\n<ServerSettings>\n  <property name=\"ServerName\" value=\"Test World\"/>\n  <property name=\"ServerPort\" value=\"26900\"/>\n  <property name=\"ServerPassword\" value=\"NewJoin2\"/>\n  <property name=\"ServerMaxPlayerCount\" value=\"8\"/>\n  \n  <property name=\"TelnetEnabled\" value=\"true\"/>\n  <property name=\"TelnetPort\" value=\"8081\"/>\n  <property name=\"TelnetPassword\" value=\"NewAdmin2\"/>\n\t<property name=\"ServerDescription\" value=\"\"/>\n\t<property name=\"ServerVisibility\" value=\"2\"/>\n\t<property name=\"GameWorld\" value=\"Navezgane\"/>\n\t<property name=\"WorldGenSeed\" value=\"test\"/>\n\t<property name=\"WorldGenSize\" value=\"6144\"/>\n\t<property name=\"GameName\" value=\"test\"/>\n\t<property name=\"GameDifficulty\" value=\"1\"/>\n\t<property name=\"EACEnabled\" value=\"true\"/>\n\t<property name=\"WebDashboardEnabled\" value=\"false\"/>\n\t<property name=\"UserDataFolder\" value=\"<ROOT>/installs/sdtd/gamedash-servers/test/data\"/>\n</ServerSettings>\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/sdtd/gamedash-test-run.sh",

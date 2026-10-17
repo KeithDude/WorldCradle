@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/enshrouded/gamedash-servers/test/enshrouded_server.json": "{\n\t\"name\": \"Test World\",\n\t\"saveDirectory\": \"./savegame\",\n\t\"logDirectory\": \"./logs\",\n\t\"ip\": \"0.0.0.0\",\n\t\"queryPort\": 15637,\n\t\"slotCount\": 8,\n\t\"enableVoiceChat\": false,\n\t\"enableTextChat\": true,\n\t\"gameSettingsPreset\": \"Default\",\n\t\"userGroups\": [\n\t\t{\n\t\t\t\"name\": \"Admin\",\n\t\t\t\"password\": \"NewAdmin2\",\n\t\t\t\"canKickBan\": true,\n\t\t\t\"canAccessInventories\": true,\n\t\t\t\"canEditWorld\": true,\n\t\t\t\"canEditBase\": true,\n\t\t\t\"canExtendBase\": true,\n\t\t\t\"reservedSlots\": 0\n\t\t},\n\t\t{\n\t\t\t\"name\": \"Friend\",\n\t\t\t\"password\": \"NewJoin2\",\n\t\t\t\"canKickBan\": false,\n\t\t\t\"canAccessInventories\": true,\n\t\t\t\"canEditWorld\": true,\n\t\t\t\"canEditBase\": true,\n\t\t\t\"canExtendBase\": true,\n\t\t\t\"reservedSlots\": 0\n\t\t}\n\t]\n}"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/enshrouded/gamedash-test-run.sh",

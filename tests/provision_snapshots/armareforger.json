@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/armareforger/gamedash-servers/test/config.json": "{\n  \"bindAddress\": \"0.0.0.0\",\n  \"bindPort\": 2001,\n  \"publicPort\": 2001,\n  \"a2s\": {\n    \"address\": \"0.0.0.0\",\n    \"port\": 17777\n  },\n  \"game\": {\n    \"name\": \"Test World\",\n    \"password\": \"NewJoin2\",\n    \"passwordAdmin\": \"NewAdmin2\",\n    \"scenarioId\": \"{ECC61978EDCC2B5A}Missions/23_Campaign.conf\",\n    \"maxPlayers\": 16,\n    \"visible\": true,\n    \"crossPlatform\": true,\n    \"gameProperties\": {\n      \"battlEye\": true\n    }\n  }\n}"
+ },
  "fields": {
   "a2s": true,
   "exec_start": "<ROOT>/installs/armareforger/gamedash-test-run.sh",

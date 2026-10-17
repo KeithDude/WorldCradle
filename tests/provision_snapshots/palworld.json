@@ -1,4 +1,7 @@
 {
+ "after_password_change": {
+  "installs/palworld/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini": "[/Script/Pal.PalGameWorldSettings]\nOptionSettings=(Difficulty=None,ServerName=\"Test World\",ServerPassword=\"NewJoin2\",AdminPassword=\"NewAdmin2\",PublicPort=8221,RCONEnabled=True,RCONPort=25576,ServerPlayerMaxNum=10)\n"
+ },
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/palworld/gamedash-test-run.sh",
