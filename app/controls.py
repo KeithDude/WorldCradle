@@ -1,6 +1,9 @@
 """controls.py — admin actions on servers: start/stop through systemd, and the in-game
 actions (save, message, kick, ban, chat) through each server's game type.
 
+Start and Stop also decide whether a server starts with the computer: a server the owner
+stopped stays stopped through a reboot, and one they started comes back.
+
 Safety model (mirrors the operator's standing rule: never disrupt a server
 without checking players first):
   * start / save / broadcast are non-disruptive.
@@ -53,6 +56,20 @@ def _systemctl(action: str, unit: str) -> str:
         msg = (r.stderr or r.stdout or "").strip() or f"exit {r.returncode}"
         raise ActionError(f"Couldn't {action} the server: {msg}")
     return "ok"
+
+
+def _starts_with_computer(s: Server, on: bool) -> None:
+    """Whether the server starts by itself when the computer starts. It follows the owner's last
+    Start / Stop, so a stopped server stays stopped through a reboot. Best effort: the start or
+    stop itself has already happened, so a failure here is only logged."""
+    try:
+        r = subprocess.run(["systemctl", "--user", "enable" if on else "disable", s.unit],
+                           capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            app_log.warning("couldn't %s %s at boot: %s", "enable" if on else "disable", s.unit,
+                            (r.stderr or r.stdout).strip())
+    except (OSError, subprocess.SubprocessError) as e:
+        app_log.warning("couldn't change start-at-boot for %s: %s", s.unit, e)
 
 
 def live_players(s: Server) -> tuple[int | None, list[str]]:
@@ -295,6 +312,11 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
                 f"Can't start {s.name}: it shares ports with {sib.name}, "
                 f"which is running. Stop {sib.name} first.")
         _systemctl("start", s.unit)
+        _starts_with_computer(s, True)
+        # servers sharing its ports must not also start with the computer
+        for other in by_key().values():
+            if other.key != s.key and s.slot_group and other.slot_group == s.slot_group:
+                _starts_with_computer(other, False)
         return {"ok": True, "message": f"Started {s.name}."}
 
     if action in DISRUPTIVE:
@@ -317,12 +339,14 @@ def perform(key: str, action: str, message: str = "", confirm: bool = False,
             pass  # already dying; the kill is what matters
         subprocess.run(["systemctl", "--user", "reset-failed", s.unit],
                        capture_output=True, text=True, timeout=15)
+        _starts_with_computer(s, False)
         return {"ok": True, "message": f"Force-stopped {s.name} — it was NOT saved."}
 
     if action in ("stop", "restart"):
         # Expected downtime — suppress the down/recovery alert for this server.
         alerts.suppress(s.key, QUIET_AFTER_RESTART if action == "restart" else QUIET_AFTER_STOP)
         _systemctl(action, s.unit)
+        _starts_with_computer(s, action == "restart")    # stopped stays stopped through a reboot
         verb = "Stopped" if action == "stop" else "Restarted"
         return {"ok": True, "message": f"{verb} {s.name}."}
 

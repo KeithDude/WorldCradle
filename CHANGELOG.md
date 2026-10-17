@@ -52,6 +52,8 @@ footer of the dashboard when signed in.
 - `gamedash uninstall` now leaves a server running if you say so, and also offers to remove a
   backup folder you moved elsewhere.
 - Don't Starve Together servers now pick up a changed join password when they start.
+- **Stop means stopped:** a server you stop stays stopped when the computer restarts, and one you
+  start comes back by itself. (Before, a stopped server started again after a reboot.)
 - Alerts follow each service's own documentation: new Matrix rooms can be used, email over "SSL"
   uses the right port, and when a service refuses a message you're told its actual reason.
 - A server that **keeps crashing** now says so on its card (and sends an alert), instead of looking
