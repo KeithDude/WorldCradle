@@ -61,3 +61,12 @@ def test_a_running_server_is_not_adopted(palworld):
     with pytest.raises(ActionError, match="Stop"):
         _adopt()
     assert "hand-made" in open(os.path.join(palworld[0], "realmcradle-pw-run.sh")).read()
+
+
+def test_removing_a_server_deletes_its_generated_scripts(palworld):
+    install, ini, units, _ = palworld
+    _adopt()
+    provision.destroy("pw")
+    assert not (install / "realmcradle-pw-run.sh").exists() and not (install / "realmcradle-pw-stop.sh").exists()
+    assert ini.exists()                                   # its settings and world stay
+    assert store.get("pw") is None

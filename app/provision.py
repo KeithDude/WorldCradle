@@ -510,6 +510,11 @@ def destroy(key: str) -> dict:
         os.remove(path)
     systemd.check("daemon-reload")
     store.remove(key)
+    # its generated launch and stop scripts (no saves in them)
+    install = os.path.expanduser(e.get("install_dir") or "")
+    for script in (f"realmcradle-{key}-run.sh", f"realmcradle-{key}-stop.sh"):
+        if install and os.path.isfile(os.path.join(install, script)):
+            os.remove(os.path.join(install, script))
     # A Windows-only server's private Wine environment (~1 GB) holds no saves — remove it too.
     extra = ""
     from games import common
