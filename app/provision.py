@@ -17,10 +17,10 @@ import re
 import shutil
 import subprocess
 import threading
-import time
 
 import config
 import games
+import jobs
 import registry
 import store
 import systemd
@@ -240,13 +240,17 @@ def create(spec: dict) -> dict:
 
 
 # ---- clone-install provisioning (async) ------------------------------------
-_job_lock = threading.Lock()
-_provision_job: dict = {"state": "idle"}  # state: idle|running|done|failed
+provision_job = jobs.Job("provision")
 
 
 def provision_status() -> dict:
-    with _job_lock:
-        return dict(_provision_job)
+    return provision_job.status()
+
+
+def _gb(n: int) -> str:
+    """A size in binary GB for a message: "0.4 GB", "12 GB"."""
+    gb = n / 2**30
+    return f"{gb:.1f} GB" if gb < 10 else f"{gb:.0f} GB"
 
 
 def _dir_size(path: str) -> int:
@@ -281,9 +285,9 @@ def _create_cloned(spec: dict, key: str, game, use_pool: bool) -> dict:
     dst = f"{src.rstrip('/')}-{key}"
     if os.path.exists(dst):
         raise ActionError(f"Target install dir already exists: {dst}")
-    with _job_lock:
-        if _provision_job.get("state") == "running":
-            raise ActionError("Another server is already being provisioned — wait for it to finish.")
+    busy = "Another server is already being provisioned — wait for it to finish."
+    if provision_job.running:
+        raise ActionError(busy)
 
     used = _port_plan(_port_requests(game, spec))
     needed = _dir_size(src)
@@ -291,32 +295,22 @@ def _create_cloned(spec: dict, key: str, game, use_pool: bool) -> dict:
     if not spec.get("confirm"):
         raise ProvisionConfirm(needed, free, _ram_available(), dst)
     if needed > free:
-        raise ActionError(f"Not enough disk: need ~{needed // 2**30} GB, only "
-                          f"{free // 2**30} GB free.")
+        raise ActionError(f"Not enough disk: need about {_gb(needed)}, only {_gb(free)} free.")
 
     # Allocate ports up front so a clash fails fast (before the long copy).
     ports = game.provision_ports(used, use_pool, _wanted_ports(spec))
-    with _job_lock:
-        _provision_job.clear()
-        _provision_job.update({"state": "running", "key": key, "kind": game.kind,
-                               "step": "preparing", "started_ts": time.time()})
+    provision_job.begin(busy, key=key, kind=game.kind, step="preparing")
     threading.Thread(target=_run_clone_job, name=f"provision-{key}",
                      args=(spec, key, game, src, dst, ports),
                      daemon=True).start()
     return {"ok": True, "message": f"Provisioning '{spec.get('name') or key}' — "
-            f"cloning a ~{needed // 2**30} GB install in the background. "
+            f"copying a {_gb(needed)} install in the background. "
             f"It'll appear when ready."}
-
-
-def _set_step(step: str):
-    with _job_lock:
-        _provision_job["step"] = step
-    app_log.info("provision: %s", step)
 
 
 def _run_clone_job(spec, key, game, src, dst, ports):
     try:
-        _set_step("cloning install (copying files)")
+        provision_job.step("cloning install (copying files)")
         # cp -a: preserve perms/symlinks/timestamps. Copy into a temp then rename
         # so a crash can't leave a half-populated dst that looks complete.
         tmp = dst + ".partial"
@@ -329,7 +323,7 @@ def _run_clone_job(spec, key, game, src, dst, ports):
             shutil.rmtree(os.path.join(tmp, sub), ignore_errors=True)
         os.replace(tmp, dst)
 
-        _set_step("configuring")
+        provision_job.step("configuring")
         spec = dict(spec)
         spec["install_dir"] = dst
         fields = game.provision(spec, ports)
@@ -338,17 +332,12 @@ def _run_clone_job(spec, key, game, src, dst, ports):
         name = f"{game.label} · {display}"
         note = _register(key, game.kind, name, fields, bool(spec.get("start")))
 
-        with _job_lock:
-            _provision_job.update({"state": "done", "ok": True, "name": name,
-                                   "finished_ts": time.time(),
-                                   "message": f"Added '{name}'.{note}"})
+        provision_job.finish(True, f"Added '{name}'.{note}", name=name)
         app_log.info("provision %s: done", key)
     except Exception as e:
         app_log.exception("provision %s crashed", key)
         shutil.rmtree(dst + ".partial", ignore_errors=True)
-        with _job_lock:
-            _provision_job.update({"state": "failed", "ok": False,
-                                   "finished_ts": time.time(), "message": str(e)})
+        provision_job.finish(False, str(e))
 
 
 # ---- launch-script editor --------------------------------------------------

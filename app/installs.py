@@ -9,20 +9,18 @@ from __future__ import annotations
 import os
 import shutil
 import threading
-import time
 
 import config
 import games
+import jobs
 from applog import app_log, audit_log
 from games.base import ActionError
 
-_lock = threading.Lock()
-_job: dict = {"state": "idle"}  # state: idle|running|done|failed
+install_job = jobs.Job("install")
 
 
 def status() -> dict:
-    with _lock:
-        return dict(_job)
+    return install_job.status()
 
 
 def _installable() -> list:
@@ -87,13 +85,8 @@ def start(kind: str) -> dict:
     if free is not None and free < need:
         raise ActionError(f"Not enough disk space for {game.label}: it needs about "
                           f"{game.install_gb:g} GB and only {free / 2**30:.0f} GB is free.")
-    with _lock:
-        if _job.get("state") == "running":
-            raise ActionError(f"{_job.get('label', 'Another game')} is still installing — "
-                              f"one at a time.")
-        _job.clear()
-        _job.update({"state": "running", "kind": kind, "label": game.label, "percent": 0.0,
-                     "step": "Getting ready", "started_ts": time.time()})
+    install_job.begin(f"{install_job.get('label', 'Another game')} is still installing — one at a time.",
+                      kind=kind, label=game.label, percent=0.0, step="Getting ready")
     audit_log.info("game INSTALL started kind=%s dir=%s", kind, d)
     threading.Thread(target=_run, args=(game, d), name=f"install-{kind}", daemon=True).start()
     return {"ok": True, "message": f"Installing {game.label} — this page shows the progress. "
@@ -116,30 +109,24 @@ def _run(game, d: str) -> None:
     def progress(phase: str, pct: float) -> None:
         if phase == "unknown":   # steamcmd's idle state between phases — not progress
             return
-        with _lock:
-            _job["step"] = _PHASES.get(phase, phase.capitalize())
-            _job["percent"] = round(pct, 1)
+        install_job.update(step=_PHASES.get(phase, phase.capitalize()), percent=round(pct, 1))
     try:
-        with _lock:
-            _job["step"] = "Getting ready"
+        install_job.update(step="Getting ready")
         ok, tail = game.install(d, progress)
         if ok and not is_installed(game):
             ok, tail = False, "the download finished but the server files weren't found"
-        with _lock:
-            _job.update({"state": "done" if ok else "failed", "ok": ok, "percent": 100.0 if ok else _job.get("percent", 0),
-                         "finished_ts": time.time(),
-                         "message": (f"{game.label} is installed. Use “Add a server” to create your first one."
-                                     if ok else f"{game.label} couldn't be installed: "
-                                     f"{_reason(tail)}")})
-        (audit_log.info if ok else audit_log.warning)("game INSTALL %s kind=%s", "ok" if ok else "FAILED", game.kind)
+        if ok:
+            install_job.finish(True, f"{game.label} is installed. Use “Add a server” to create your first one.",
+                               percent=100.0)
+            audit_log.info("game INSTALL ok kind=%s", game.kind)
+        else:
+            install_job.finish(False, f"{game.label} couldn't be installed: {_reason(tail)}")
+            audit_log.warning("game INSTALL FAILED kind=%s", game.kind)
     except ActionError as e:
-        with _lock:
-            _job.update({"state": "failed", "ok": False, "finished_ts": time.time(), "message": str(e)})
+        install_job.finish(False, str(e))
     except Exception as e:
         app_log.exception("install %s crashed", game.kind)
-        with _lock:
-            _job.update({"state": "failed", "ok": False, "finished_ts": time.time(),
-                         "message": f"Something went wrong installing {game.label}: {e}"})
+        install_job.finish(False, f"Something went wrong installing {game.label}: {e}")
 
 
 def uninstall(kind: str) -> dict:
@@ -156,9 +143,8 @@ def uninstall(kind: str) -> dict:
     if using:
         raise ActionError(f"{game.label} is still used by: {', '.join(using)}. Remove those "
                           f"servers first (back up their worlds if you want to keep them).")
-    with _lock:
-        if _job.get("state") == "running":
-            raise ActionError("A game is being installed — wait for it to finish.")
+    if install_job.running:
+        raise ActionError("A game is being installed — wait for it to finish.")
     d = os.path.realpath(config.install_dir(kind))
     home = os.path.realpath(os.path.expanduser("~"))
     # only ever delete a real game folder that sits inside the home directory

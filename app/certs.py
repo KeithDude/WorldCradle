@@ -26,6 +26,7 @@ import threading
 import time
 
 import config
+import jobs
 import paths
 import systemd
 from applog import app_log, audit_log
@@ -39,13 +40,11 @@ TERMS_URL = "https://letsencrypt.org/repository/"
 _DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
 _EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[a-z0-9.-]{3,253}$", re.I)
 
-_lock = threading.Lock()
-_job: dict = {"state": "idle"}  # idle|running|done|failed
+cert_job = jobs.Job("certificate")
 
 
 def status_job() -> dict:
-    with _lock:
-        return dict(_job)
+    return cert_job.status()
 
 
 def certbot_path() -> str | None:
@@ -201,12 +200,7 @@ def start(domain: str, email: str, agree: bool, dashboard_port: int = 8443) -> d
     if not _port_free(http_port):
         raise ActionError(f"Port {http_port} on this computer is in use by another program, and "
                           f"the certificate check needs it for a moment.")
-    with _lock:
-        if _job.get("state") == "running":
-            raise ActionError("A certificate request is already running.")
-        _job.clear()
-        _job.update({"state": "running", "domain": domain, "step": "Asking Let's Encrypt",
-                     "started_ts": time.time()})
+    cert_job.begin("A certificate request is already running.", domain=domain, step="Asking Let's Encrypt")
     audit_log.info("certificate REQUEST domain=%s", domain)
     threading.Thread(target=_run, args=(domain, email, http_port, dashboard_port), name="cert",
                      daemon=True).start()
@@ -223,28 +217,22 @@ def _run(domain: str, email: str, http_port: int, dashboard_port: int) -> None:
         # then costs nothing, instead of using up the real service's attempts.
         for label, extra in (("Testing the connection from Let's Encrypt", ["--dry-run"]),
                              ("Issuing the certificate", [])):
-            with _lock:
-                _job["step"] = label
+            cert_job.step(label)
             r = subprocess.run(base + extra, capture_output=True, text=True, timeout=300)
             if r.returncode != 0:
                 raise ActionError(_explain(r.stdout + "\n" + r.stderr))
         install_issued(domain)
         config.update(lambda c: c.update({"cert_domain": domain}))
         _write_renew_units(http_port)
-        with _lock:
-            _job.update({"state": "done", "ok": True, "finished_ts": time.time(),
-                         "message": f"Done — a trusted certificate for {domain} is installed and "
-                                    f"will renew itself. The dashboard is restarting; reload this "
-                                    f"page in a few seconds using https://{domain}:{dashboard_port}/"})
+        cert_job.finish(True, f"Done — a trusted certificate for {domain} is installed and will renew "
+                              f"itself. The dashboard is restarting; reload this page in a few seconds "
+                              f"using https://{domain}:{dashboard_port}/")
         audit_log.info("certificate ISSUED domain=%s", domain)
         time.sleep(2)   # let the page read the result before the restart
         restart_dashboard()
     except ActionError as e:
-        with _lock:
-            _job.update({"state": "failed", "ok": False, "finished_ts": time.time(), "message": str(e)})
+        cert_job.finish(False, str(e))
         audit_log.warning("certificate FAILED domain=%s", domain)
     except Exception as e:
         app_log.exception("certificate request crashed")
-        with _lock:
-            _job.update({"state": "failed", "ok": False, "finished_ts": time.time(),
-                         "message": f"Something went wrong requesting the certificate: {e}"})
+        cert_job.finish(False, f"Something went wrong requesting the certificate: {e}")

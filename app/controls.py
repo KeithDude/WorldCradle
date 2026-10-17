@@ -18,10 +18,10 @@ from __future__ import annotations
 import os
 import subprocess
 import threading
-import time
 
 import alerts
 import games
+import jobs
 import monitor
 import systemd
 from applog import app_log
@@ -90,13 +90,11 @@ def _update_script(app: int) -> str | None:
     return None
 
 
-_update_lock = threading.Lock()
-_update_job: dict = {"state": "idle"}  # state: idle|running|done|failed
+update_job = jobs.Job("update")
 
 
 def update_status() -> dict:
-    with _update_lock:
-        return dict(_update_job)
+    return update_job.status()
 
 
 def start_update(app, confirm: bool = False) -> dict:
@@ -111,9 +109,8 @@ def start_update(app, confirm: bool = False) -> dict:
     import installs
     if installs.status().get("state") == "running":
         raise ActionError("A game is being installed — wait for it to finish, then update.")
-    with _update_lock:
-        if _update_job.get("state") == "running":
-            raise ActionError("an update is already running")
+    if update_job.running:
+        raise ActionError("an update is already running")
 
     servers = [s for s in by_key().values() if s.steam_app == app]
     if not servers:
@@ -132,25 +129,11 @@ def start_update(app, confirm: bool = False) -> dict:
     if count and not confirm:
         raise ConfirmRequired(count, names)
 
-    with _update_lock:
-        _update_job.clear()
-        _update_job.update({"state": "running", "app": app, "game": game,
-                            "step": "starting", "started_ts": time.time(),
-                            "restart": [s.key for s in running]})
+    update_job.begin("an update is already running", app=app, game=game, step="starting",
+                     restart=[s.key for s in running])
     threading.Thread(target=_run_update, args=(app, running, game),
                      name="update", daemon=True).start()
     return {"ok": True, "message": f"Update started for {game}."}
-
-
-def _set_step_quiet(step: str):
-    with _update_lock:           # progress ticks: update the status, don't spam the log
-        _update_job["step"] = step
-
-
-def _set_step(step: str):
-    with _update_lock:
-        _update_job["step"] = step
-    app_log.info("update: %s", step)
 
 
 def _run_update(app: int, running: list, game: str):
@@ -158,7 +141,7 @@ def _run_update(app: int, running: list, game: str):
         # Stop running servers (suppress alerts; this is planned downtime).
         for s in running:
             alerts.suppress(s.key, QUIET_DURING_UPDATE)
-        _set_step(f"stopping {len(running)} server(s)")
+        update_job.step(f"stopping {len(running)} server(s)")
         for s in running:
             try:
                 _systemctl("stop", s.unit)
@@ -166,7 +149,7 @@ def _run_update(app: int, running: list, game: str):
                 app_log.warning("update: stop %s failed: %s", s.unit, e)
 
         # Run the game's steamcmd update script.
-        _set_step("running steamcmd update (may take several minutes)")
+        update_job.step("running steamcmd update (may take several minutes)")
         script = _update_script(app)
         if script:
             r = subprocess.run(["bash", script], capture_output=True, text=True, timeout=3600)
@@ -179,24 +162,19 @@ def _run_update(app: int, running: list, game: str):
                 (s.install_dir for s in by_key().values() if s.steam_app == app), "")
             ok, tail = steam.app_update(
                 app, install_dir, g.steam_platform,
-                lambda phase, pct: _set_step_quiet(f"{phase} {pct:.0f}%"), beta=g.steam_beta)
+                lambda phase, pct: update_job.step(f"{phase} {pct:.0f}%", log=False), beta=g.steam_beta)
             tail = tail[-300:].strip()
 
         # Restart whatever was running before.
-        _set_step(f"restarting {len(running)} server(s)")
+        update_job.step(f"restarting {len(running)} server(s)")
         for s in running:
             try:
                 _systemctl("start", s.unit)
             except ActionError as e:
                 app_log.warning("update: start %s failed: %s", s.unit, e)
 
-        with _update_lock:
-            _update_job.update({
-                "state": "done" if ok else "failed",
-                "ok": ok, "finished_ts": time.time(),
-                "message": (f"{game} updated and restarted." if ok
-                            else f"{game} update FAILED (servers restarted on old build). {tail}"),
-            })
+        update_job.finish(ok, f"{game} updated and restarted." if ok
+                          else f"{game} update FAILED (servers restarted on old build). {tail}")
         app_log.info("update %s: %s", game, "done" if ok else "FAILED")
         try:
             import updates
@@ -210,9 +188,7 @@ def _run_update(app: int, running: list, game: str):
                 _systemctl("start", s.unit)
             except Exception:
                 pass
-        with _update_lock:
-            _update_job.update({"state": "failed", "ok": False,
-                                "finished_ts": time.time(), "message": str(e)})
+        update_job.finish(False, str(e))
 
 
 def read_logs(key: str, lines=300) -> str:

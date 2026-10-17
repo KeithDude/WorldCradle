@@ -9,6 +9,47 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-17 — Code clean-up, part 2
+
+All checked in a browser or on real servers on the test VM, and by a new safety net.
+
+- **The dashboard page:**
+  - **Windows:** one helper replaces six hand-built ones. Each now closes on Escape, a click
+    outside or ✕.
+  - **Players-online question:** one shared step replaces five copies.
+  - **Card buttons:** they live in one table.
+  - **Game knowledge moved out of the page:** each game declares its own "How to join" steps and
+    its in-game buttons. This gave Terraria and other console-driven games the Save and Message
+    buttons they were missing.
+  - **Split into modules:** the 1,290-line `app.js` became eight modules
+    (`app/static/js/`), each page loading only its own, with no build step.
+  - **No inline styles:** the security policy no longer allows `'unsafe-inline'` styles.
+- **Safety net for game setup:** `tests/provision_snapshots.py` records, for all 45 games, what
+  creating a server writes:
+  - launch scripts, settings files and their permissions;
+  - the server record;
+  - each settings file after its password-sync step runs with a changed password.
+  
+  The recording is identical on every computer, because paths, the Python, random values and the
+  LAN address become placeholders. Every step below was checked against it.
+- **Game setup reworked:**
+  - **Password sync:** one way to put the passwords into a game's settings at start
+    (`common.password_sync` / `json_password_sync`), replacing ~20 snippets.
+  - **Form limits** are written once, in the form field (`GameType.option`), replacing 139 copies.
+  - **Shared helpers:** `common.write_private` (21 copies) and `empty_probe()` (33 copies).
+  - **One file per game:** `more.py` and `winegames.py` split.
+  - **Result:** every game writes the same files as before, with one exception — a found bug, below.
+- **Found and fixed:** Squad and Squad 44 kept their admin-console password (Squad 44 also the
+  join password) in settings files other accounts could read.
+- **Plumbing:**
+  - `systemd.py` is now the one way to run `systemctl`, replacing six. Stop, start, restart and
+    force stop were tested on the VM, with start-at-boot following each.
+  - `jobs.Job` is the one helper for background tasks, replacing four.
+- **Still to do** (roadmap):
+  - the smaller shared helpers (player lists, admin commands, downloads);
+  - moving the older game types onto the shared bases. That changes their launch scripts, so each
+    one needs a real server test.
+
 ## 2026-10-16 — A real package; one setup for every way of installing
 
 The owner made the package and the install/update process the priority before going public.
