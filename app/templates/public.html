@@ -11,8 +11,10 @@
         {% if s.join_port %}
           <button class="joinbtn" data-kind="{{ s.kind }}" data-name="{{ s.name }}" data-srvname="{{ s.server_name }}" data-port="{{ s.join_port }}">ⓘ How to join</button>
         {% endif %}
-        <h2><span class="dot {{ 'on' if s.online else 'off' }}"></span>{{ s.name }}</h2>
-        {% if s.server_name %}<div class="srvname">🎮 {{ s.server_name }}</div>{% endif %}
+        {# same heading as app.js's cardHead: the title without "Game · ", the in-game name only if different #}
+        {% set title = s.name.split(' · ', 1)[1] if ' · ' in s.name else (s.server_name or s.name) %}
+        <h2><span class="dot {{ 'on' if s.online else 'off' }}"></span>{{ title }}</h2>
+        {% if s.server_name and (s.server_name|lower|replace(' ', '')) not in [title|lower|replace(' ', ''), s.name|lower|replace(' ', '')] %}<div class="srvname">🎮 {{ s.server_name }}</div>{% endif %}
         {% if s.online %}
           {% if s.players is not none %}
             <div class="players">{{ s.players }}<span class="max">{% if s.max_players %} / {{ s.max_players }}{% endif %} players</span></div>

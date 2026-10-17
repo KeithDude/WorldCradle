@@ -113,6 +113,21 @@ const gamedash = (() => {
     });
   }
 
+  // ---- card heading: each thing said once ----
+  // Cards sit under their game's heading, so the title drops the "Game · " part of the name;
+  // a server named just after its game is titled with its in-game name instead.
+  const cardTitle = (v) => {
+    const i = v.name.indexOf(" · ");
+    return i >= 0 ? v.name.slice(i + 3) : (v.server_name || v.name);
+  };
+  const plain = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // The name players see in the game's server list, only when it isn't just the card title again.
+  const inGameName = (v) => v.server_name && plain(v.server_name) !== plain(cardTitle(v))
+    && plain(v.server_name) !== plain(v.name)
+    ? `<div class="srvname" title="The name players see in the game's server list">🎮 ${esc(v.server_name)}</div>` : "";
+  const cardHead = (v) => `<h2><span class="dot ${v.online ? "on" : "off"}" title="${v.online ? "running" : "stopped"}"></span>${esc(cardTitle(v))}</h2>`
+    + inGameName(v);
+
   const playersBlock = (v) => {
     if (v.players != null) {
       const max = v.max_players ? ` / ${esc(v.max_players)}` : "";
@@ -136,8 +151,7 @@ const gamedash = (() => {
       return head + `
       <div class="card ${s.online ? "" : "off"}">
         ${joinButton(s)}
-        <h2><span class="dot ${s.online ? "on" : "off"}"></span>${esc(s.name)}</h2>
-        ${s.server_name ? `<div class="srvname">🎮 ${esc(s.server_name)}</div>` : ""}
+        ${cardHead(s)}
         ${playersBlock(s)}
       </div>`;
     }).join("");
@@ -744,8 +758,6 @@ const gamedash = (() => {
       const game = v.name.split(" · ")[0];
       const head = game !== lastGame ? `<h3 class="group-head">${esc(gameTitle(game))}</h3>` : "";
       lastGame = game;
-      const kind = `<div class="kind-tag">${esc(v.kind)}</div>`
-        + (v.server_name ? `<div class="srvname">🎮 ${esc(v.server_name)}</div>` : "");
       const detail = v.player_detail || [];
       const names = detail.length ? `<div class="names">${detail.map((p) => `
         <div class="prow"><span class="who">👤 ${esc(p.name)}</span>${p.id ? `
@@ -784,16 +796,14 @@ const gamedash = (() => {
       return head + `
       <div class="card ${v.online ? "" : "off"}" data-key="${esc(v.key)}">
         ${joinButton(v)}
-        <h2><span class="dot ${v.online ? "on" : "off"}"></span>${esc(v.name)}</h2>
-        ${kind}
+        ${cardHead(v)}
         ${playersBlock(v)}
         ${names}
         ${note}
         <dl class="meta">
-          <dt title="Whether the server is switched on">status</dt><dd>${v.online ? pill("on", "running") : pill("off", "stopped")}</dd>
           ${live}
           ${sf}
-          <dt title="Does this server switch itself on when the computer starts up?">starts with computer</dt><dd>${v.enabled ? pill("on", "yes") : pill("off", "no")}</dd>
+          ${v.enabled ? "" : `<dt title="This server won't switch itself on when the computer starts up">starts with computer</dt><dd>${pill("off", "no")}</dd>`}
           <dt title="The network ports this server uses. Press “Can friends connect?” to see which ones your router needs to pass through">ports</dt><dd>${ports}</dd>
           ${updRow}
         </dl>

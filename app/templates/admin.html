@@ -58,37 +58,8 @@
   </details>
 
   <div class="grid" id="grid">
-    {# rendered client-side by app.js; this is the first paint #}
-    {% set ns = namespace(last='') %}
-    {% for v in snap.servers.values() %}
-      {% set game = v.name.split(' · ')[0] %}
-      {% if game != ns.last %}<h3 class="group-head">{{ game_titles.get(game, game) }}</h3>{% set ns.last = game %}{% endif %}
-      <div class="card {{ '' if v.online else 'off' }}">
-        <h2><span class="dot {{ 'on' if v.online else 'off' }}"></span>{{ v.name }}</h2>
-        <div class="kind-tag">{{ v.kind }}</div>
-        {% if v.players is not none %}
-          <div class="players">{{ v.players }}<span class="max">{% if v.max_players %} / {{ v.max_players }}{% endif %} players</span></div>
-        {% elif v.online %}
-          <div class="players unknown">online</div>
-        {% else %}
-          <div class="statusline">offline</div>
-        {% endif %}
-        {% if v.player_names %}<div class="names">👥 <span class="who">{{ v.player_names|join(', ') }}</span></div>{% endif %}
-        {% if v.note %}<div class="note">⚠ {{ v.note }}</div>{% endif %}
-        <dl class="meta">
-          <dt>status</dt><dd><span class="pill {{ 'on' if v.online else 'off' }}">{{ 'running' if v.online else 'stopped' }}</span></dd>
-          {% if v.online %}
-            <dt>reachable</dt><dd>
-              {% if v.reachable is none %}<span class="muted">n/a</span>
-              {% elif v.reachable %}<span class="pill on">yes</span>
-              {% else %}<span class="pill bad">no</span>{% endif %}</dd>
-            <dt>CPU / RAM</dt><dd>{% if v.cpu_percent is none %}…{% else %}{{ v.cpu_percent }}%{% endif %} · {% if v.mem_mb is none %}…{% elif v.mem_mb >= 1024 %}{{ '%.1f' % (v.mem_mb / 1024) }} GB{% else %}{{ v.mem_mb }} MB{% endif %}</dd>
-          {% endif %}
-          <dt>boot</dt><dd><span class="pill {{ 'on' if v.enabled else 'off' }}">{{ 'enabled' if v.enabled else 'disabled' }}</span></dd>
-          <dt>ports</dt><dd>game {{ v.game_port }}{% if v.query_port %} · q {{ v.query_port }}{% endif %}{% if v.rcon_port %} · rcon {{ v.rcon_port }}{% endif %}</dd>
-        </dl>
-      </div>
-    {% endfor %}
+    {# filled in by app.js as soon as the page loads (one renderer for the cards, not two) #}
+    <p class="muted">Loading servers…</p>
   </div>
 {% endblock %}
 {% block scripts %}
