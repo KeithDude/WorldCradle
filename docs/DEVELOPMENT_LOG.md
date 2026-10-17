@@ -45,7 +45,14 @@ The owner made the package and the install/update process the priority before go
 - Tested on the VM: the source install re-run (libraries moved to the pinned versions), and the
   package's files run as a package install would (libraries built in the home folder in 13 s;
   dashboard, backup service, `status`, `version`, `update`). `install.sh --check` too.
-  **Not yet tested: installing with apt for real** — that needs sudo on the VM.
+  Later the same day, **tested with apt for real** on the VM:
+  - install, then setup;
+  - an update to a newer package;
+  - a deliberately broken update, which rolled back to the previous version by itself;
+  - removal, with settings and the game server kept;
+  - a reinstall that picked up the same settings and servers.
+  
+  All steps passed.
 - Found on the way: another product called "GameDash" exists — a commercial game-server control
   panel. The owner was told before going public.
 

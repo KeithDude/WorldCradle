@@ -214,9 +214,11 @@ right before the repository is made public.
          package; `get.sh` installs the package when a release exists. *(2026-10-16)*
    - [x] Tested on the VM: the package's files run as a package install would (libraries built in
          the home folder, dashboard and backup services, every command). *(2026-10-16)*
-   - [ ] **Tested with apt for real** on a fresh VM: install, `gamedash setup`, upgrade to a newer
-         package (dashboard restarts, new libraries installed), `gamedash update` with rollback,
-         `apt remove`, reinstall keeps the data. *(Needs sudo on the test VM.)*
+   - [x] **Tested with apt for real** on the Ubuntu 26.04 VM: `apt install`, `gamedash setup`
+         (libraries in the home folder), `gamedash update` to a newer package (dashboard restarted
+         by the package), a broken update rolled back to the previous version by itself,
+         `apt remove` (dashboard stopped, settings and game server kept), reinstall + setup picked
+         up the same settings and servers. *(2026-10-16)*
    - [x] GitHub Actions: tests, unused-code check and a package build on every push
          (`.github/workflows/tests.yml`); pushing a tag `v<version>` checks VERSION and CHANGELOG
          agree, builds the package and creates the release with it, its checksum and the
