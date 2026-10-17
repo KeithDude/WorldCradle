@@ -21,6 +21,9 @@
  "files": {
   "installs/valheim/gamedash-test-run.sh": "#!/bin/sh\n# gamedash-managed Valheim world (vanilla).\n. <ROOT>/secrets.conf\nexport LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH\nexport SteamAppID=892970\nexec ./valheim_server.x86_64 -nographics -batchmode -logfile \"./gamedash-test.log\" -name \"Test World\" -port 2460 -world \"TestWorld\" -password \"${GAME_SERVER_PASSWORD}\" -public 0\n"
  },
+ "permissions": {
+  "installs/valheim/gamedash-test-run.sh": "0o755"
+ },
  "ports": {
   "game": 2460,
   "query": 2461

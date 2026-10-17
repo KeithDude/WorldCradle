@@ -27,6 +27,13 @@
   "installs/minecraft/servers/test/gamedash-gamerules.txt": "gamerule pvp true\ngamerule command_blocks_work false\n",
   "installs/minecraft/servers/test/server.properties": "motd=Test World\nserver-port=25565\nmax-players=10\ngamemode=survival\ndifficulty=easy\nhardcore=false\nwhite-list=true\nenforce-whitelist=true\nlevel-type=minecraft\\:normal\nlevel-seed=\nview-distance=10\nonline-mode=true\nenable-rcon=true\nrcon.port=25585\nrcon.password=set-at-launch\nenable-query=false\n"
  },
+ "permissions": {
+  "installs/minecraft/gamedash-test-run.sh": "0o755",
+  "installs/minecraft/gamedash-test-stop.sh": "0o755",
+  "installs/minecraft/servers/test/eula.txt": "0o664",
+  "installs/minecraft/servers/test/gamedash-gamerules.txt": "0o664",
+  "installs/minecraft/servers/test/server.properties": "0o600"
+ },
  "ports": {
   "game": 25565,
   "rcon": 25585

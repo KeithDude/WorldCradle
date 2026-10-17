@@ -22,6 +22,10 @@
   "installs/ark/gamedash-test-run.sh": "#!/bin/sh\n. <ROOT>/secrets.conf\nmkdir -p \"<ROOT>/installs/ark/cluster\"\ncd \"<ROOT>/installs/ark\" || exit 1\nexec ./ShooterGame/Binaries/Linux/ShooterGameServer \\\n  \"TheIsland_WP?listen?SessionName=Test World?MaxPlayers=10?ServerPassword=${GAME_SERVER_PASSWORD}?ServerAdminPassword=${GAME_ADMIN_PASSWORD}?Port=7790?QueryPort=27030?RCONEnabled=True?RCONPort=27040?AltSaveDirectoryName=gd_test?ServerPVE=True\" \\\n  -server -log -clusterid=gamedash -ClusterDirOverride=\"<ROOT>/installs/ark/cluster\" -NoTransferFromFiltering\n",
   "installs/ark/gamedash-test-stop.sh": "#!/bin/sh\n. <ROOT>/secrets.conf\n\"<PYTHON>\" \"<APP>/arkstop.py\" 27040 \"$GAME_ADMIN_PASSWORD\"\n"
  },
+ "permissions": {
+  "installs/ark/gamedash-test-run.sh": "0o755",
+  "installs/ark/gamedash-test-stop.sh": "0o755"
+ },
  "ports": {
   "game": 7790,
   "query": 27030,

@@ -1,5 +1,5 @@
 """Record exactly what each game writes when a server is created — its launch script, settings
-files and the server record — so a change to how servers are set up can be checked line by line.
+files (and their permissions: password files must stay private) and the server record — so a change to how servers are set up can be checked line by line.
 
 Each game is "installed" as a few stand-in files in a scratch folder (only what its setup reads),
 then set up with fixed inputs. Paths, this Python and random values are replaced by placeholders
@@ -128,7 +128,8 @@ def record_all() -> dict[str, dict]:
             except Exception as e:   # recorded too: a game that can't be set up is a difference
                 fields = {"error": f"{type(e).__name__}: {e}"}
             written = {p: t for p, t in _all_files(root).items() if before.get(p) != t}
-            out[g.kind] = {"ports": ports, "fields": fields, "files": written,
+            modes = {p: oct(os.stat(os.path.join(root, p)).st_mode & 0o777) for p in written}
+            out[g.kind] = {"ports": ports, "fields": fields, "files": written, "permissions": modes,
                            "after_password_change": _password_sync(root, written)}
             written = {p: t for p, t in _all_files(root).items() if before.get(p) != t}
             # leave nothing behind for the next game (they share the home folder)

@@ -19,6 +19,9 @@
  "files": {
   "installs/satisfactory/gamedash-test-run.sh": "#!/bin/sh\nexport HOME=\"<ROOT>/installs/satisfactory/gamedash-homes/test\"\nmkdir -p \"$HOME\"\ncd \"<ROOT>/installs/satisfactory\" || exit 1\nexec ./FactoryServer.sh -Port=7779 -ReliablePort=8889 -unattended -LOG=gamedash-test.log \\\n    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers=4'\n"
  },
+ "permissions": {
+  "installs/satisfactory/gamedash-test-run.sh": "0o755"
+ },
  "ports": {
   "game": 7779,
   "query": 8889
