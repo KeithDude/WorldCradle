@@ -5,7 +5,10 @@
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/scum/gamedash-test-run.sh",
-  "extra_ports": [],
+  "extra_ports": [
+   7043,
+   7044
+  ],
   "game_port": 7042,
   "install_dir": "<ROOT>/installs/scum",
   "join_port": 7042,

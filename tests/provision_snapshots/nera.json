@@ -5,7 +5,9 @@
  "fields": {
   "a2s": false,
   "exec_start": "<ROOT>/installs/nera/gamedash-test-run.sh",
-  "extra_ports": [],
+  "extra_ports": [
+   7778
+  ],
   "game_port": 7777,
   "install_dir": "<ROOT>/installs/nera",
   "join_port": 7777,

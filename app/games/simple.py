@@ -38,6 +38,9 @@ class SimpleGame(GameType):
     # shared admin password: e.g. {"save": "/server-save", "kick": "/kick {target}"}.
     rcon_commands: dict[str, str] = {}
     rcon_quit_command = ""   # sent over RCON on stop (saves, then quits)
+    # The log line that says it has finished shutting down, for a server whose process can't be
+    # told apart from other servers' (stopping waits for this line instead of the process).
+    stopped_line = ""
 
     @property
     def install_marker(self) -> str:
@@ -126,12 +129,13 @@ class SimpleGame(GameType):
         stop = ""
         if stop_body:
             stop = os.path.join(install, f"gamedash-{key}-stop.sh")
-            pattern = self.proc_pattern(key, ports, server_dir)
+            running = (f'! grep -q "{self.stopped_line}" "{log}" 2>/dev/null' if self.stopped_line
+                       else f"pgrep -f -- '{self.proc_pattern(key, ports, server_dir)}' >/dev/null")
             with open(stop, "w", encoding="utf-8") as f:
                 f.write("#!/bin/sh\n# gamedash-managed graceful stop: ask the server to save and quit, then wait.\n"
                         f". {config.secrets_path()}\n" + stop_body +
                         f"i=0\nwhile [ $i -lt {max(10, self.stop_seconds - 15)} ] && "
-                        f"pgrep -f -- '{pattern}' >/dev/null; do sleep 1; i=$((i+1)); done\nexit 0\n")
+                        f"{running}; do sleep 1; i=$((i+1)); done\nexit 0\n")
             os.chmod(stop, 0o755)
         out = {
             "exec_start": run, "working_dir": install,
@@ -143,7 +147,7 @@ class SimpleGame(GameType):
             "install_dir": install, "steam_app": self.steam_app,
             "kill_signal": self.kill_signal, "timeout_stop": self.stop_seconds,
             "world": key, "save_root": self.save_dir(server_dir, install),
-            "extra_ports": [p for n, p in ports.items() if n not in ("game", "query", "rcon")],
+            "extra_ports": self._extra_ports(ports),
         }
         if stop:
             out["exec_stop"] = stop
@@ -151,6 +155,16 @@ class SimpleGame(GameType):
             out["rcon_password_ref"] = "GAME_ADMIN_PASSWORD"
         if log:
             out["log_path"] = log
+        return out
+
+    def _extra_ports(self, ports: dict) -> list[int]:
+        """Every port it uses besides the game, query and admin ports themselves — including the
+        rest of a run of ports (a "span"), so Start's in-use check covers them all."""
+        out = []
+        for p in self.port_layout:
+            if p["name"] in ports:
+                first = 1 if p["name"] in ("game", "query", "rcon") else 0
+                out += [ports[p["name"]] + i for i in range(first, p.get("span", 1))]
         return out
 
     def card_rows(self, s) -> dict:

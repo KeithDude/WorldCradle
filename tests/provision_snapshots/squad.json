@@ -6,6 +6,8 @@
   "a2s": false,
   "exec_start": "<ROOT>/installs/squad/gamedash-test-run.sh",
   "extra_ports": [
+   7788,
+   27166,
    15000
   ],
   "game_port": 7787,

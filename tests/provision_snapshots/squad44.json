@@ -7,6 +7,8 @@
   "a2s": false,
   "exec_start": "<ROOT>/installs/squad44/gamedash-test-run.sh",
   "extra_ports": [
+   10028,
+   10038,
    15010
   ],
   "game_port": 10027,
