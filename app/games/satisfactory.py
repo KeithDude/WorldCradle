@@ -142,6 +142,9 @@ class SatisfactoryGame(SimpleGame):
         if not token:
             raise ActionError(f"{s.name}: no API token/password configured.")
         state = monitor.satisfactory_state(s.game_port, token) or {}
+        if state and not state.get("isGameRunning", True):
+            raise ActionError(f"{s.name} has no game running yet — start one (or load a save) in the "
+                              f"game's Server Manager, then there will be something to save.")
         name = state.get("activeSessionName") or "realmcradle_save"
         ok, msg = monitor.satisfactory_save(s.game_port, token, name)
         if not ok:
