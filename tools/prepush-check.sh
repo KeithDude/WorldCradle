@@ -48,13 +48,23 @@ else
   bad "pytest isn't installed — run: venv/bin/pip install -r requirements-dev.txt"
 fi
 
-# 4. JavaScript syntax (needs gjs or node)
-JS="$REPO/app/static/app.js"
-if command -v node >/dev/null; then node --check "$JS" && ok "app.js syntax" || bad "app.js syntax"
-elif command -v gjs >/dev/null; then
-  out=$(gjs -c "const [o,b]=imports.gi.GLib.file_get_contents('$JS'); try{new Function(new TextDecoder().decode(b)); print('ok')}catch(e){print('ERR '+e.message+' line '+e.lineNumber)}" 2>&1)
-  [ "$out" = "ok" ] && ok "app.js syntax" || bad "app.js syntax: $out"
-else bad "no JavaScript checker (install nodejs or gjs)"; fi
+# 4. The page's JavaScript modules parse, and every import names something its module exports
+#    (needs gjs or node)
+js_fail=""
+for f in "$REPO"/app/static/js/*.js; do
+  if command -v gjs >/dev/null; then
+    out=$(cd "$(dirname "$f")" && gjs -m "$f" 2>&1 | grep -E "Error" | head -1)
+  elif command -v node >/dev/null; then
+    tmp=$(mktemp -d); cp "$REPO"/app/static/js/*.js "$tmp"/
+    for m in "$tmp"/*.js; do mv "$m" "${m%.js}.mjs"; done
+    sed -i 's/\.js";$/.mjs";/' "$tmp"/*.mjs
+    out=$(node --check "$tmp/$(basename "${f%.js}").mjs" 2>&1 | head -1); rm -rf "$tmp"
+  else
+    out="no JavaScript checker (install nodejs or gjs)"
+  fi
+  [ -n "$out" ] && js_fail="$js_fail ${f##*/}: $out;"
+done
+[ -z "$js_fail" ] && ok "JavaScript modules parse" || bad "JavaScript:$js_fail"
 
 # 5. Shell scripts parse
 sh_fail=0

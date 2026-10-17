@@ -103,6 +103,8 @@
   </section>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
-  <script nonce="{{ csp_nonce }}">gamedash.initSettings();</script>
+  <script type="module" nonce="{{ csp_nonce }}">
+    import { initSettings } from "{{ url_for('static', filename='js/settings.js') }}";
+    initSettings();
+  </script>
 {% endblock %}

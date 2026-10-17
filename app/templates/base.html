@@ -40,7 +40,9 @@
   <script nonce="{{ csp_nonce }}">
     (function () {
       var n = document.getElementById("certnote");
-      if (!localStorage.getItem("gd-certnote-dismissed")) n.hidden = false;
+      var dismissed = false;
+      try { dismissed = !!localStorage.getItem("gd-certnote-dismissed"); } catch (e) {}
+      if (!dismissed) n.hidden = false;
       document.getElementById("certnote-x").onclick = function () {
         n.hidden = true;
         try { localStorage.setItem("gd-certnote-dismissed", "1"); } catch (e) {}

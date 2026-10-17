@@ -63,6 +63,8 @@
   </div>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
-  <script nonce="{{ csp_nonce }}">gamedash.pollAdmin();</script>
+  <script type="module" nonce="{{ csp_nonce }}">
+    import { pollAdmin } from "{{ url_for('static', filename='js/admin.js') }}";
+    pollAdmin();
+  </script>
 {% endblock %}

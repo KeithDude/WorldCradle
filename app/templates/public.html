@@ -24,6 +24,8 @@
     connection/login attempts may get your IP <b>banned</b>.</p>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
-  <script nonce="{{ csp_nonce }}">gamedash.pollPublic();</script>
+  <script type="module" nonce="{{ csp_nonce }}">
+    import { pollPublic } from "{{ url_for('static', filename='js/public.js') }}";
+    pollPublic();
+  </script>
 {% endblock %}

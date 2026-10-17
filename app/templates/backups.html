@@ -28,6 +28,8 @@
   </div>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
-  <script nonce="{{ csp_nonce }}">gamedash.initBackupsPage();</script>
+  <script type="module" nonce="{{ csp_nonce }}">
+    import { initBackupsPage } from "{{ url_for('static', filename='js/backups.js') }}";
+    initBackupsPage();
+  </script>
 {% endblock %}

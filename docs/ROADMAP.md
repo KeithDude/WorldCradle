@@ -139,7 +139,10 @@ on real servers before it ships:
       come from what the game supports, instead of game names written into `app.js` — which also
       gave Terraria and other console games the Save / Message buttons they were missing.
       *(2026-10-17)*
-- [ ] `app.js`: split into a few modules. Move inline styles into the stylesheet, which also lets the
+- [x] The page's code split into modules by job (`app/static/js/`: core, servers, public, admin,
+      server-actions, games-panel, settings, backups); each page loads only its own, with no build
+      step. The pre-push check parses every module and checks every import. *(2026-10-17)*
+- [ ] Move inline styles into the stylesheet, which also lets the
       security policy drop `'unsafe-inline'` for styles.
 
 ### Dashboard

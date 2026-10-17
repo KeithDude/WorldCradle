@@ -54,7 +54,7 @@ prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
 ## Layout
 ```
 gamedash/
-├── app/          all application code (Flask app, games/, templates/, static/)
+├── app/          all application code (Flask app, games/, templates/, static/ — the page code is static/js/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
 ├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
 ├── get.sh        one-line download + install (the package, or the source before a release exists)
