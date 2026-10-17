@@ -25,7 +25,8 @@ class SatisfactoryGame(SimpleGame):
     # several can run from one install.
     servers_folder = "gamedash-homes"
     has_query = False            # players and stats come from its HTTPS API
-    stop_seconds = 90            # SIGINT flushes a clean autosave
+    stop_seconds = 90
+    stop_only_saves = True       # saved through its admin API first: SIGINT alone doesn't save
     install_gb = 3
     ram_note = "about 4-8 GB of memory, more for very large factories"
     about = "Factory building. You name the server and set its passwords in-game after first connecting."
@@ -63,6 +64,20 @@ class SatisfactoryGame(SimpleGame):
         return (f'./FactoryServer.sh -Port={ports["game"]} -ReliablePort={ports["query"]} '
                 f'-unattended -LOG=gamedash-{spec["key"]}.log \\\n'
                 f"    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers={self.option(spec, 'maxplayers')}'{flags}")
+
+    def stop_lines(self, spec, ports, name, server_dir, install):
+        # the same save as the dashboard's Save button, into the running session's save
+        import sys
+        return (f'"{sys.executable}" - {ports["game"]} "$GAME_ADMIN_PASSWORD" <<\'SAVE\'\n'
+                "import sys\n"
+                f"sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))!r})\n"
+                "import config, monitor\n"
+                "port = int(sys.argv[1])\n"
+                "token = config.load().get('satisfactory_api_token') or monitor.satisfactory_login(port, sys.argv[2])\n"
+                "if token:\n"
+                "    state = monitor.satisfactory_state(port, token) or {}\n"
+                "    monitor.satisfactory_save(port, token, state.get('activeSessionName') or 'gamedash_save')\n"
+                "SAVE\n")
 
     def pre(self, spec, ports, name, server_dir, install):
         return f'export HOME="{server_dir}"\n'

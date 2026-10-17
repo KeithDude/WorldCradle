@@ -45,6 +45,7 @@ class SimpleGame(GameType):
     # … or a command sent over RCON just before systemd's stop signal, for a server that shuts
     # down cleanly on the signal but should save first (stopping then doesn't wait for it to quit)
     rcon_save_before_stop = ""
+    stop_only_saves = False  # its stop_lines save but leave the quitting to the stop signal (no wait)
     # The log line that says it has finished shutting down, for a server whose process can't be
     # told apart from other servers' (stopping waits for this line instead of the process).
     stopped_line = ""
@@ -152,12 +153,13 @@ class SimpleGame(GameType):
             stop = os.path.join(install, f"gamedash-{key}-stop.sh")
             running = (f'! grep -q "{self.stopped_line}" "{log}" 2>/dev/null' if self.stopped_line
                        else f"pgrep -f -- '{_regex(self.proc_pattern(spec, ports, server_dir))}' >/dev/null")
-            wait = ("" if self.rcon_save_before_stop else
+            only_saves = self.stop_only_saves or bool(self.rcon_save_before_stop)
+            wait = ("" if only_saves else
                     f"i=0\nwhile [ $i -lt {max(10, self.stop_seconds - 15)} ] && "
                     f"{running}; do sleep 1; i=$((i+1)); done\n")
             with open(stop, "w", encoding="utf-8") as f:
                 f.write("#!/bin/sh\n# gamedash-managed graceful stop: "
-                        + ("save, then let systemd's stop signal shut it down.\n" if self.rcon_save_before_stop
+                        + ("save, then let systemd's stop signal shut it down.\n" if only_saves
                            else "ask the server to save and quit, then wait.\n") +
                         f". {config.secrets_path()}\n" + stop_body + wait
                         + self.after_stop_lines(spec, server_dir) + "exit 0\n")
