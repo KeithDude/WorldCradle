@@ -132,9 +132,11 @@ on real servers before it ships:
       module.
 - [ ] One `systemd` helper instead of six ways of calling `systemctl`; one background-job helper
       instead of three.
-- [ ] `app.js`: one window (modal) helper instead of six, one "players are online — continue?"
-      step instead of five, per-game join instructions and actions sent by the server, and the
-      file split into a few modules. Move inline styles into the stylesheet, which also lets the
+- [x] `app.js`: one window helper instead of six hand-built ones (every window now closes on
+      Escape, a click outside or ✕, and is announced as a dialog), one "players are online —
+      continue?" step instead of five, the card buttons in one table. *(2026-10-17)*
+- [ ] `app.js`: per-game join instructions and actions sent by the server, and the file split
+      into a few modules. Move inline styles into the stylesheet, which also lets the
       security policy drop `'unsafe-inline'` for styles.
 
 ### Dashboard

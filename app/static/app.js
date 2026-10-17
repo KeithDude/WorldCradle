@@ -71,34 +71,48 @@ const gamedash = (() => {
     return [`Connect to <code>${addr}</code>.`];
   }
 
-  function ensureJoinModal() {
-    let m = document.getElementById("join-modal");
-    if (m) return m;
-    m = document.createElement("div");
-    m.id = "join-modal"; m.hidden = true;
-    m.innerHTML = `
-      <div class="join-box">
-        <div class="join-head"><b id="join-title">How to join</b>
-          <button class="linkbtn" id="join-close">✕ close</button></div>
-        <div class="join-body" id="join-body"></div>
+  // ---- pop-up windows ----
+  // Every window over the page is made here: a title bar with ✕ close, and it also closes on
+  // Escape or a click outside it. Returns the window's body element.
+  //   size: "" (narrow), "medium" or "wide";  flush: the body lays out its own padding
+  //   headButtons: extra buttons in the title bar;  onClose: called once it has closed
+  function openModal({ id, title, bodyHtml = "", headButtons = "", size = "", flush = false, onClose }) {
+    closeModal(id);
+    const m = document.createElement("div");
+    m.id = id;
+    m.className = "modal";
+    m.innerHTML = `<div class="modal-box ${size}" role="dialog" aria-modal="true" aria-labelledby="${id}-title">
+        <div class="modal-head"><b id="${id}-title"></b>
+          <span>${headButtons}<button class="linkbtn" data-close>✕ close</button></span></div>
+        <div class="modal-body${flush ? " flush" : ""}">${bodyHtml}</div>
       </div>`;
+    m.querySelector(`#${id}-title`).textContent = title;
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    const close = () => {
+      m.remove();
+      document.removeEventListener("keydown", onKey);
+      if (onClose) onClose();
+    };
+    m.addEventListener("click", (e) => { if (e.target === m || e.target.closest("[data-close]")) close(); });
+    document.addEventListener("keydown", onKey);
+    m.closeModal = close;
     document.body.appendChild(m);
-    m.querySelector("#join-close").onclick = () => { m.hidden = true; };
-    m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; });
-    return m;
+    m.querySelector("[data-close]").focus();
+    return m.querySelector(".modal-body");
+  }
+
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m && m.closeModal) m.closeModal();
   }
 
   function openJoin(info) {
-    const m = ensureJoinModal();
     const addr = esc(`${joinHost()}:${info.port}`);   // goes into innerHTML via joinSteps
-    document.getElementById("join-title").textContent = "Join — " + info.name;
-    const steps = joinSteps(info.kind, info.srvname, addr)
-      .map((s) => `<li>${s}</li>`).join("");
-    document.getElementById("join-body").innerHTML = `
+    const steps = joinSteps(info.kind, info.srvname, addr).map((s) => `<li>${s}</li>`).join("");
+    openModal({ id: "join-modal", title: "Join — " + info.name, bodyHtml: `
       ${info.srvname ? `<p class="join-srv">Server name: <b>${esc(info.srvname)}</b></p>` : ""}
       <p class="join-addr">Address: <code>${addr}</code></p>
-      <ol class="join-steps">${steps}</ol>`;
-    m.hidden = false;
+      <ol class="join-steps">${steps}</ol>` });
   }
 
   function wireJoin() {
@@ -238,136 +252,106 @@ const gamedash = (() => {
 
   const postAction = (body) => api.post("/admin/action", body);
 
-  async function doAction(key, action, btn) {
-    // player-targeted actions
-    if (action === "kick" || action === "ban") {
-      const name = (btn && btn.dataset.name) || "this player";
-      const target = btn && btn.dataset.target;
-      if (!target) { toast("No player ID available to " + action + ".", true); return; }
-      if (!confirm(`${action === "ban" ? "BAN" : "Kick"} ${name}?`)) return;
-      const r = await postAction({ key, action, target });
-      if (!r) return;
-      if (r.data.ok) toast(r.data.message || "Done."); else toast(r.data.error || "Failed.", true);
-      setTimeout(refreshAdminNow, 800);
-      return;
+  // Tell the owner how a request went: the server's own message, or a fallback.
+  const report = (res, done, failed) =>
+    toast(res.data.ok ? (res.data.message || done) : (res.data.error || failed), !res.data.ok);
+
+  // A change that would disconnect players is first sent without `confirm`. If anyone is on, the
+  // server answers 409 with who; the owner is asked, and only then is it sent again with
+  // confirm. `send(confirmed)` makes the request. Returns the final answer, or null.
+  async function withPlayerCheck(send, question) {
+    let res = await send(false);
+    if (res && res.status === 409 && res.data.confirm_required && res.data.players != null) {
+      const who = (res.data.names || []).length ? "\n\nOnline: " + res.data.names.join(", ") : "";
+      if (!confirm(`⚠ ${res.data.players} player(s) ONLINE — ${question}${who}`)) {
+        toast("Cancelled — players are online.", true);
+        return null;
+      }
+      res = await send(true);
     }
-    if (action === "update") {
-      const appId = btn.dataset.app;
+    return res;
+  }
+
+  // the server's full name, from its card (for window titles and questions)
+  const cardName = (btn, key) => (btn && btn.closest(".card") && btn.closest(".card").dataset.name) || key;
+  const refreshSoon = (ms = 800) => setTimeout(refreshAdminNow, ms);
+
+  async function playerAction(key, btn, action) {
+    if (!btn.dataset.target) { toast(`No player ID available to ${action}.`, true); return; }
+    if (!confirm(`${action === "ban" ? "BAN" : "Kick"} ${btn.dataset.name || "this player"}?`)) return;
+    const res = await postAction({ key, action, target: btn.dataset.target });
+    if (res) { report(res, "Done.", "Failed."); refreshSoon(); }
+  }
+
+  // What the card buttons do. Anything not listed (start, stop, restart, save) is sent as it is.
+  const ACTIONS = {
+    kick: (key, btn) => playerAction(key, btn, "kick"),
+    ban: (key, btn) => playerAction(key, btn, "ban"),
+    reach: (key) => openReach(key),
+    chat: (key, btn) => openChat(key, cardName(btn, key)),
+    logs: (key, btn) => openLogs(key, cardName(btn, key)),
+    editscript: (key, btn) => openScriptEditor(key, cardName(btn, key)),
+    async update(key, btn) {
       const gname = btn.dataset.gname || "this game";
       if (!confirm(`Update ${gname}?\n\nThis STOPS the server(s), runs the Steam update, then restarts — a few minutes of downtime (ARK can take longer).`)) return;
-      const postUpd = (body) => api.post("/admin/updates/apply", body);
-      let res = await postUpd({ app: appId, confirm: false });
-      if (!res) return;
-      if (res.status === 409 && res.data.confirm_required) {
-        const who = res.data.names && res.data.names.length ? "\n\nOnline: " + res.data.names.join(", ") : "";
-        if (!confirm(`⚠ ${res.data.players} player(s) ONLINE — they'll be disconnected. Update ${gname} anyway?${who}`)) {
-          toast("Cancelled — players online.", true); return;
-        }
-        res = await postUpd({ app: appId, confirm: true });
-        if (!res) return;
-      }
-      toast(res.data.ok ? (res.data.message || "Update started.") : (res.data.error || "Update failed."), !res.data.ok);
-      setTimeout(refreshAdminNow, 1000);
-      return;
-    }
-    if (action === "removesrv") {
-      const c = btn && btn.closest(".card");
-      const nm = c && c.querySelector("h2") ? c.querySelector("h2").textContent.trim() : key;
-      if (!confirm(`Remove server "${nm}"?\n\nStops it and deletes its gamedash unit. Save data on disk is left alone.`)) return;
-      const r = await api.post("/admin/servers/remove", { key });
-      if (!r) return;
-      const d = r.data;
-      toast(d.ok ? (d.message || "Removed.") : (d.error || "Remove failed."), !d.ok);
-      setTimeout(refreshAdminNow, 800);
-      return;
-    }
-    if (action === "reach") { openReach(key); return; }
-    if (action === "chat" || action === "logs" || action === "editscript") {
-      const c = btn && btn.closest(".card");
-      const h = c && c.querySelector("h2");
-      const name = h ? h.textContent.trim() : key;
-      ({ chat: openChat, logs: openLogs, editscript: openScriptEditor }[action])(key, name);
-      return;
-    }
-
-    if (action === "kill") {
-      const card = btn && btn.closest(".card");
-      const nm = (card && card.querySelector("h2")) ? card.querySelector("h2").textContent.trim() : key;
-      if (!confirm(`⚠ FORCE STOP "${nm}" — NO SAVE\n\n` +
+      const res = await withPlayerCheck(
+        (confirmed) => api.post("/admin/updates/apply", { app: btn.dataset.app, confirm: confirmed }),
+        `they'll be disconnected. Update ${gname} anyway?`);
+      if (res) { report(res, "Update started.", "Update failed."); refreshSoon(1000); }
+    },
+    async removesrv(key, btn) {
+      if (!confirm(`Remove server "${cardName(btn, key)}"?\n\nStops it and deletes its gamedash unit. Save data on disk is left alone.`)) return;
+      const res = await api.post("/admin/servers/remove", { key });
+      if (res) { report(res, "Removed.", "Remove failed."); refreshSoon(); }
+    },
+    async kill(key, btn) {
+      if (!confirm(`⚠ FORCE STOP "${cardName(btn, key)}" — NO SAVE\n\n` +
         `This stops the server IMMEDIATELY. Everything since the last ` +
         `autosave is LOST. Use this only if the server is frozen, or to intentionally ` +
         `discard recent changes (e.g. to roll back).\n\nForce stop without saving?`)) return;
-      let res = await postAction({ key, action: "kill", confirm: false });
-      if (!res) return;
-      if (res.status === 409 && res.data.confirm_required) {
-        const who = res.data.names && res.data.names.length ? "\n\nOnline: " + res.data.names.join(", ") : "";
-        if (!confirm(`⚠ ${res.data.players} player(s) ONLINE — they'll be disconnected with NO SAVE. Force stop anyway?${who}`)) {
-          toast("Cancelled — players online.", true); return;
-        }
-        res = await postAction({ key, action: "kill", confirm: true });
-        if (!res) return;
-      }
-      toast(res.data.ok ? (res.data.message || "Killed.") : (res.data.error || "Kill failed."), !res.data.ok);
-      setTimeout(refreshAdminNow, 800);
-      return;
-    }
-
-    let message = "";
-    if (action === "broadcast") {
-      message = prompt("Message to broadcast to players on this server:");
+      const res = await withPlayerCheck((confirmed) => postAction({ key, action: "kill", confirm: confirmed }),
+        "they'll be disconnected with NO SAVE. Force stop anyway?");
+      if (res) { report(res, "Force-stopped.", "Force stop failed."); refreshSoon(); }
+    },
+    async broadcast(key) {
+      const message = prompt("Message to broadcast to players on this server:");
       if (!message) return;
-    }
-    let res = await postAction({ key, action, message, confirm: false });
-    if (!res) return;
-    if (res.status === 409 && res.data.confirm_required) {
-      const who = res.data.names && res.data.names.length
-        ? "\n\nOnline: " + res.data.names.join(", ") : "";
-      const ok = confirm(
-        `⚠ ${res.data.players} player(s) are ONLINE.\n` +
-        `Really ${action} this server?${who}`);
-      if (!ok) { toast("Cancelled — players are online.", true); return; }
-      res = await postAction({ key, action, message, confirm: true });
-      if (!res) return;
-    }
-    if (res.data.ok) {
-      toast(res.data.message || "Done.");
-    } else {
-      toast(res.data.error || "Action failed.", true);
-    }
-    setTimeout(refreshAdminNow, 800);  // reflect new state promptly
+      const res = await postAction({ key, action: "broadcast", message });
+      if (res) report(res, "Sent.", "Couldn't send the message.");
+    },
+  };
+
+  async function doAction(key, action, btn) {
+    if (ACTIONS[action]) { await ACTIONS[action](key, btn); return; }
+    // stop and restart ask first if players are on
+    const res = await withPlayerCheck((confirmed) => postAction({ key, action, confirm: confirmed }),
+      `really ${action} this server?`);
+    if (res) { report(res, "Done.", "Action failed."); refreshSoon(); }
   }
 
-  // ---- live chat panel (ARK GetChat) ----
-  const chatState = { key: null, name: "", open: false };
+  // ---- live chat window (ARK) ----
+  const chat = { key: null, open: false };
 
-  function ensureChatModal() {
-    let m = document.getElementById("chat-modal");
-    if (m) return m;
-    m = document.createElement("div");
-    m.id = "chat-modal";
-    m.hidden = true;
-    m.innerHTML = `
-      <div class="chat-box">
-        <div class="chat-head"><b id="chat-title">Chat</b>
-          <button class="linkbtn" id="chat-close">✕ close</button></div>
-        <div class="chat-log" id="chat-log"></div>
-        <form class="chat-send" id="chat-send">
-          <input type="text" id="chat-input" placeholder="Send a server message…" autocomplete="off">
+  function openChat(key, name) {
+    chat.key = key;
+    chat.open = true;
+    const body = openModal({ id: "chat-modal", title: "Chat — " + name, size: "medium", flush: true,
+      onClose: () => { chat.open = false; },
+      bodyHtml: `<div class="chat-log" id="chat-log">
+          <div class="chat-line muted">Listening for new chat… (only messages sent from now on appear)</div></div>
+        <form class="chat-send">
+          <input type="text" placeholder="Send a server message…" autocomplete="off">
           <button class="btn" type="submit">Send</button>
-        </form>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector("#chat-close").onclick = closeChat;
-    m.addEventListener("click", (e) => { if (e.target === m) closeChat(); });
-    m.querySelector("#chat-send").addEventListener("submit", (e) => {
+        </form>` });
+    body.querySelector("form").addEventListener("submit", (e) => {
       e.preventDefault();
-      const inp = document.getElementById("chat-input");
-      const msg = inp.value.trim();
-      if (!msg) return;
-      inp.value = "";
-      postAction({ key: chatState.key, action: "broadcast", message: msg });
+      const input = body.querySelector("input");
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = "";
+      postAction({ key: chat.key, action: "broadcast", message });
     });
-    return m;
+    pollChat();
   }
 
   function appendChat(text) {
@@ -385,53 +369,25 @@ const gamedash = (() => {
   }
 
   async function pollChat() {
-    if (!chatState.open) return;
-    const r = await postAction({ key: chatState.key, action: "chat" });
+    if (!chat.open) return;
+    const r = await postAction({ key: chat.key, action: "chat" });
     if (r && r.data && r.data.ok && r.data.chat) appendChat(r.data.chat);
-    if (chatState.open) setTimeout(pollChat, 4000);
-  }
-
-  function openChat(key, name) {
-    const m = ensureChatModal();
-    chatState.key = key; chatState.name = name; chatState.open = true;
-    document.getElementById("chat-title").textContent = "Chat — " + name;
-    document.getElementById("chat-log").innerHTML =
-      '<div class="chat-line muted">Listening for new chat… (only messages sent from now on appear)</div>';
-    m.hidden = false;
-    pollChat();
-  }
-
-  function closeChat() {
-    chatState.open = false;
-    const m = document.getElementById("chat-modal");
-    if (m) m.hidden = true;
+    if (chat.open) setTimeout(pollChat, 4000);
   }
 
   // ---- "Can friends connect?" (router ports + reachability) ----
   async function openReach(key) {
-    let m = document.getElementById("reach-modal");
-    if (m) m.remove();
-    m = document.createElement("div");
-    m.id = "reach-modal";
-    m.innerHTML = `<div class="join-box" role="dialog" aria-modal="true">
-        <div class="join-head"><b id="reach-title">Can friends connect?</b>
-          <button class="linkbtn" id="reach-close">✕ close</button></div>
-        <div class="join-body" id="reach-body"><p class="muted">Checking… this takes a few seconds.</p></div>
-      </div>`;
-    document.body.appendChild(m);
-    const close = () => m.remove();
-    m.querySelector("#reach-close").onclick = close;
-    m.addEventListener("click", (e) => { if (e.target === m) close(); });
+    const body = openModal({ id: "reach-modal", title: "Can friends connect?", size: "medium",
+      bodyHtml: `<p class="muted">Checking… this takes a few seconds.</p>` });
     let d = null;
     try {
       const r = await api.get(`/admin/servers/reach?key=${encodeURIComponent(key)}`);
       if (!r) return;
       d = r.data;
     } catch (e) { /* handled below */ }
-    const body = document.getElementById("reach-body");
-    if (!body) return;
+    if (!body.isConnected) return;   // closed while it was checking
     if (!d || !d.ok) { body.textContent = (d && d.error) || "The check couldn't be run. Try again in a moment."; return; }
-    document.getElementById("reach-title").textContent = "Can friends connect? — " + d.name;
+    document.getElementById("reach-modal-title").textContent = "Can friends connect? — " + d.name;
     const verdict = {
       yes: d.evidence === "steam"
         ? `<p class="reach-v good">✅ <b>Looks good.</b> Steam's public server list shows this server at your address — a strong sign that people outside your home can find and join it. If a friend still can't get in, compare your router's rules with the list below.</p>`
@@ -460,34 +416,22 @@ const gamedash = (() => {
   }
 
   // ---- per-server log viewer ----
-  const logsState = { key: null };
+  const logs = { key: null };
 
-  function ensureLogsModal() {
-    let m = document.getElementById("logs-modal");
-    if (m) return m;
-    m = document.createElement("div");
-    m.id = "logs-modal"; m.hidden = true;
-    m.innerHTML = `
-      <div class="logs-box">
-        <div class="logs-head"><b id="logs-title">Logs</b>
-          <span>
-            <button class="ctl" id="logs-refresh">Refresh</button>
-            <button class="linkbtn" id="logs-close">✕ close</button>
-          </span></div>
-        <pre class="logs-body" id="logs-body"></pre>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector("#logs-close").onclick = () => { m.hidden = true; };
-    m.querySelector("#logs-refresh").onclick = refreshLogs;
-    m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; });
-    return m;
+  function openLogs(key, name) {
+    logs.key = key;
+    openModal({ id: "logs-modal", title: "Logs — " + name, size: "wide", flush: true,
+      headButtons: `<button class="ctl" id="logs-refresh">Refresh</button>`,
+      bodyHtml: `<pre class="logs-body" id="logs-body">Loading…</pre>` });
+    document.getElementById("logs-refresh").onclick = refreshLogs;
+    refreshLogs();
   }
 
   async function refreshLogs() {
     const body = document.getElementById("logs-body");
     if (!body) return;
     try {
-      const r = await api.get(`/admin/logs/${encodeURIComponent(logsState.key)}?lines=400`);
+      const r = await api.get(`/admin/logs/${encodeURIComponent(logs.key)}?lines=400`);
       if (!r) return;
       const d = r.data;
       body.textContent = d.ok ? (d.text || "(empty)") : ("Error: " + (d.error || "failed"));
@@ -495,73 +439,40 @@ const gamedash = (() => {
     } catch (e) { body.textContent = "Failed to load logs."; }
   }
 
-  function openLogs(key, name) {
-    const m = ensureLogsModal();
-    logsState.key = key;
-    document.getElementById("logs-title").textContent = "Logs — " + name;
-    document.getElementById("logs-body").textContent = "Loading…";
-    m.hidden = false;
-    refreshLogs();
-  }
-
   // ---- launch-script editor ----
-  const scriptState = { key: null };
-
-  function ensureScriptModal() {
-    let m = document.getElementById("script-modal");
-    if (m) return m;
-    m = document.createElement("div");
-    m.id = "script-modal"; m.hidden = true;
-    m.innerHTML = `
-      <div class="logs-box">
-        <div class="logs-head"><b id="script-title">Launch script</b>
-          <span>
-            <button class="ctl go" id="script-save">Save</button>
-            <button class="linkbtn" id="script-close">✕ close</button>
-          </span></div>
-        <p class="muted" id="script-path" style="font-size:.75rem;margin:.2rem 0"></p>
-        <textarea class="script-body" id="script-body" spellcheck="false" autocomplete="off" wrap="off"></textarea>
-        <p class="muted" style="font-size:.75rem">Changes take effect on the next start/restart of this server.</p>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector("#script-close").onclick = () => { m.hidden = true; };
-    m.querySelector("#script-save").onclick = saveScript;
-    m.addEventListener("click", (e) => { if (e.target === m) m.hidden = true; });
-    return m;
-  }
+  const script = { key: null };
 
   async function openScriptEditor(key, name) {
-    const m = ensureScriptModal();
-    scriptState.key = key;
-    document.getElementById("script-title").textContent = "Launch script — " + name;
-    document.getElementById("script-path").textContent = "";
-    const body = document.getElementById("script-body");
-    body.value = "Loading…"; body.disabled = true;
-    m.hidden = false;
+    script.key = key;
+    const body = openModal({ id: "script-modal", title: "Launch script — " + name, size: "wide", flush: true,
+      headButtons: `<button class="ctl go" id="script-save">Save</button>`,
+      bodyHtml: `<p class="muted script-path" id="script-path"></p>
+        <textarea class="script-body" id="script-body" spellcheck="false" autocomplete="off" wrap="off" disabled>Loading…</textarea>
+        <p class="muted script-note">Changes take effect on the next start/restart of this server.</p>` });
+    document.getElementById("script-save").onclick = saveScript;
+    const text = body.querySelector("textarea");
     try {
       const r = await api.get(`/admin/servers/script?key=${encodeURIComponent(key)}`);
       if (!r) return;
-      const d = r.data;
-      if (d.ok) {
-        body.value = d.content; body.disabled = false;
-        document.getElementById("script-path").textContent = d.path;
+      if (r.data.ok) {
+        text.value = r.data.content;
+        text.disabled = false;
+        body.querySelector("#script-path").textContent = r.data.path;
       } else {
-        body.value = ""; body.disabled = true;
-        toast(d.error || "Can't edit this server's script.", true);
-        m.hidden = true;
+        toast(r.data.error || "Can't edit this server's script.", true);
+        closeModal("script-modal");
       }
-    } catch (e) { body.value = ""; toast("Failed to load script.", true); }
+    } catch (e) { toast("Failed to load script.", true); closeModal("script-modal"); }
   }
 
   async function saveScript() {
-    const body = document.getElementById("script-body");
-    if (!scriptState.key || body.disabled) return;
+    const text = document.getElementById("script-body");
+    if (!script.key || !text || text.disabled) return;
     try {
-      const r = await api.post("/admin/servers/script", { key: scriptState.key, content: body.value });
+      const r = await api.post("/admin/servers/script", { key: script.key, content: text.value });
       if (!r) return;
-      const d = r.data;
-      toast(d.ok ? (d.message || "Saved.") : (d.error || "Save failed."), !d.ok);
-      if (d.ok) document.getElementById("script-modal").hidden = true;
+      report(r, "Saved.", "Save failed.");
+      if (r.data.ok) closeModal("script-modal");
     } catch (e) { toast("Save failed.", true); }
   }
 
@@ -625,17 +536,11 @@ const gamedash = (() => {
       : "\n\n(Map save only — the shared cluster is left untouched.)");
     if (!confirm(`Restore "${name}"?\n\nThis STOPS the server, snapshots the current save, then overwrites it with this backup, and restarts. Progress since this backup will be replaced.${scope}`)) return;
     const body = { key: section.dataset.key, name, include_cluster: incl };
-    let r = await api.post("/admin/servers/restore", { ...body, confirm: false });
+    const r = await withPlayerCheck(
+      (confirmed) => api.post("/admin/servers/restore", { ...body, confirm: confirmed }),
+      "they'll be disconnected by the restore. Proceed?");
     if (!r) return;
-    if (r.status === 409 && r.data.confirm_required) {
-      const who = r.data.names && r.data.names.length ? "\n\nOnline: " + r.data.names.join(", ") : "";
-      if (!confirm(`⚠ ${r.data.players} player(s) ONLINE — they'll be disconnected by the restore. Proceed?${who}`)) {
-        toast("Cancelled — players online.", true); return;
-      }
-      r = await api.post("/admin/servers/restore", { ...body, confirm: true });
-      if (!r) return;
-    }
-    toast(r.data.ok ? (r.data.message || "Restored.") : (r.data.error || "Restore failed."), !r.data.ok);
+    report(r, "Restored.", "Restore failed.");
     bkLoad(section);
   }
 
@@ -790,7 +695,7 @@ const gamedash = (() => {
         updRow = `<dt title="Whether this game has a newer version available (checked every 6 hours)">version</dt><dd>${cell}${btnUpd}</dd>`;
       }
       return head + `
-      <div class="card ${v.online ? "" : "off"}" data-key="${esc(v.key)}">
+      <div class="card ${v.online ? "" : "off"}" data-key="${esc(v.key)}" data-name="${esc(v.name)}">
         ${joinButton(v)}
         ${cardHead(v)}
         ${playersBlock(v)}
