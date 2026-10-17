@@ -402,6 +402,23 @@ def satisfactory_login(port: int, password: str,
     return None
 
 
+def satisfactory_claim(port: int, server_name: str, admin_password: str,
+                       join_password: str = "") -> str | None:
+    """Claim a server nobody has claimed yet (what the game's Server Manager asks the first
+    player to do): name it, set its admin password and, if given, its join password. Returns
+    an Administrator token, or None if it is already claimed or can't be reached."""
+    r = _sf_api(port, "PasswordlessLogin", data={"minimumPrivilegeLevel": "InitialAdmin"})
+    initial = (r or {}).get("data", {}).get("authenticationToken")
+    if not initial:
+        return None                        # already claimed (or not answering)
+    r = _sf_api(port, "ClaimServer", token=initial,
+                data={"serverName": server_name, "adminPassword": admin_password})
+    token = (r or {}).get("data", {}).get("authenticationToken")
+    if token and join_password:
+        _sf_api(port, "SetClientPassword", token=token, data={"password": join_password})
+    return token
+
+
 def satisfactory_state(port: int, token: str) -> dict | None:
     """QueryServerState (needs an admin/client Bearer token). Returns the
     serverGameState dict (numConnectedPlayers, playerLimit, ...) or None."""

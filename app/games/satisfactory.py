@@ -7,6 +7,7 @@ import re
 import config
 import monitor
 import registry
+from applog import app_log
 from games.base import ActionError, empty_probe
 from games.simple import SimpleGame
 
@@ -29,7 +30,7 @@ class SatisfactoryGame(SimpleGame):
     stop_only_saves = True       # saved through its admin API first: SIGINT alone doesn't save
     install_gb = 3
     ram_note = "about 4-8 GB of memory, more for very large factories"
-    about = "Factory building. You name the server and set its passwords in-game after first connecting."
+    about = "Factory building. Start the game itself from the in-game Server Manager after first connecting."
     steam_app = 1690800
     update_script = "UpdateSatisfactoryServer.sh"
     actions = {"save"}           # through its HTTPS API
@@ -41,9 +42,10 @@ class SatisfactoryGame(SimpleGame):
          "default": True, "help": "Unticked launches with -DisableSeasonalEvents."},
     ]
     provision_hint = ("Satisfactory — a new instance from the shared install with its own ports "
-                      "and private save folder. The game has few launch options: the server name, "
-                      "admin and player passwords, session, autosave interval and auto-pause are "
-                      "all set in-game (Server Manager) after you first connect and claim it.")
+                      "and private save folder. Once it is running, RealmCradle claims it for you: it "
+                      "gets this server's name and the shared admin and join passwords. Start a new "
+                      "game or load a save in-game (Server Manager); the autosave interval and "
+                      "auto-pause are set there too.")
     provision_note = ("Never load the SAME save file on two running instances — both would write "
                       "to it at once and corrupt it. It needs both its ports forwarded (game "
                       "UDP+TCP and reliable TCP).")
@@ -102,6 +104,13 @@ class SatisfactoryGame(SimpleGame):
             return tok
         pw = registry.game_admin_password()
         tok = monitor.satisfactory_login(s.game_port, pw) if pw else None
+        if not tok and pw:
+            # a new server nobody has claimed yet: claim it with the shared passwords, so its
+            # owner doesn't have to do it in the game before the dashboard can see it
+            tok = monitor.satisfactory_claim(s.game_port, s.server_name or s.name, pw,
+                                             registry.load_secrets().get("GAME_SERVER_PASSWORD", ""))
+            if tok:
+                app_log.info("claimed the new Satisfactory server %s with the shared passwords", s.key)
         if tok:
             self._tokens[s.game_port] = tok
         return tok

@@ -184,8 +184,19 @@ def main(argv) -> int:
     finally:
         # 5. clean up
         if any(s for s in d.feed()["servers"] if s == key):
+            saves = d.get(f"/admin/servers/backups?key={key}").get("save_paths", [])
             r = d.post("/admin/servers/remove", {"key": key})
             step("remove server", r.get("ok", False), r.get("message") or r.get("error", ""))
+            # Removing keeps a server's world, so a later test of the same game would find it in the
+            # way: delete the test server's own folder (named after it) — never a shared one.
+            names = {key, "rc_" + key.replace("-", "_")}
+            for path in saves:
+                parts = path.rstrip("/").split("/")
+                hits = [i for i, part in enumerate(parts) if part in names]
+                if hits and os.path.isdir("/".join(parts[:hits[0] + 1])):
+                    own = "/".join(parts[:hits[0] + 1])
+                    subprocess.run(["rm", "-rf", "--", own])
+                    say(f"✓ deleted the test server's world ({own})")
         # a game that needs its own copy per server leaves that copy behind on removal (some keep
         # their world in it) — delete the test's own copy
         for leftover in glob.glob(os.path.expanduser(f"~/*-{key}")):
