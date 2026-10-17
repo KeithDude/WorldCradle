@@ -173,6 +173,10 @@ on real servers before it ships:
 - [x] **Each alert service checked against its own documentation** and fixed where it differed
       (Matrix room IDs, email SSL port and headers, Telegram/Matrix/Slack error reasons, Discord
       mentions, Slack escaping, Teams card, ntfy titles, retry on "too many"). *(2026-10-16)*
+- [x] **ntfy and Gotify tested against the real servers** (their official releases, run privately on
+      the test VM): test / down / recovered messages arrive with the right titles (accents and emoji
+      kept), priorities and tags; a protected ntfy topic refuses a missing or wrong token, Gotify a
+      wrong token, each with a plain message. *(2026-10-17)*
 - [ ] **Test the alerts end to end with real accounts.** Each service is tested against stand-in
       servers, and the Settings page was tried in a browser against a local receiver — but no message
       has yet reached a real Discord / Telegram / email / Slack / Teams / Pushover / ntfy / Gotify /
