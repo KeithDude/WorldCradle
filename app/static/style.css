@@ -45,11 +45,13 @@ main { padding: 1rem; max-width: 1100px; margin: 0 auto; }
   display: grid; gap: .8rem;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
+/* the game's name above its servers: a clear divider between games */
 .group-head {
   grid-column: 1 / -1;
-  margin: .6rem 0 0; padding-bottom: .25rem;
-  font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--muted); border-bottom: 1px solid var(--line);
+  margin: 1.4rem 0 .1rem; padding: .45rem .8rem;
+  font-size: 1.05rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--text); background: var(--panel2);
+  border-left: 4px solid var(--accent); border-radius: .4rem;
 }
 .group-head:first-child { margin-top: 0; }
 
