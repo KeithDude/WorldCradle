@@ -57,7 +57,8 @@ class ValheimGame(SimpleGame):
                       "you; the join password is the shared one. Leave the world modifiers on "
                       "“default” for a standard world.")
     extra_fields = (
-        [{"name": "world", "label": "World name (3-20 letters/digits)", "placeholder": "NewWorld"},
+        [{"name": "world", "label": "World name (3-20 letters/digits) — blank = from the server's name",
+          "placeholder": "NewWorld", "help": "An existing world of this name is loaded as-is."},
          {"name": "savedir", "label": "Save directory (blank = default worlds_local)",
           "placeholder": "~/valheim-saves/NewWorld"},
          {"name": "public", "label": "List in the public server browser", "type": "checkbox",
@@ -130,6 +131,9 @@ class ValheimGame(SimpleGame):
     @staticmethod
     def _world(spec) -> str:
         world = (spec.get("world") or "").strip()
+        if not world:   # from the server's name (or key): letters, digits and _ only
+            world = re.sub(r"[^A-Za-z0-9_]", "", (spec.get("name") or spec["key"]).replace(" ", "_").replace("-", "_"))[:20]
+            world = world if len(world) >= 3 else "World_" + world
         if not re.match(r"^[A-Za-z0-9_]{3,20}$", world):
             raise ActionError("World name must be 3-20 letters, digits, or underscores.")
         return world
