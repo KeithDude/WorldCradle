@@ -1,0 +1,25 @@
+{
+ "fields": {
+  "a2s": false,
+  "exec_start": "<ROOT>/installs/satisfactory/gamedash-test-run.sh",
+  "game_port": 7779,
+  "install_dir": "<ROOT>/installs/satisfactory",
+  "join_port": 7779,
+  "kill_signal": "SIGINT",
+  "proc_match": "-Port=7779",
+  "query_port": 8889,
+  "rcon_port": null,
+  "save_root": "<ROOT>/installs/satisfactory/gamedash-homes/test/.config/Epic/FactoryGame/Saved/SaveGames",
+  "server_name": "Test World",
+  "steam_app": 1690800,
+  "timeout_stop": 90,
+  "working_dir": "<ROOT>/installs/satisfactory"
+ },
+ "files": {
+  "installs/satisfactory/gamedash-test-run.sh": "#!/bin/sh\nexport HOME=\"<ROOT>/installs/satisfactory/gamedash-homes/test\"\nmkdir -p \"$HOME\"\ncd \"<ROOT>/installs/satisfactory\" || exit 1\nexec ./FactoryServer.sh -Port=7779 -ReliablePort=8889 -unattended -LOG=gamedash-test.log \\\n    '-ini:Game:[/Script/Engine.GameSession]:MaxPlayers=4'\n"
+ },
+ "ports": {
+  "game": 7779,
+  "query": 8889
+ }
+}

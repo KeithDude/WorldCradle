@@ -1,0 +1,27 @@
+{
+ "fields": {
+  "a2s": false,
+  "exec_start": "<ROOT>/installs/valheim/gamedash-test-run.sh",
+  "game_port": 2460,
+  "install_dir": "<ROOT>/installs/valheim",
+  "join_port": 2460,
+  "kill_signal": "SIGINT",
+  "log_path": "<ROOT>/installs/valheim/gamedash-test.log",
+  "proc_match": "-port 2460",
+  "query_port": 2461,
+  "rcon_port": null,
+  "save_root": "",
+  "server_name": "Test World",
+  "steam_app": 896660,
+  "timeout_stop": 60,
+  "working_dir": "<ROOT>/installs/valheim",
+  "world": "TestWorld"
+ },
+ "files": {
+  "installs/valheim/gamedash-test-run.sh": "#!/bin/sh\n# gamedash-managed Valheim world (vanilla).\n. <ROOT>/secrets.conf\nexport LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH\nexport SteamAppID=892970\nexec ./valheim_server.x86_64 -nographics -batchmode -logfile \"./gamedash-test.log\" -name \"Test World\" -port 2460 -world \"TestWorld\" -password \"${GAME_SERVER_PASSWORD}\" -public 0\n"
+ },
+ "ports": {
+  "game": 2460,
+  "query": 2461
+ }
+}

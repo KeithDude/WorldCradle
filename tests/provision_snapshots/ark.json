@@ -1,0 +1,29 @@
+{
+ "fields": {
+  "a2s": true,
+  "cluster_id": "gamedash",
+  "exec_start": "<ROOT>/installs/ark/gamedash-test-run.sh",
+  "exec_stop": "<ROOT>/installs/ark/gamedash-test-stop.sh",
+  "game_port": 7790,
+  "install_dir": "<ROOT>/installs/ark",
+  "join_port": 27030,
+  "proc_match": "TheIsland_WP?listen",
+  "query_port": 27030,
+  "rcon_password_ref": "GAME_ADMIN_PASSWORD",
+  "rcon_port": 27040,
+  "save_dir": "gd_test",
+  "server_name": "Test World",
+  "steam_app": 376030,
+  "timeout_stop": 130,
+  "working_dir": "<ROOT>/installs/ark"
+ },
+ "files": {
+  "installs/ark/gamedash-test-run.sh": "#!/bin/sh\n. <ROOT>/secrets.conf\nmkdir -p \"<ROOT>/installs/ark/cluster\"\ncd \"<ROOT>/installs/ark\" || exit 1\nexec ./ShooterGame/Binaries/Linux/ShooterGameServer \\\n  \"TheIsland_WP?listen?SessionName=Test World?MaxPlayers=10?ServerPassword=${GAME_SERVER_PASSWORD}?ServerAdminPassword=${GAME_ADMIN_PASSWORD}?Port=7790?QueryPort=27030?RCONEnabled=True?RCONPort=27040?AltSaveDirectoryName=gd_test?ServerPVE=True\" \\\n  -server -log -clusterid=gamedash -ClusterDirOverride=\"<ROOT>/installs/ark/cluster\" -NoTransferFromFiltering\n",
+  "installs/ark/gamedash-test-stop.sh": "#!/bin/sh\n. <ROOT>/secrets.conf\n\"<PYTHON>\" \"<APP>/arkstop.py\" 27040 \"$GAME_ADMIN_PASSWORD\"\n"
+ },
+ "ports": {
+  "game": 7790,
+  "query": 27030,
+  "rcon": 27040
+ }
+}

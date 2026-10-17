@@ -8,3 +8,4 @@ os.environ["GAMEDASH_HOME"] = _HOME           # read by app/paths.py when it is 
 os.environ["GAMEDASH_QUIET_LOG"] = "1"
 os.environ.setdefault("GAMEDASH_BACKUPS", os.path.join(_HOME, "backups"))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # tests/ helpers (provision_snapshots)
