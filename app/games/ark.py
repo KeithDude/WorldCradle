@@ -201,6 +201,7 @@ class ArkGame(SimpleGame):
         count = None
         resp = self.rcon_send(s, "ListPlayers")
         if resp is not None:
+            out["reachable"] = True        # its admin console answered (ARK Ascended has no Steam query)
             entries = monitor.parse_ark_players(resp)
             count = len(entries)
         info = monitor.a2s_info(s.query_port)
