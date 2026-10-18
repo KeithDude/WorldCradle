@@ -36,8 +36,11 @@ Last updated: 2026-10-15
 ### Installing should be as simple as possible
 - [x] One-step installer that asks **no questions** by default (only the computer's password); `--ask`
       to choose extras, `--minimal` to skip them. *(2026-10-15)*
-- [x] One-line "get and install": `curl -fsSL …/get.sh | bash` downloads WorldCradle and runs the
-      installer. *(2026-10-15 — works once the repository is public)*
+- [x] ~~One-line "get and install" (`get.sh | bash`)~~ — **retired 2026-10-18** (Keith): a script from
+      the internet asking for your password looks suspicious and isn't what Linux users expect.
+      Installing is now three plain steps where the only `sudo` is one you type: download
+      `worldcradle.deb` (the release also publishes it under that fixed name), `sudo apt install` it,
+      `worldcradle setup`.
 - [x] **Fresh-machine test, Ubuntu 22.04 desktop** — full install in 1 min 45 s, first-visit setup,
       sign-in, installing / running / removing a Linux game (Terraria) and a Windows-only one
       (V Rising, under 22.04's Wine 6.0) all worked. Seven problems found and fixed (see the
@@ -234,7 +237,7 @@ right before the repository is made public.
    - [x] `worldcradle setup` (same setup as `install.sh`), `worldcradle update` installs the newest
          release's package after checking its checksum and rolls back to the previous release if
          the new one doesn't answer; `worldcradle uninstall` and `worldcradle version` know about the
-         package; `get.sh` installs the package when a release exists. *(2026-10-16)*
+         package. *(2026-10-16)*
    - [x] Tested on the VM: the package's files run as a package install would (libraries built in
          the home folder, dashboard and backup services, every command). *(2026-10-16)*
    - [x] **Tested with apt for real** on the Ubuntu 26.04 VM: `apt install`, `worldcradle setup`
@@ -252,16 +255,16 @@ right before the repository is made public.
          CHANGELOG notes (`release.yml`). The tests workflow passes on GitHub (first run
          2026-10-17); the release workflow runs for the first time with the first tag. *(2026-10-16)*
    - [ ] **Sign releases** (beyond the checksum, which only proves the download is complete): sign
-         the package / checksum file so `worldcradle update` and `get.sh` can tell it came from the
+         the package / checksum file so `worldcradle update` (and people installing) can tell it came from the
          maintainer even if GitHub were compromised.
    - [ ] A desktop shortcut ("WorldCradle") that opens the dashboard, and running `worldcradle setup` for
          you when the package is installed from the Ubuntu App Center (no terminal at all).
 2. [ ] **WorldCradle apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
        `apt install worldcradle` after adding the repository once, and updates arrive with the
        computer's normal system updates (`apt upgrade`). **Wanted as a future update — not for the
-       first public release** (Keith, 2026-10-18; until then: `get.sh`, or the `.deb` from the
-       Releases page). Needs: a signing key kept as a GitHub secret, a publish step in `release.yml`,
-       `get.sh` adding the repository, and a way to keep `worldcradle update`'s automatic roll-back
+       first public release** (Keith, 2026-10-18; until then: the `.deb` from the Releases page).
+       Needs: a signing key kept as a GitHub secret, a publish step in `release.yml`, install
+       instructions for adding the repository, and a way to keep `worldcradle update`'s automatic roll-back
        when an update comes through `apt upgrade` instead.
 3. [ ] **Launchpad PPA** (`sudo add-apt-repository ppa:…/worldcradle`) — the most familiar route for
        Ubuntu users; Launchpad builds from source, which takes more packaging work.

@@ -6,25 +6,24 @@ manual route for systems the installer doesn't cover.
 
 ## Ways to install
 
-**1. The one line** (Ubuntu 22.04+ / Debian 12+):
+**1. The package** (Ubuntu 22.04+ / Debian 12+):
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/WorldCradle/main/get.sh | bash
-```
-It downloads the newest WorldCradle package from GitHub Releases, checks it against its published
-checksum, installs it with apt (asks for your computer's password), then runs `worldcradle setup`.
-Add `-s -- --minimal` after `bash` to leave out the optional extras (Java, Wine, fail2ban).
-
-**2. The package by hand:** download `worldcradle_<version>_all.deb` from the Releases page, then
-```
-sudo apt install ./worldcradle_<version>_all.deb
+wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+sudo apt update
+sudo apt install /tmp/worldcradle.deb
 worldcradle setup                     # as your normal user, not with sudo
 ```
+The address always gives the newest release. To check the download first, compare it with the
+release's `worldcradle.deb.sha256` (`sha256sum /tmp/worldcradle.deb`). Only the `sudo apt` step needs
+administrator rights: apt installs WorldCradle and the system packages the games need. Add
+`--no-install-recommends` to it to leave out the optional extras (Java, Wine, fail2ban). Each release
+also has the same package under its versioned name, `worldcradle_<version>_all.deb`.
 
-**3. From the source** (for development, or before a release exists): clone or download the
+**2. From the source** (for development, or before a release exists): clone or download the
 repository into your home folder, then `bash install.sh` in it. It installs the same system packages
 the package would, then runs the same setup.
 
-All three end the same way: the dashboard running at `https://<this computer>:8443/`, a one-time
+Both end the same way: the dashboard running at `https://<this computer>:8443/`, a one-time
 setup code for choosing your password in the browser, and the password friends need to join.
 
 ## What gets installed where

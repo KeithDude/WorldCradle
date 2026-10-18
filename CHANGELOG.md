@@ -13,11 +13,11 @@ footer of the dashboard when signed in.
 - **45 games** you can install and run from the dashboard (Windows-only servers run through Wine),
   plus any other server as a custom service. Which ones have been tried with real players:
   [docs/SUPPORTED_GAMES.md](docs/SUPPORTED_GAMES.md).
-- **One-step install** that asks no questions (only your computer's password) and checks first that
-  the computer can run WorldCradle. Shows a QR code to open the dashboard on a phone, and the password
-  your friends need to join.
-- **A WorldCradle package** (`.deb`) for Ubuntu and Debian: `sudo apt install ./worldcradle_….deb`, then
-  `worldcradle setup`. The one-line installer uses it, and `worldcradle update` installs new versions
+- **Simple install:** download the package, install it with `sudo apt`, then run `worldcradle setup`,
+  which asks no questions, checks first that the computer can run WorldCradle, and shows a QR code to
+  open the dashboard on a phone and the password your friends need to join.
+- **A WorldCradle package** (`.deb`) for Ubuntu and Debian: download it, `sudo apt install` it, then
+  `worldcradle setup` — the only `sudo` is the one you type. `worldcradle update` installs new versions
   of it (and puts the old one back if the new one doesn't start).
 - WorldCradle's Python libraries are **exact, checksum-verified versions**, so every install gets
   exactly what was tested.

@@ -11,14 +11,24 @@ for bigger games.
 
 ## 1. Install WorldCradle (about 2 minutes)
 
-Open a **terminal** on that computer (press `Ctrl` + `Alt` + `T` on Ubuntu) and paste this line:
+Open a **terminal** on that computer (press `Ctrl` + `Alt` + `T` on Ubuntu) and type these four
+lines, one at a time:
 
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/WorldCradle/main/get.sh | bash
+wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+sudo apt update
+sudo apt install /tmp/worldcradle.deb
+worldcradle setup
 ```
 
-It asks for your computer's password once (the one you log in with), checks the computer is
-suitable, installs what's needed and starts WorldCradle. When it's done it shows:
+1. downloads WorldCradle;
+2. and 3. install it, together with the system software the games need. These two start with
+   `sudo` because installing software needs administrator rights, so they ask for the password you
+   log in to this computer with (nothing appears as you type it — that's normal);
+4. sets WorldCradle up for your account and starts it — no `sudo`, no password. It checks the
+   computer is suitable first.
+
+When it's done it shows:
 
 - the **address** to open in your browser (and a QR code for your phone),
 - a **one-time setup code**,

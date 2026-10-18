@@ -1,6 +1,7 @@
 # Publishing a version: push a tag like v0.2.0 (VERSION must say 0.2.0 and CHANGELOG.md must have a
 # "## 0.2.0" section). This runs the tests, builds the package, and creates the GitHub release with
-# the package, its checksum, and that CHANGELOG section as the notes. `worldcradle update` and get.sh
+# the package (also as plain worldcradle.deb, so the install instructions' address never changes), its
+# checksum, and that CHANGELOG section as the notes. `worldcradle update` and the install instructions
 # install from these releases.
 name: release
 on:
@@ -44,4 +45,10 @@ jobs:
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*.deb dist/*.deb.sha256 --title "WorldCradle ${GITHUB_REF_NAME#v}" --notes-file notes.md
+        run: |
+          # the same package under a name that never changes:
+          #   https://github.com/<owner>/<repo>/releases/latest/download/worldcradle.deb
+          deb=$(ls dist/worldcradle_*_all.deb)
+          cp "$deb" dist/worldcradle.deb
+          (cd dist && sha256sum worldcradle.deb > worldcradle.deb.sha256)
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/*.deb.sha256 --title "WorldCradle ${GITHUB_REF_NAME#v}" --notes-file notes.md

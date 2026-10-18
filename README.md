@@ -38,16 +38,17 @@ full list and which games have been tested with real players.
   fail2ban; the launch-script editor is content-validated.
 
 ## Quick start
-One line in a terminal (once the repository is public):
+In a terminal (Ubuntu 22.04+ / Debian 12+):
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/WorldCradle/main/get.sh | bash
+wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+sudo apt update
+sudo apt install /tmp/worldcradle.deb
+worldcradle setup
 ```
-It installs the WorldCradle package (checked against its published checksum) and sets it up.
-(`curl -fsSL … | bash` works too where curl is installed; a fresh Ubuntu desktop only has wget.)
-
-Or install the package yourself — `sudo apt install ./worldcradle_<version>_all.deb`, then
-`worldcradle setup` — or, from a downloaded copy of the source, run `bash install.sh` in its folder.
-It prints the address to open and a one-time setup code. A step-by-step walk-through with
+`sudo apt` installs WorldCradle and the system packages the games need (that's the only step that
+needs administrator rights); `worldcradle setup` then sets it up for your account, as you — not with
+sudo. It prints the address to open and a one-time setup code. (From a downloaded copy of the source
+instead: `bash install.sh` in its folder.) A step-by-step walk-through with
 screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
 your password, then follow the *Getting started* checklist. Details and
@@ -59,7 +60,6 @@ worldcradle/
 ├── app/          all application code (Flask app, games/, templates/, static/ — the page code is static/js/)
 ├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
 ├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
-├── get.sh        one-line download + install (the package, or the source before a release exists)
 ├── install.sh    install from the source: system packages, then setup.sh
 ├── setup.sh      setup for your account (`worldcradle setup`)
 ├── bin/          the `worldcradle` command, its self-repairing Python environment, the computer checks
