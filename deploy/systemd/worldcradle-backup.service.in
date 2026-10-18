@@ -1,10 +1,10 @@
 [Unit]
-Description=RealmCradle — daily backup of all server saves
+Description=WorldCradle — daily backup of all server saves
 After=network-online.target
 
 [Service]
 Type=oneshot
-Environment=REALMCRADLE_HOME=__DATA__
+Environment=WORLDCRADLE_HOME=__DATA__
 WorkingDirectory=__CODE__/app
 ExecStart=__VENV__/bin/python __CODE__/app/backups.py all
 # don't pin the box if a backup is slow; saves are flushed per-server internally

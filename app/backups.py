@@ -39,7 +39,7 @@ BACKUP_ROOT = os.path.expanduser(config.load().get("backups_dir") or paths.DEFAU
 NAME_RE = re.compile(r"^[A-Za-z0-9._-]+\.tar\.gz$")
 KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")   # same shape as a server key
 _restore_lock = threading.Lock()                     # one restore at a time (shared staging dir)
-MANIFEST = "realmcradle-manifest.json"
+MANIFEST = "worldcradle-manifest.json"
 
 
 def _server(key: str):
@@ -324,7 +324,7 @@ def restore_backup(key: str, name: str, confirm: bool = False,
 def backup_all() -> dict:
     """Back up every server that has a known save location. Best-effort: a
     failure on one server is logged and the rest continue. Used by the daily
-    systemd timer (realmcradle-backup.timer)."""
+    systemd timer (worldcradle-backup.timer)."""
     results: dict[str, str] = {}
     for s in by_key().values():
         if not save_paths(s):
@@ -340,7 +340,7 @@ def backup_all() -> dict:
     failed = {k: v for k, v in results.items() if str(v).startswith("FAILED")}
     if failed:  # a backup that silently stops is worse than none — say so
         names = by_key()
-        alerts.notify("⚠️ realmcradle: backup FAILED",
+        alerts.notify("⚠️ worldcradle: backup FAILED",
                       "\n".join(f"{names[k].name if k in names else k}: {v[8:]}"
                                  for k, v in failed.items()), "bad")
     return results

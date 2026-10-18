@@ -1,4 +1,4 @@
-"""RealmCradle's own Source RCON client against a small fake server."""
+"""WorldCradle's own Source RCON client against a small fake server."""
 import socket
 import struct
 import threading

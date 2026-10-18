@@ -24,7 +24,7 @@ PERSPECTIVES = [["Both", "First and third person"], ["First", "First person only
 _TOKEN_RE = re.compile(r"^[A-Fa-f0-9]{32}$")
 
 def _server_id(key: str) -> str:
-    return "rc_" + key.replace("-", "_")
+    return "wc_" + key.replace("-", "_")
 
 
 class UnturnedGame(SimpleGame):

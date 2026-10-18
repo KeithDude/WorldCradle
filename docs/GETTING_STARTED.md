@@ -1,4 +1,4 @@
-# Getting started with RealmCradle
+# Getting started with WorldCradle
 
 From a fresh computer to friends playing on your server. No technical knowledge needed — you'll type
 a few lines into a terminal once, and do everything else in a web browser.
@@ -9,16 +9,16 @@ for bigger games.
 
 ---
 
-## 1. Install RealmCradle (about 2 minutes)
+## 1. Install WorldCradle (about 2 minutes)
 
 Open a **terminal** on that computer (press `Ctrl` + `Alt` + `T` on Ubuntu) and paste this line:
 
 ```
-wget -qO- https://raw.githubusercontent.com/KeithDude/RealmCradle/main/get.sh | bash
+wget -qO- https://raw.githubusercontent.com/KeithDude/WorldCradle/main/get.sh | bash
 ```
 
 It asks for your computer's password once (the one you log in with), checks the computer is
-suitable, installs what's needed and starts RealmCradle. When it's done it shows:
+suitable, installs what's needed and starts WorldCradle. When it's done it shows:
 
 - the **address** to open in your browser (and a QR code for your phone),
 - a **one-time setup code**,
@@ -65,7 +65,7 @@ asked to tick a box when you add a server.
 ## 5. Add a server
 
 Open **Add a server**, pick the game, give the server a name, and change any options you like — every
-game shows the options it really has. Leave the port boxes empty: RealmCradle picks free ones for you.
+game shows the options it really has. Leave the port boxes empty: WorldCradle picks free ones for you.
 Keep **start it now** ticked and press **Add server**.
 
 ![Adding a server](images/04-add-server.png)
@@ -84,14 +84,14 @@ forward, with step-by-step instructions, and checks whether it worked.
 ![Can friends connect?](images/05-can-friends-connect.png)
 
 > 🔒 **Only forward the ports it lists.** Never forward an "admin console" or other control port —
-> RealmCradle marks them "keep closed" everywhere. They control the server, and they're never meant to
+> WorldCradle marks them "keep closed" everywhere. They control the server, and they're never meant to
 > be reachable from the internet.
 
 **Test it yourself before telling friends:** turn on your phone's **Mobile Hotspot**, connect the
 computer you play on to that hotspot (not to your home Wi-Fi), and join the game using the address
 shown next to *Friends connect to*. If that works, it works for your friends too.
 
-Give your friends the address and the **join password** (type `realmcradle passwords` in a terminal to
+Give your friends the address and the **join password** (type `worldcradle passwords` in a terminal to
 see it again, or change it in **Settings → Game passwords**).
 
 ## 7. Get told when something goes wrong
@@ -105,21 +105,21 @@ server going down, a server that keeps crashing, or a backup that failed.
 
 | You want to… | In the dashboard | Or in a terminal |
 |---|---|---|
-| See if everything's running | the server cards | `realmcradle status` |
-| Restart a server | **Restart** on its card (it asks first if players are on) | `realmcradle server restart <name>` |
-| Back up or restore a world | **Backups** (a backup is also made every night) | `realmcradle backup <name>` / `realmcradle backup list <name>` |
+| See if everything's running | the server cards | `worldcradle status` |
+| Restart a server | **Restart** on its card (it asks first if players are on) | `worldcradle server restart <name>` |
+| Back up or restore a world | **Backups** (a backup is also made every night) | `worldcradle backup <name>` / `worldcradle backup list <name>` |
 | Message the players | **Message** on the card (games that support it) | — |
-| Forgot the dashboard password | — | `realmcradle reset-password` |
-| Update RealmCradle | — | `realmcradle update` |
-| Check alerts reach you | **Settings → Alerts → Test** | `realmcradle test-alert` |
-| Get help | — | `realmcradle help` |
+| Forgot the dashboard password | — | `worldcradle reset-password` |
+| Update WorldCradle | — | `worldcradle update` |
+| Check alerts reach you | **Settings → Alerts → Test** | `worldcradle test-alert` |
+| Get help | — | `worldcradle help` |
 
 ## If something goes wrong
 
-- **The page won't open:** type `realmcradle status` in a terminal on the RealmCradle computer — it shows
-  whether the dashboard is running and the right address. `realmcradle check` looks for common problems.
+- **The page won't open:** type `worldcradle status` in a terminal on the WorldCradle computer — it shows
+  whether the dashboard is running and the right address. `worldcradle check` looks for common problems.
 - **A friend can't join:** press **Can friends connect?** on the server's card and follow it.
 - **Still stuck?** Open an issue on GitHub with the **Bug report** form, and include the output of
-  `realmcradle version` (never include passwords).
+  `worldcradle version` (never include passwords).
 
 Which games have been tried with real players: [SUPPORTED_GAMES.md](SUPPORTED_GAMES.md).

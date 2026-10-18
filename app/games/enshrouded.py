@@ -88,4 +88,4 @@ class EnshroudedGame(WineGame):
         return os.path.join(server_dir, "savegame")
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"realmcradle-servers\\{spec['key']}\\{EXE}"
+        return f"worldcradle-servers\\{spec['key']}\\{EXE}"

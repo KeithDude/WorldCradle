@@ -1,0 +1,19 @@
+#!/bin/sh
+# worldcradle — command-line tools for WorldCradle. "worldcradle help" lists them.
+# A git checkout links ~/.local/bin/worldcradle here (setup.sh); the package installs /usr/bin/worldcradle.
+WORLDCRADLE_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
+# use the same data folder as the running dashboard
+if [ -z "${WORLDCRADLE_HOME:-}" ]; then
+    WORLDCRADLE_HOME="$(systemctl --user show worldcradle.service -p Environment --value 2>/dev/null \
+                     | tr ' ' '\n' | sed -n 's/^WORLDCRADLE_HOME=//p')"
+    [ -n "$WORLDCRADLE_HOME" ] || unset WORLDCRADLE_HOME
+fi
+. "$WORLDCRADLE_CODE/bin/worldcradle-env.sh"
+# "worldcradle setup" builds everything (Python environment included), so it runs before the rest
+if [ "${1:-}" = setup ]; then
+    shift
+    exec bash "$WORLDCRADLE_CODE/setup.sh" "$@"
+fi
+# repair the Python environment first if a system upgrade broke it
+"$WORLDCRADLE_CODE/bin/worldcradle-ensure-venv" || exit 1
+exec "$WORLDCRADLE_VENV/bin/python" "$WORLDCRADLE_CODE/app/cli.py" "$@"

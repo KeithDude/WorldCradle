@@ -1,5 +1,5 @@
 #!/bin/sh
-# RealmCradle package: before removing (not before an upgrade).
+# WorldCradle package: before removing (not before an upgrade).
 set -e
 if [ "$1" = remove ]; then
     # Stop the dashboard of every account that runs one; its files are about to go. Settings,
@@ -8,13 +8,13 @@ if [ "$1" = remove ]; then
         [ -d "$dir" ] || continue
         user="$(getent passwd "${dir##*/}" | cut -d: -f1)"
         [ -n "$user" ] || continue
-        systemctl --user -M "$user@" disable --now realmcradle.service realmcradle-backup.timer \
+        systemctl --user -M "$user@" disable --now worldcradle.service worldcradle-backup.timer \
             >/dev/null 2>&1 || true
     done
-    echo "RealmCradle: the dashboard is stopped. Your settings, game servers and saves are kept"
-    echo "          (in ~/.config/realmcradle and the game folders); installing RealmCradle again uses them."
-    echo "          Game servers you created keep running; to remove those too, reinstall RealmCradle"
-    echo "          and run: realmcradle uninstall"
+    echo "WorldCradle: the dashboard is stopped. Your settings, game servers and saves are kept"
+    echo "          (in ~/.config/worldcradle and the game folders); installing WorldCradle again uses them."
+    echo "          Game servers you created keep running; to remove those too, reinstall WorldCradle"
+    echo "          and run: worldcradle uninstall"
 fi
-find /usr/lib/realmcradle -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+find /usr/lib/worldcradle -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 exit 0

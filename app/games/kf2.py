@@ -40,7 +40,7 @@ class Kf2Game(SimpleGame):
         diff = self.option(spec, "difficulty")
         length = self.option(spec, "length")
         # ConfigSubDir gives this server its own settings folder under KFGame/Config
-        return (f'./Binaries/Win64/KFGameSteamServer.bin.x86_64 "{mapname}?ConfigSubDir=rc_{key}'
+        return (f'./Binaries/Win64/KFGameSteamServer.bin.x86_64 "{mapname}?ConfigSubDir=wc_{key}'
                 f'?Difficulty={diff}?GameLength={length}'
                 f'?GamePassword=$GAME_SERVER_PASSWORD?AdminPassword=$GAME_ADMIN_PASSWORD" '
                 f'-Port={ports["game"]} -QueryPort={ports["query"]} -WebAdminPort={ports["web"]} '

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Can this computer run RealmCradle? Checked before anything is installed, each explained in plain
+# Can this computer run WorldCradle? Checked before anything is installed, each explained in plain
 # words. ✗ stops the install (unless --force); ⚠ is a warning and the install continues.
 #
-#   realmcradle-preflight [--force] [--check]
+#   worldcradle-preflight [--force] [--check]
 #     --force  carry on despite ✗ (exit 0)
 #     --check  show the results only; never stop (exit 0)
-# Used by install.sh (a git checkout) and by setup.sh (`realmcradle setup`, after the package).
+# Used by install.sh (a git checkout) and by setup.sh (`worldcradle setup`, after the package).
 set -uo pipefail
 FORCE=0; CHECK=0
 for arg in "$@"; do
     case "$arg" in --force) FORCE=1 ;; --check) CHECK=1 ;; esac
 done
-REALMCRADLE_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
-. "$REALMCRADLE_CODE/bin/realmcradle-env.sh"
+WORLDCRADLE_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
+. "$WORLDCRADLE_CODE/bin/worldcradle-env.sh"
 
 FAIL=0
 ok()   { printf '   \033[32m✓\033[0m %s\n' "$*"; }
@@ -21,21 +21,21 @@ bad()  { printf '   \033[31m✗\033[0m %s\n' "$*"; FAIL=1; }
 printf '\n\033[1;36m== %s\033[0m\n' "Checking this computer"
 
 if [ "$(id -u)" = 0 ]; then
-    bad "Running as root. Run RealmCradle's setup as your normal user (no 'sudo' in front) — it asks for your password itself when it needs to."
+    bad "Running as root. Run WorldCradle's setup as your normal user (no 'sudo' in front) — it asks for your password itself when it needs to."
 fi
 
 # operating system — installing uses apt (Ubuntu / Debian)
 id="" ver="" name=""
 [ -r /etc/os-release ] && . /etc/os-release && id="${ID:-}" ver="${VERSION_ID:-}" name="${PRETTY_NAME:-}"
 if ! command -v apt-get >/dev/null 2>&1; then
-    bad "RealmCradle is installed with 'apt' (Ubuntu or Debian). On another Linux, install the packages listed in deploy/SETUP.md, then run ./setup.sh"
+    bad "WorldCradle is installed with 'apt' (Ubuntu or Debian). On another Linux, install the packages listed in deploy/SETUP.md, then run ./setup.sh"
 elif { [ "$id" = ubuntu ] && [ "${ver%%.*}" -ge 22 ] 2>/dev/null; } || { [ "$id" = debian ] && [ "${ver%%.*}" -ge 12 ] 2>/dev/null; }; then
     ok "Operating system: ${name:-$id $ver}"
     if { [ "$id" = ubuntu ] && [ "${ver%%.*}" -lt 24 ]; } || { [ "$id" = debian ] && [ "${ver%%.*}" -lt 13 ]; }; then
         warn "This version offers an older Wine (6.0). Windows-only game servers were tested with Wine 10; some may not work with 6.0 (V Rising does). Linux game servers are unaffected. For the Windows-only ones, Ubuntu 24.04 or newer is the safer choice."
     fi
 else
-    warn "Operating system: ${name:-unknown}. RealmCradle is made for Ubuntu 22.04+ or Debian 12+; it may still work."
+    warn "Operating system: ${name:-unknown}. WorldCradle is made for Ubuntu 22.04+ or Debian 12+; it may still work."
 fi
 
 # processor — game servers are built for 64-bit Intel/AMD processors
@@ -52,28 +52,28 @@ fi
 # memory
 mem_gb=$(awk '/MemTotal/ {printf "%d", $2/1048576 + 0.5}' /proc/meminfo)
 if [ "$mem_gb" -ge 8 ]; then ok "Memory: ${mem_gb} GB"
-elif [ "$mem_gb" -ge 4 ]; then warn "Memory: ${mem_gb} GB. Enough for RealmCradle and a small game server; most game servers want 4-16 GB each."
+elif [ "$mem_gb" -ge 4 ]; then warn "Memory: ${mem_gb} GB. Enough for WorldCradle and a small game server; most game servers want 4-16 GB each."
 else bad "Memory: ${mem_gb} GB. Game servers need at least 4 GB; most want much more."; fi
 
 # disk space where the games will be installed (the home folder)
 free_gb=$(df -Pk "$HOME" | awk 'NR==2 {printf "%d", $4/1048576}')
 if [ "$free_gb" -ge 50 ]; then ok "Free disk space: ${free_gb} GB"
 elif [ "$free_gb" -ge 15 ]; then warn "Free disk space: ${free_gb} GB. Enough to start; many game servers take 5-30 GB each."
-else bad "Free disk space: ${free_gb} GB. Please free up space first — RealmCradle and one game server need at least 15 GB."; fi
+else bad "Free disk space: ${free_gb} GB. Please free up space first — WorldCradle and one game server need at least 15 GB."; fi
 
-# background services for this user (RealmCradle runs as one)
+# background services for this user (WorldCradle runs as one)
 if systemctl --user show-environment >/dev/null 2>&1; then
     ok "Background services: available"
 else
-    bad "Background services (systemd) aren't available for your account here — RealmCradle needs them. On WSL, enable systemd first; otherwise log in normally (not through 'su') and try again."
+    bad "Background services (systemd) aren't available for your account here — WorldCradle needs them. On WSL, enable systemd first; otherwise log in normally (not through 'su') and try again."
 fi
 
-# the dashboard's port must be free (unless RealmCradle itself already uses it)
-if command -v ss >/dev/null 2>&1 && ss -tlnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$REALMCRADLE_PORT\$" \
-   && ! systemctl --user is-active --quiet realmcradle 2>/dev/null; then
-    bad "Port $REALMCRADLE_PORT, which the dashboard uses, is already taken by another program on this computer."
+# the dashboard's port must be free (unless WorldCradle itself already uses it)
+if command -v ss >/dev/null 2>&1 && ss -tlnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$WORLDCRADLE_PORT\$" \
+   && ! systemctl --user is-active --quiet worldcradle 2>/dev/null; then
+    bad "Port $WORLDCRADLE_PORT, which the dashboard uses, is already taken by another program on this computer."
 else
-    ok "Dashboard port $REALMCRADLE_PORT: free"
+    ok "Dashboard port $WORLDCRADLE_PORT: free"
 fi
 
 # internet — needed to download packages, Python libraries and game servers
@@ -100,6 +100,6 @@ if [ "$CHECK" = 1 ]; then
 elif [ "$FORCE" = 1 ]; then
     echo "   Continuing anyway because of --force."; exit 0
 fi
-echo "   RealmCradle can't be installed on this computer as it is — see the ✗ lines above."
+echo "   WorldCradle can't be installed on this computer as it is — see the ✗ lines above."
 echo "   (To try anyway, add --force.)"
 exit 1

@@ -53,7 +53,7 @@ class RustGame(SimpleGame):
                       "take 5-10 minutes before the server appears.")
 
     def server_folder(self, install, key):
-        return os.path.join(install, self.servers_folder, "rc_" + key.replace("-", "_"))
+        return os.path.join(install, self.servers_folder, "wc_" + key.replace("-", "_"))
 
     def command(self, spec, ports, name, server_dir, install):
         seed = self.option(spec, "seed")

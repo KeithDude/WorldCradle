@@ -131,7 +131,7 @@ class AbioticGame(WineGame):
 
     @staticmethod
     def _sandbox_rel(key) -> str:
-        return f"Config/WindowsServer/realmcradle-{key}-Sandbox.ini"   # relative to Saved/
+        return f"Config/WindowsServer/worldcradle-{key}-Sandbox.ini"   # relative to Saved/
 
     def command(self, spec, ports, name, server_dir, install):
         key, world = spec["key"], self._world(spec)
@@ -143,7 +143,7 @@ class AbioticGame(WineGame):
         flags = (f" -PlatformLimited={platform}" if platform else "") + \
                 (" -LANOnly" if self.option(spec, "lanonly") else "")
         return (f"wine {EXE} \\\n"
-                f"    -log -LOG=realmcradle-{key}.log -useperfthreads -NoAsyncLoadingThread \\\n"
+                f"    -log -LOG=worldcradle-{key}.log -useperfthreads -NoAsyncLoadingThread \\\n"
                 f"    -MaxServerPlayers={self.option(spec, 'maxplayers')} -PORT={ports['game']} -QueryPort={ports['query']} \\\n"
                 f'    -ServerPassword="$GAME_SERVER_PASSWORD" \\\n'
                 f'    -AdminPassword="$GAME_ADMIN_PASSWORD" \\\n'
@@ -168,7 +168,7 @@ class AbioticGame(WineGame):
             f.write("[SandboxSettings]\n" + "".join(f"{k}={v}\n" for k, v in sandbox.items()))
 
     def log_file(self, server_dir, install):
-        return os.path.join(self._saved(install), "Logs", f"realmcradle-{os.path.basename(server_dir)}.log")
+        return os.path.join(self._saved(install), "Logs", f"worldcradle-{os.path.basename(server_dir)}.log")
 
     def proc_pattern(self, spec, ports, server_dir):
         return f"-PORT={ports['game']} "

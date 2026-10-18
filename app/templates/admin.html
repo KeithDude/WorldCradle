@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · RealmCradle{% endblock %}
+{% block title %}Dashboard · WorldCradle{% endblock %}
 {% block content %}
   <meta name="csrf" content="{{ csrf }}">
   <div id="toast" class="toast" hidden></div>
@@ -18,7 +18,7 @@
     <div class="alerts-btns"><button class="ctl" id="checklist-hide" title="Hide this list. You can bring it back from Settings.">Hide this checklist</button></div>
   </details>
 
-  <details class="alerts-panel" id="games-panel" title="The games RealmCradle can run on this computer. Install one here, then create servers for it with “Add a server”.">
+  <details class="alerts-panel" id="games-panel" title="The games WorldCradle can run on this computer. Install one here, then create servers for it with “Add a server”.">
     <summary>🎮 Games <span class="muted" id="games-sum"></span></summary>
     <p class="muted hint below">Installing a game downloads its server files to this computer.
       You only do this once per game — after that, “Add a server” creates as many servers as you like from it.</p>
@@ -33,7 +33,7 @@
   <details class="alerts-panel" id="add-panel" title="Create a new server. Pick a game, give it a name, and the rest is filled in for you.">
     <summary>➕ Add a server</summary>
     <div class="alerts-form">
-      <label title="Which game this server is for. “Custom service” is for advanced users running something RealmCradle doesn't know about.">Game
+      <label title="Which game this server is for. “Custom service” is for advanced users running something WorldCradle doesn't know about.">Game
         <select id="as-kind"></select>
       </label>
       <label title="What to call this server. Your friends will see this name in the game's server list.">Server name <input type="text" id="as-name" placeholder="My Server" autocomplete="off"></label>
@@ -45,7 +45,7 @@
       <div id="as-custom">
         <label title="The exact command to launch the server — full path to the executable/script plus its arguments. Runs as your user.">Launch command <input type="text" id="as-exec" placeholder="/path/to/server/start.sh -port 7100" autocomplete="off"></label>
         <label title="Directory the command runs in (where its files/config live).">Working directory <input type="text" id="as-dir" placeholder="~/myserver" autocomplete="off"></label>
-        <label title="The UDP/TCP port players connect to. Must be free; realmcradle checks. Forward it on the router for internet play.">Game port <input type="number" id="as-port" placeholder="7100"></label>
+        <label title="The UDP/TCP port players connect to. Must be free; worldcradle checks. Forward it on the router for internet play.">Game port <input type="number" id="as-port" placeholder="7100"></label>
         <label title="Optional Steam query port — if the game answers A2S here, the dashboard shows player count + reachability.">Query port — optional; lets the dashboard show how many players are on <input type="number" id="as-qport" placeholder=""></label>
         <label title="Optional folder where this service stores its save data. Set it to enable Backups for this custom service.">Save folder — optional, enables Backups <input type="text" id="as-save" placeholder="~/myserver/saves" autocomplete="off"></label>
       </div>

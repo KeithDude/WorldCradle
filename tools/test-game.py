@@ -6,8 +6,8 @@
 
     venv/bin/python tools/test-game.py <game kind> [--keep] [--wait MINUTES] [--set field=value …]
 
-Run it on the computer RealmCradle runs on. It asks for the dashboard password (or reads
-REALMCRADLE_TEST_PASSWORD). --keep leaves the game installed afterwards; --set fills in a form
+Run it on the computer WorldCradle runs on. It asks for the dashboard password (or reads
+WORLDCRADLE_TEST_PASSWORD). --keep leaves the game installed afterwards; --set fills in a form
 field (e.g. a token the game requires). Prints what happened at each step and a verdict.
 It doesn't play the game: whether players can join still needs a person with the game.
 """
@@ -26,7 +26,7 @@ import requests
 import urllib3
 
 urllib3.disable_warnings()
-BASE = os.environ.get("REALMCRADLE_URL", "https://localhost:8443")
+BASE = os.environ.get("WORLDCRADLE_URL", "https://localhost:8443")
 
 
 class Dashboard:
@@ -76,7 +76,7 @@ def say(text=""):
 
 
 def unit(key, *props):
-    out = subprocess.run(["systemctl", "--user", "show", f"realmcradle-{key}.service",
+    out = subprocess.run(["systemctl", "--user", "show", f"worldcradle-{key}.service",
                           *[a for p in props for a in ("-p", p)]], capture_output=True, text=True).stdout
     return dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
 
@@ -92,7 +92,7 @@ def main(argv) -> int:
         if a == "--set":
             k, _, v = argv[i + 1].partition("=")
             fields[k] = v
-    password = os.environ.get("REALMCRADLE_TEST_PASSWORD") or getpass.getpass("Dashboard password: ")
+    password = os.environ.get("WORLDCRADLE_TEST_PASSWORD") or getpass.getpass("Dashboard password: ")
     d = Dashboard(password)
     key = f"gt-{kind}"[:31].replace("_", "-")
     result = {"game": kind, "steps": {}}
@@ -124,7 +124,7 @@ def main(argv) -> int:
 
         # 2. add a server and start it
         types = {t["kind"]: t for t in d.get("/admin/servers/types")["types"]}
-        spec = {"kind": kind, "key": key, "name": f"RealmCradle test {kind}", "start": True, "confirm": True,
+        spec = {"kind": kind, "key": key, "name": f"WorldCradle test {kind}", "start": True, "confirm": True,
                 "eula": True}
         for f in types[kind]["extra_fields"]:
             if f.get("default") is not None and not f["name"].startswith("port_"):
@@ -164,7 +164,7 @@ def main(argv) -> int:
         step("listening on its ports", not missing, f"{ports}" + (f", not {missing}" if missing else ""))
         # the in-game buttons the game offers (Save, Message), pressed for real
         for action in [a for a in ("save", "broadcast") if a in seen.get("actions", [])]:
-            body = {"key": key, "action": action, "message": "RealmCradle test message"}
+            body = {"key": key, "action": action, "message": "WorldCradle test message"}
             r = d.post("/admin/action", body)
             step(f"{'Save' if action == 'save' else 'Message'} button", r.get("ok", False),
                  r.get("message") or r.get("error", ""))
@@ -189,7 +189,7 @@ def main(argv) -> int:
             step("remove server", r.get("ok", False), r.get("message") or r.get("error", ""))
             # Removing keeps a server's world, so a later test of the same game would find it in the
             # way: delete the test server's own folder (named after it) — never a shared one.
-            names = {key, "rc_" + key.replace("-", "_")}
+            names = {key, "wc_" + key.replace("-", "_")}
             for path in saves:
                 parts = path.rstrip("/").split("/")
                 hits = [i for i, part in enumerate(parts) if part in names]

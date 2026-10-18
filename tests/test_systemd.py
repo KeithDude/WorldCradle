@@ -1,4 +1,4 @@
-"""The one way RealmCradle runs systemctl: problems come back as results or plain messages."""
+"""The one way WorldCradle runs systemctl: problems come back as results or plain messages."""
 import subprocess
 
 import pytest

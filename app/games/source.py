@@ -19,7 +19,7 @@ _SDK_LINES = """for a in 32 64; do
     [ -e "$d/steamclient.so" ] && continue
     for c in "$HOME/.local/share/Steam/steamcmd/linux$a/steamclient.so" \\
              "$HOME/.steam/steamcmd/linux$a/steamclient.so" \\
-             "$HOME/.local/share/realmcradle/steamcmd/linux$a/steamclient.so"; do
+             "$HOME/.local/share/worldcradle/steamcmd/linux$a/steamclient.so"; do
         if [ -f "$c" ]; then mkdir -p "$d" && ln -sf "$c" "$d/steamclient.so"; break; fi
     done
 done

@@ -1,6 +1,6 @@
-"""systemd.py — the one way RealmCradle runs `systemctl --user`.
+"""systemd.py — the one way WorldCradle runs `systemctl --user`.
 
-The dashboard and every game server are systemd services of the account RealmCradle runs as, so
+The dashboard and every game server are systemd services of the account WorldCradle runs as, so
 starting, stopping and asking about them all goes through here.
 """
 from __future__ import annotations

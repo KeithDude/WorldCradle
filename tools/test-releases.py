@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""A stand-in for GitHub's release list, to test `realmcradle update` before anything is published.
+"""A stand-in for GitHub's release list, to test `worldcradle update` before anything is published.
 
-    tools/test-releases.py <folder with realmcradle_*.deb files> [port]
+    tools/test-releases.py <folder with worldcradle_*.deb files> [port]
 
 Serves every package in the folder as a release (the newest version is "latest") with its
 checksum, on http://127.0.0.1:<port> (default 8765). Then, on the same computer:
 
-    REALMCRADLE_RELEASES_URL=http://127.0.0.1:8765/releases realmcradle update
+    WORLDCRADLE_RELEASES_URL=http://127.0.0.1:8765/releases worldcradle update
 
 To test the roll-back, put in a newer package that doesn't start: update installs it, sees it
 doesn't answer, and puts the previous release back (also served from here).
@@ -23,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 FOLDER = os.path.abspath(sys.argv[1])
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8765
 BASE = f"http://127.0.0.1:{PORT}"
-DEB_RE = re.compile(r"^realmcradle_(?P<version>[A-Za-z0-9.+~-]+)_all\.deb$")
+DEB_RE = re.compile(r"^worldcradle_(?P<version>[A-Za-z0-9.+~-]+)_all\.deb$")
 
 
 def _compare(a: str, b: str) -> int:

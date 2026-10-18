@@ -1,8 +1,8 @@
-"""provision.py — create/remove realmcradle-managed servers.
+"""provision.py — create/remove worldcradle-managed servers.
 
-Generates a `systemctl --user` unit (~/.config/systemd/user/realmcradle-<key>.service)
+Generates a `systemctl --user` unit (~/.config/systemd/user/worldcradle-<key>.service)
 and a servers.json entry, allocating free ports. Only servers with
-managed=="realmcradle" can be torn down here — legacy (hand-made) servers are
+managed=="worldcradle" can be torn down here — legacy (hand-made) servers are
 refused, so the existing fleet can't be deleted by accident.
 
 Most games provision synchronously (write a small launch script into a shared
@@ -45,7 +45,7 @@ class ProvisionConfirm(Exception):
 
 
 def _unit_name(key: str) -> str:
-    return f"realmcradle-{key}.service"
+    return f"worldcradle-{key}.service"
 
 
 def _unit_path(key: str) -> str:
@@ -153,7 +153,7 @@ def _template_fields(kind: str, spec: dict, use_pool: bool) -> tuple[str, dict]:
 def _unit_text(name: str, fields: dict) -> str:
     svc = [
         "[Unit]",
-        f"Description=realmcradle: {name}",
+        f"Description=worldcradle: {name}",
         "After=network-online.target", "Wants=network-online.target", "",
         "[Service]", "Type=simple",
         f"WorkingDirectory={fields['working_dir']}",
@@ -175,7 +175,7 @@ def _unit_text(name: str, fields: dict) -> str:
 def _store_entry(key: str, kind: str, name: str, fields: dict) -> dict:
     entry = {
         "key": key, "kind": kind, "name": name,
-        "unit": _unit_name(key), "managed": "realmcradle",
+        "unit": _unit_name(key), "managed": "worldcradle",
         "game_port": fields["game_port"], "query_port": fields.get("query_port"),
         "rcon_port": fields.get("rcon_port"), "a2s": bool(fields.get("a2s")),
         "proc_match": fields.get("proc_match", ""),
@@ -235,15 +235,15 @@ def adopt(key: str, spec: dict, ports: dict) -> dict:
     install = os.path.expanduser(entry.get("install_dir") or config.install_dir(entry["kind"]))
     stamp = time.strftime("%Y%m%d-%H%M%S")
     kept = []
-    for path in (_unit_path(key), os.path.join(install, f"realmcradle-{key}-run.sh"),
-                 os.path.join(install, f"realmcradle-{key}-stop.sh"), store.STORE_PATH):
+    for path in (_unit_path(key), os.path.join(install, f"worldcradle-{key}-run.sh"),
+                 os.path.join(install, f"worldcradle-{key}-stop.sh"), store.STORE_PATH):
         if os.path.isfile(path):
             shutil.copy2(path, f"{path}.before-adopt-{stamp}")
             kept.append(path)
     full = {**spec, "key": key, "kind": entry["kind"], "install_dir": install, "adopt": True}
     full.setdefault("name", entry.get("server_name") or entry["name"])
     fields = game.provision(full, ports)
-    old_stop = os.path.join(install, f"realmcradle-{key}-stop.sh")
+    old_stop = os.path.join(install, f"worldcradle-{key}-stop.sh")
     if not fields.get("exec_stop") and os.path.isfile(old_stop):
         os.unlink(old_stop)          # the old stop script no longer applies (a copy is kept)
     with open(_unit_path(key), "w", encoding="utf-8") as f:
@@ -260,7 +260,7 @@ def adopt(key: str, spec: dict, ports: dict) -> dict:
 
 
 def create(spec: dict) -> dict:
-    """Create a realmcradle-managed server: custom (kind='custom', caller gives the
+    """Create a worldcradle-managed server: custom (kind='custom', caller gives the
     launch command) or a game template (kind in games, auto config+ports).
     Games that need their own copy of the install go through the background job."""
     key = (spec.get("key") or "").strip().lower()
@@ -442,17 +442,17 @@ def _validate_script(content: str) -> None:
 
 
 def _script_path(key: str) -> str:
-    """Path of a realmcradle-managed server's generated run script, validated.
+    """Path of a worldcradle-managed server's generated run script, validated.
 
     Only a managed server whose unit's ExecStart points at its own
-    `realmcradle-<key>-run.sh` is editable — this excludes legacy servers and
+    `worldcradle-<key>-run.sh` is editable — this excludes legacy servers and
     custom services (whose ExecStart is an arbitrary command, not our script).
     """
     e = store.get(key)
     if not e:
-        raise ActionError(f"No realmcradle-managed server with key '{key}'.")
-    if e.get("managed") != "realmcradle":
-        raise ActionError("Only realmcradle-managed servers have an editable launch script.")
+        raise ActionError(f"No worldcradle-managed server with key '{key}'.")
+    if e.get("managed") != "worldcradle":
+        raise ActionError("Only worldcradle-managed servers have an editable launch script.")
     unit = _unit_path(key)
     if not os.path.exists(unit):
         raise ActionError("Unit file not found.")
@@ -463,9 +463,9 @@ def _script_path(key: str) -> str:
             break
     token = exec_start.split()[0].strip('"') if exec_start else ""
     if (not token or not os.path.isabs(token)
-            or os.path.basename(token) != f"realmcradle-{key}-run.sh"
+            or os.path.basename(token) != f"worldcradle-{key}-run.sh"
             or not os.path.isfile(token)):
-        raise ActionError("This server has no editable realmcradle launch script "
+        raise ActionError("This server has no editable worldcradle launch script "
                           "(custom services run a command you set directly).")
     return os.path.realpath(token)
 
@@ -497,8 +497,8 @@ def write_script(key: str, content: str) -> dict:
 def destroy(key: str) -> dict:
     e = store.get(key)
     if not e:
-        raise ActionError(f"No realmcradle-managed server with key '{key}'.")
-    if e.get("managed") != "realmcradle":
+        raise ActionError(f"No worldcradle-managed server with key '{key}'.")
+    if e.get("managed") != "worldcradle":
         raise ActionError("Refusing to remove a legacy (hand-made) server.")
     unit = e.get("unit", _unit_name(key))
     try:
@@ -512,14 +512,14 @@ def destroy(key: str) -> dict:
     store.remove(key)
     # its generated launch and stop scripts (no saves in them)
     install = os.path.expanduser(e.get("install_dir") or "")
-    for script in (f"realmcradle-{key}-run.sh", f"realmcradle-{key}-stop.sh"):
+    for script in (f"worldcradle-{key}-run.sh", f"worldcradle-{key}-stop.sh"):
         if install and os.path.isfile(os.path.join(install, script)):
             os.remove(os.path.join(install, script))
     # A Windows-only server's private Wine environment (~1 GB) holds no saves — remove it too.
     extra = ""
     from games import common
     prefix = common.wine_prefix(e.get("kind", ""), key)
-    if e.get("kind") and os.path.basename(prefix).startswith(".wine-rc-") and os.path.isdir(prefix):
+    if e.get("kind") and os.path.basename(prefix).startswith(".wine-wc-") and os.path.isdir(prefix):
         shutil.rmtree(prefix, ignore_errors=True)
         extra = " Its Wine environment was deleted."
     audit_log.info("server REMOVED key=%s unit=%s%s", key, unit, " (wine prefix deleted)" if extra else "")

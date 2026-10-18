@@ -26,7 +26,7 @@ ARK_MAPS = [
     ("LostIsland", "Lost Island", "Mods/LostIsland"),
     ("Fjordur", "Fjordur", "Mods/FjordurOfficial"),
 ]
-REALMCRADLE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORLDCRADLE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class ArkGame(SimpleGame):
@@ -90,9 +90,9 @@ class ArkGame(SimpleGame):
             {"name": "crossplay", "label": "Allow Epic Games players (crossplay)",
              "type": "checkbox", "default": False},
             {"name": "cluster_id", "label": "Cluster ID (blank = the configured default)",
-             "placeholder": "realmcradle",
+             "placeholder": "worldcradle",
              "help": "Maps with the same cluster ID can transfer characters and dinos."},
-            {"name": "savedir", "label": "Save folder name (blank = rc_<key>)", "placeholder": "rc_<key>"},
+            {"name": "savedir", "label": "Save folder name (blank = wc_<key>)", "placeholder": "wc_<key>"},
         ]
 
     port_layout = [
@@ -108,7 +108,7 @@ class ArkGame(SimpleGame):
     # ---- the launch ------------------------------------------------------------------------
     @staticmethod
     def _cluster_id(spec) -> str:
-        cid = (spec.get("cluster_id") or "").strip() or config.load().get("ark_cluster_id") or "realmcradle"
+        cid = (spec.get("cluster_id") or "").strip() or config.load().get("ark_cluster_id") or "worldcradle"
         if not re.match(r"^[A-Za-z0-9_]{1,40}$", cid):
             raise ActionError("Cluster ID must be letters/digits/underscores.")
         return cid
@@ -116,7 +116,7 @@ class ArkGame(SimpleGame):
     @staticmethod
     def _save(spec) -> str:
         """Its save folder's name (AltSaveDirectoryName)."""
-        save = (spec.get("savedir") or "").strip() or f"rc_{spec['key'].replace('-', '_')}"
+        save = (spec.get("savedir") or "").strip() or f"wc_{spec['key'].replace('-', '_')}"
         if not re.match(r"^[A-Za-z0-9_]{1,40}$", save):
             raise ActionError("Save folder name must be letters/digits/underscores.")
         return save

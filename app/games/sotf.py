@@ -85,4 +85,4 @@ class SotfGame(WineGame):
         return os.path.join(server_dir, "dedicatedserver.cfg")
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"realmcradle-servers\\{spec['key']}"     # its -userdatapath argument
+        return f"worldcradle-servers\\{spec['key']}"     # its -userdatapath argument

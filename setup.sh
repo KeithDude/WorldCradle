@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# RealmCradle setup for your user account: the Python environment, the settings folder, the
+# WorldCradle setup for your user account: the Python environment, the settings folder, the
 # dashboard's certificate, the background services, and the final "here's how to open it" screen.
 #
-#   realmcradle setup              after installing the RealmCradle package
+#   worldcradle setup              after installing the WorldCradle package
 #   ./install.sh                from a downloaded copy (installs the system packages, then runs this)
 #
 # Options:  --fail2ban / --no-fail2ban   set up (or skip) blocking of password guessers; the
@@ -10,14 +10,14 @@
 #           --force                      carry on even if the computer checks fail
 #
 # Safe to run again at any time: it never overwrites existing settings, passwords, certificate
-# or server list. Data: $REALMCRADLE_HOME (default ~/.config/realmcradle). Backups: $REALMCRADLE_BACKUPS
-# (default ~/.local/share/realmcradle/backups).
+# or server list. Data: $WORLDCRADLE_HOME (default ~/.config/worldcradle). Backups: $WORLDCRADLE_BACKUPS
+# (default ~/.local/share/worldcradle/backups).
 set -euo pipefail
 
-REALMCRADLE_CODE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-. "$REALMCRADLE_CODE/bin/realmcradle-env.sh"
-CODE="$REALMCRADLE_CODE"; VENV="$REALMCRADLE_VENV"; DATA="$REALMCRADLE_HOME"; PORT="$REALMCRADLE_PORT"
-BACKUPS="${REALMCRADLE_BACKUPS:-$HOME/.local/share/realmcradle/backups}"
+WORLDCRADLE_CODE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+. "$WORLDCRADLE_CODE/bin/worldcradle-env.sh"
+CODE="$WORLDCRADLE_CODE"; VENV="$WORLDCRADLE_VENV"; DATA="$WORLDCRADLE_HOME"; PORT="$WORLDCRADLE_PORT"
+BACKUPS="${WORLDCRADLE_BACKUPS:-$HOME/.local/share/worldcradle/backups}"
 UNITS="$HOME/.config/systemd/user"
 PACKAGED=0; [ -w "$CODE" ] || PACKAGED=1      # the package's program folder belongs to the system
 FAIL2BAN=auto; FORCE=()
@@ -30,19 +30,19 @@ for arg in "$@"; do
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
-FROM_INSTALLER="${REALMCRADLE_FROM_INSTALLER:-0}"
+FROM_INSTALLER="${WORLDCRADLE_FROM_INSTALLER:-0}"
 say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 
-# --- 0. Can this computer run RealmCradle? (install.sh has already checked) ----------
+# --- 0. Can this computer run WorldCradle? (install.sh has already checked) ----------
 if [ "$FROM_INSTALLER" != 1 ]; then
-    "$CODE/bin/realmcradle-preflight" "${FORCE[@]}" || exit 1
+    "$CODE/bin/worldcradle-preflight" "${FORCE[@]}" || exit 1
 fi
 
 # --- 1. Python environment ---------------------------------------------------------
 say "Python libraries"
 # creates the environment, or rebuilds it if it's missing or broken (e.g. after a Python upgrade)
-"$CODE/bin/realmcradle-ensure-venv" || exit 1
+"$CODE/bin/worldcradle-ensure-venv" || exit 1
 
 # --- 2. Settings folder ------------------------------------------------------------
 say "Settings: $DATA"
@@ -92,22 +92,22 @@ fi
 say "Background services"
 mkdir -p "$UNITS"
 subst() { sed -e "s#__CODE__#$CODE#g" -e "s#__VENV__#$VENV#g" -e "s#__DATA__#$DATA#g" -e "s#__PORT__#$PORT#g" "$1"; }
-subst "$CODE/deploy/systemd/realmcradle.service.in"        > "$UNITS/realmcradle.service"
-subst "$CODE/deploy/systemd/realmcradle-backup.service.in" > "$UNITS/realmcradle-backup.service"
-cp    "$CODE/deploy/systemd/realmcradle-backup.timer"        "$UNITS/realmcradle-backup.timer"
+subst "$CODE/deploy/systemd/worldcradle.service.in"        > "$UNITS/worldcradle.service"
+subst "$CODE/deploy/systemd/worldcradle-backup.service.in" > "$UNITS/worldcradle-backup.service"
+cp    "$CODE/deploy/systemd/worldcradle-backup.timer"        "$UNITS/worldcradle-backup.timer"
 systemctl --user daemon-reload
-systemctl --user enable --quiet realmcradle.service realmcradle-backup.timer
-systemctl --user restart realmcradle.service       # picks up a new version on re-runs
-systemctl --user start realmcradle-backup.timer
+systemctl --user enable --quiet worldcradle.service worldcradle-backup.timer
+systemctl --user restart worldcradle.service       # picks up a new version on re-runs
+systemctl --user start worldcradle-backup.timer
 note "The dashboard and the daily 05:00 backup are running."
 
-# The `realmcradle` command. The package installs it for everyone; a downloaded copy links it here.
+# The `worldcradle` command. The package installs it for everyone; a downloaded copy links it here.
 if [ "$PACKAGED" = 0 ]; then
     mkdir -p "$HOME/.local/bin"
-    ln -sfn "$CODE/bin/realmcradle" "$HOME/.local/bin/realmcradle"
+    ln -sfn "$CODE/bin/worldcradle" "$HOME/.local/bin/worldcradle"
     case ":$PATH:" in
         *":$HOME/.local/bin:"*) ;;
-        *) note "The realmcradle command works in new terminal windows (or after logging in again)." ;;
+        *) note "The worldcradle command works in new terminal windows (or after logging in again)." ;;
     esac
 fi
 
@@ -115,9 +115,9 @@ fi
 if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -q 'Linger=yes'; then
     :
 elif loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER"; then
-    note "RealmCradle keeps running after you log out and starts with the computer."
+    note "WorldCradle keeps running after you log out and starts with the computer."
 else
-    note "⚠ Couldn't set RealmCradle to start with the computer. Run: sudo loginctl enable-linger $USER"
+    note "⚠ Couldn't set WorldCradle to start with the computer. Run: sudo loginctl enable-linger $USER"
 fi
 
 # --- 6. The computer's firewall, if it has one switched on ------------------------------
@@ -133,20 +133,20 @@ if [ "$FAIL2BAN" = auto ]; then
     command -v fail2ban-client >/dev/null 2>&1 && FAIL2BAN=yes || FAIL2BAN=no
 fi
 if [ "$FAIL2BAN" = yes ]; then
-    jail="$(sed -e "s#__REALMCRADLE_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/realmcradle-jail.conf")"
+    jail="$(sed -e "s#__WORLDCRADLE_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/worldcradle-jail.conf")"
     settings() { grep -v '^[[:space:]]*\(#\|$\)'; }    # compare what fail2ban reads, not the comments
-    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/realmcradle.conf 2>/dev/null)" ] \
-       && [ "$(settings < "$CODE/deploy/fail2ban/realmcradle-filter.conf")" = \
-            "$(settings < /etc/fail2ban/filter.d/realmcradle.conf 2>/dev/null)" ]; then
+    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/worldcradle.conf 2>/dev/null)" ] \
+       && [ "$(settings < "$CODE/deploy/fail2ban/worldcradle-filter.conf")" = \
+            "$(settings < /etc/fail2ban/filter.d/worldcradle.conf 2>/dev/null)" ]; then
         :   # already set up
     else
         note "Setting up protection against password guessing (fail2ban) — this asks for your password."
-        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/realmcradle.conf >/dev/null \
-           && sudo cp "$CODE/deploy/fail2ban/realmcradle-filter.conf" /etc/fail2ban/filter.d/realmcradle.conf \
+        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/worldcradle.conf >/dev/null \
+           && sudo cp "$CODE/deploy/fail2ban/worldcradle-filter.conf" /etc/fail2ban/filter.d/worldcradle.conf \
            && sudo systemctl enable --quiet --now fail2ban && sudo systemctl restart fail2ban; then
             note "Done: an address that gets the dashboard password wrong 4 times is blocked for an hour."
         else
-            note "⚠ Couldn't set up fail2ban. RealmCradle still slows down password guessing by itself."
+            note "⚠ Couldn't set up fail2ban. WorldCradle still slows down password guessing by itself."
         fi
     fi
 fi

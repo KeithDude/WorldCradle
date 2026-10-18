@@ -1,4 +1,4 @@
-# Exact versions of every Python library RealmCradle uses, with checksums, so each install gets
+# Exact versions of every Python library WorldCradle uses, with checksums, so each install gets
 # exactly the files that were tested (pip refuses anything that does not match).
 # Generated from requirements.txt by tools/lock-requirements.sh — do not edit by hand.
 acme==5.8.0 \

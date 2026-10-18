@@ -19,7 +19,7 @@ from applog import app_log
 from games.base import ActionError
 
 # Our own copy lives beside the backups, outside the code and the config dir.
-PRIVATE_DIR = os.path.expanduser("~/.local/share/realmcradle/steamcmd")
+PRIVATE_DIR = os.path.expanduser("~/.local/share/worldcradle/steamcmd")
 TARBALL_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 _PROGRESS = re.compile(r"Update state \(0x[0-9a-f]+\) ([a-z ]+?), progress: ([\d.]+) \((\d+) / (\d+)\)")
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
@@ -27,7 +27,7 @@ _BUILDID = re.compile(r'"buildid"\s*"(\d+)"')
 # Steam's own client library, which dedicated servers load from ~/.steam/sdk32 and sdk64. Valve
 # publishes it as the "Steamworks SDK Redist" (steamcmd itself only carries the 32-bit one).
 REDIST_APP = 1007
-REDIST_DIR = os.path.expanduser("~/.local/share/realmcradle/steamworks-redist")
+REDIST_DIR = os.path.expanduser("~/.local/share/worldcradle/steamworks-redist")
 
 
 def find() -> str | None:
@@ -70,7 +70,7 @@ def ensure() -> str:
         broken = True
     if broken:
         raise ActionError("The Steam server tool needs this computer's 32-bit support libraries, "
-                          "which aren't installed. Run the RealmCradle installer again (it adds "
+                          "which aren't installed. Run the WorldCradle installer again (it adds "
                           "them), or ask whoever manages this computer to install 'lib32gcc-s1'.")
     return path
 

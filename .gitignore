@@ -8,7 +8,7 @@ __pycache__/
 *.tmp
 *.partial
 
-# Runtime data lives in $REALMCRADLE_HOME (default ~/.config/realmcradle), NEVER in the
+# Runtime data lives in $WORLDCRADLE_HOME (default ~/.config/worldcradle), NEVER in the
 # repo. These guards keep personal data out even if someone points the data root
 # here or drops files in by habit:
 /config.json

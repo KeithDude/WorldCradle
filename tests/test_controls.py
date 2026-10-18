@@ -10,7 +10,7 @@ from games.base import ActionError
 
 
 def _server(key, *ports):
-    return SimpleNamespace(key=key, name=key.title(), unit=f"realmcradle-{key}.service", kind="custom",
+    return SimpleNamespace(key=key, name=key.title(), unit=f"worldcradle-{key}.service", kind="custom",
                            rcon_port=None, rcon_password=None, all_ports=lambda: set(ports))
 
 
@@ -25,7 +25,7 @@ def fleet(monkeypatch):
 
     def fake_run(args, **kw):
         calls.append(tuple(args[2:]))           # drop "systemctl --user"
-        key = args[-1].removeprefix("realmcradle-").removesuffix(".service")
+        key = args[-1].removeprefix("worldcradle-").removesuffix(".service")
         if args[2] in ("start", "restart"):
             running.add(key)
         if args[2] == "stop":
@@ -34,7 +34,7 @@ def fleet(monkeypatch):
 
     monkeypatch.setattr(controls, "by_key", lambda: servers)
     monkeypatch.setattr(controls.systemd, "is_active",
-                        lambda unit: unit.removeprefix("realmcradle-").removesuffix(".service") in running)
+                        lambda unit: unit.removeprefix("worldcradle-").removesuffix(".service") in running)
     monkeypatch.setattr(controls.monitor, "ports_in_use", lambda: set(listening))
     monkeypatch.setattr(controls, "live_players", lambda s: (0, []))
     monkeypatch.setattr(controls.systemd.subprocess, "run", fake_run)
@@ -44,25 +44,25 @@ def fleet(monkeypatch):
 
 def test_stop_means_stopped_through_a_reboot(fleet):
     controls.perform("valheim", "stop")
-    assert ("disable", "realmcradle-valheim.service") in fleet.calls
+    assert ("disable", "worldcradle-valheim.service") in fleet.calls
 
 
 def test_start_comes_back_after_a_reboot(fleet):
     controls.perform("island", "start")
-    assert ("start", "realmcradle-island.service") in fleet.calls
-    assert ("enable", "realmcradle-island.service") in fleet.calls
+    assert ("start", "worldcradle-island.service") in fleet.calls
+    assert ("enable", "worldcradle-island.service") in fleet.calls
 
 
 def test_restart_keeps_it_starting_with_the_computer(fleet):
     controls.perform("valheim", "restart")
-    assert ("enable", "realmcradle-valheim.service") in fleet.calls
+    assert ("enable", "worldcradle-valheim.service") in fleet.calls
 
 
 def test_a_server_on_the_same_ports_as_a_running_one_does_not_start(fleet):
     controls.perform("island", "start")
     with pytest.raises(ActionError, match="ports are in use — Island is running on the same ports"):
         controls.perform("extinction", "start")
-    assert ("start", "realmcradle-extinction.service") not in fleet.calls
+    assert ("start", "worldcradle-extinction.service") not in fleet.calls
     controls.perform("island", "stop")
     controls.perform("extinction", "start")          # free again: takes its turn
     assert "extinction" in fleet.running

@@ -46,8 +46,8 @@ class WindroseGame(WineGame):
     def command(self, spec, ports, name, server_dir, install):
         self.option(spec, "connect")
         self.option(spec, "maxplayers")
-        # -realmcradle=… means nothing to the game; it lets the dashboard tell this server's process apart
-        return f'wine ./WindroseServer-Win64-Shipping.exe -realmcradle={os.path.basename(server_dir)} -log'
+        # -worldcradle=… means nothing to the game; it lets the dashboard tell this server's process apart
+        return f'wine ./WindroseServer-Win64-Shipping.exe -worldcradle={os.path.basename(server_dir)} -log'
 
     def write_files(self, spec, ports, name, server_dir, install):
         import json
@@ -85,7 +85,7 @@ class WindroseGame(WineGame):
         return os.path.join(install, "R5", "Saved", "Logs", "R5.log")
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"-realmcradle={spec['key']} -log"
+        return f"-worldcradle={spec['key']} -log"
 
     def _direct(self, install) -> bool:
         import json

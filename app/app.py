@@ -69,7 +69,7 @@ app.json.sort_keys = False
 app.config.update(
     # "__Host-" makes browsers refuse the cookie unless it is Secure, has
     # Path=/ and no Domain — it can't be set or overridden from another host.
-    SESSION_COOKIE_NAME="__Host-realmcradle",
+    SESSION_COOKIE_NAME="__Host-worldcradle",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=True,   # cookie only sent over HTTPS (we serve TLS)
@@ -102,7 +102,7 @@ def _template_values():
     return {"csp_nonce": getattr(g, "csp_nonce", ""), "game_titles": games.titles(),
             "cert_trusted": _cert_trusted(), "project_url": project.PROJECT_URL,
             "support_url": _SUPPORT_URL, "support_label": project.SUPPORT_LABEL,
-            "rc_version": version.version()}
+            "wc_version": version.version()}
 
 
 @app.after_request
@@ -163,7 +163,7 @@ def _client_ip() -> str:
 
 
 def _dashboard_port() -> int:
-    """The port this page was opened on (set in realmcradle.service, normally 8443)."""
+    """The port this page was opened on (set in worldcradle.service, normally 8443)."""
     _, _, port = request.host.rpartition(":")
     return int(port) if port.isdigit() else 443
 
@@ -355,7 +355,7 @@ def admin_checklist():
         {"id": "server", "title": "Add your first server", "go": "#add-panel",
          "done": bool(servers),
          "help": "Open “Add a server”, pick the game, give it a name and press Add server."},
-        {"id": "address", "title": "Tell RealmCradle your public address", "go": "/admin/settings",
+        {"id": "address", "title": "Tell WorldCradle your public address", "go": "/admin/settings",
          "done": bool(cfg.get("public_host")),
          "help": "The address your friends connect to, shown in each server's “How to join”. "
                  "Settings → General."},
@@ -512,7 +512,7 @@ def admin_config():
         current = config.update(lambda c: c.update(changes))
         audit_log.info("settings changed ip=%s keys=%s", _client_ip(), ",".join(sorted(changes)))
     # report current editable values (admin-only page; token shown for editing)
-    timer_on = systemd.is_enabled("realmcradle-backup.timer")
+    timer_on = systemd.is_enabled("worldcradle-backup.timer")
     return jsonify({
         "ok": True,
         "public_host": current.get("public_host", ""),
@@ -522,7 +522,7 @@ def admin_config():
         "satisfactory_api_token": current.get("satisfactory_api_token", ""),
         "default_backup_keep": current.get("default_backup_keep", config.DEFAULT_BACKUP_KEEP),
         "install_dirs": current.get("install_dirs", {}),
-        "backup_schedule": "Daily at 05:00 local (realmcradle-backup.timer)",
+        "backup_schedule": "Daily at 05:00 local (worldcradle-backup.timer)",
         "backup_timer_enabled": timer_on,
     })
 

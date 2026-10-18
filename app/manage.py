@@ -9,7 +9,7 @@
   manage.py install-cert              put a renewed certificate in place
                                       (run by the renewal timer)
 
-Everyday jobs have friendlier versions in the `realmcradle` command (cli.py).
+Everyday jobs have friendlier versions in the `worldcradle` command (cli.py).
 """
 import getpass
 import sys
@@ -57,7 +57,7 @@ def main() -> int:
     if cmd == "show":
         cfg = config.load()
         print(f"dev-server bind: {cfg['bind_host']}:{cfg['bind_port']} "
-              f"(the service's real address is set in realmcradle.service)")
+              f"(the service's real address is set in worldcradle.service)")
         print(f"admin password set: {'yes' if cfg['admin_password_hash'] else 'no'}")
         return 0
     print(__doc__)

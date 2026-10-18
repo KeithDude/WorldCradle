@@ -82,7 +82,7 @@ def crash_warning(unit: str, name: str) -> str:
         if not seen["alerted"]:
             seen["alerted"] = True
             try:
-                alerts.notify(f"⚠️ realmcradle: {name} keeps crashing",
+                alerts.notify(f"⚠️ worldcradle: {name} keeps crashing",
                               f"{name} has crashed and restarted itself {max(n, 1)} time(s) in the last "
                               f"{CRASH_WINDOW // 60} minutes. Check its Logs on the dashboard.", "bad")
             except Exception:
@@ -293,7 +293,7 @@ class Poller:
             # which rows the card shows: they depend on the game, not on whether it's running
             "rows": game.card_rows(s) if game else {"players": False, "answering": False, "server_stats": False},
             "backup_warn": self._backup_warn(s),
-            "crash_warn": crash_warning(s.unit, s.name) if (online or s.managed == "realmcradle") else "",
+            "crash_warn": crash_warning(s.unit, s.name) if (online or s.managed == "worldcradle") else "",
             "_probe": False,
         }
 

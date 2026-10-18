@@ -92,7 +92,7 @@ class DstGame(SimpleGame):
 
     def server_folder(self, install, key):
         # the game's own place for worlds ("clusters"), one per server
-        return os.path.join(os.path.expanduser(STORAGE_ROOT), CONF_DIR, "rc_" + key.replace("-", "_"))
+        return os.path.join(os.path.expanduser(STORAGE_ROOT), CONF_DIR, "wc_" + key.replace("-", "_"))
 
     @staticmethod
     def _args(server_dir) -> str:

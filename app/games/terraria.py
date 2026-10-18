@@ -26,7 +26,7 @@ EXE = "TerrariaServer.bin.x86_64"
 SIZES = [["1", "Small"], ["2", "Medium"], ["3", "Large"]]
 DIFFICULTIES = [["0", "Classic"], ["1", "Expert"], ["2", "Master"], ["3", "Journey"]]
 _EVENTS = re.compile(r"^(?P<joined>[^\r\n]{1,40}?) has joined\.\s*$|^(?P<left>[^\r\n]{1,40}?) has left\.\s*$", re.M)
-_UA = {"User-Agent": "Mozilla/5.0 (RealmCradle)"}   # terraria.org refuses the default Python agent
+_UA = {"User-Agent": "Mozilla/5.0 (WorldCradle)"}   # terraria.org refuses the default Python agent
 
 class TerrariaGame(SimpleGame):
     kind = "terraria"

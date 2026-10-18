@@ -1,14 +1,14 @@
 """The web routes' safety rules: every change needs a signed-in admin and the page's CSRF token."""
 import pytest
 
-import app as rc_app
+import app as wc_app
 import config
 
 
 @pytest.fixture
 def client():
-    rc_app.app.config["TESTING"] = True
-    with rc_app.app.test_client() as c:
+    wc_app.app.config["TESTING"] = True
+    with wc_app.app.test_client() as c:
         yield c
 
 
@@ -20,7 +20,7 @@ def _sign_in(client):
 
 
 def _post_routes():
-    return sorted(r.rule for r in rc_app.app.url_map.iter_rules()
+    return sorted(r.rule for r in wc_app.app.url_map.iter_rules()
                   if "POST" in r.methods and r.rule.startswith("/admin"))
 
 
@@ -76,7 +76,7 @@ def test_pages_have_no_inline_styles():
     or in the page's code would be silently ignored by the browser."""
     import glob
     import os
-    root = os.path.join(os.path.dirname(rc_app.__file__))
+    root = os.path.join(os.path.dirname(wc_app.__file__))
     files = glob.glob(os.path.join(root, "templates", "*.html")) + glob.glob(os.path.join(root, "static", "js", "*.js"))
     offenders = [os.path.basename(f) for f in files if "style=" in open(f, encoding="utf-8").read()]
     assert not offenders, f"inline style in: {offenders}"

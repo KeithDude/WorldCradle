@@ -59,7 +59,7 @@ class AsaGame(ArkGame):
             {"name": "crossplay", "label": "Allow console players (crossplay)", "type": "checkbox",
              "default": False},
             {"name": "cluster_id", "label": "Cluster name (blank = the configured default)",
-             "placeholder": "realmcradle"},
+             "placeholder": "worldcradle"},
         ]
 
     def session_name(self, spec, name):

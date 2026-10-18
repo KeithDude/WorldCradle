@@ -86,7 +86,7 @@ def source_rcon(port: int, password: str, command: str, timeout: float = RCON_TI
                 host: str = HOST) -> str | None:
     """Run one command over Valve's Source RCON protocol and return the reply text
     ("" if the server sent none). None if the console can't be reached or the
-    password is refused. Written here rather than taken from a library so RealmCradle
+    password is refused. Written here rather than taken from a library so WorldCradle
     carries no GPL dependency."""
     def send(s, pid: int, ptype: int, body: str) -> None:
         payload = struct.pack("<ii", pid, ptype) + body.encode("utf-8") + b"\x00\x00"

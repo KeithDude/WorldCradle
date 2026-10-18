@@ -1,7 +1,7 @@
-"""applog.py — logging for realmcradle.
+"""applog.py — logging for worldcradle.
 
 Two rotating-file loggers (also echoed to stderr → systemd journal):
-  * app_log  (logs/realmcradle.log)  — errors, warnings, debug/operational events.
+  * app_log  (logs/worldcradle.log)  — errors, warnings, debug/operational events.
   * audit_log(logs/audit.log)     — security events: logins, lockouts, every
                                      admin control action, settings changes.
 
@@ -38,13 +38,13 @@ def _logger(name: str, filename: str, level: int = logging.INFO) -> logging.Logg
             os.chmod(path, 0o600)
         except OSError:
             pass
-        if not os.environ.get("REALMCRADLE_QUIET_LOG"):   # the `realmcradle` command keeps its screen clean
-            sh = logging.StreamHandler()  # → stderr → journald (journalctl --user -u realmcradle)
+        if not os.environ.get("WORLDCRADLE_QUIET_LOG"):   # the `worldcradle` command keeps its screen clean
+            sh = logging.StreamHandler()  # → stderr → journald (journalctl --user -u worldcradle)
             sh.setFormatter(logging.Formatter("%(name)s %(levelname)s %(message)s"))
             lg.addHandler(sh)
     return lg
 
 
-app_log = _logger("realmcradle", "realmcradle.log")
-audit_log = _logger("realmcradle.audit", "audit.log")
-access_log = _logger("realmcradle.access", "access.log")
+app_log = _logger("worldcradle", "worldcradle.log")
+audit_log = _logger("worldcradle.audit", "audit.log")
+access_log = _logger("worldcradle.access", "access.log")

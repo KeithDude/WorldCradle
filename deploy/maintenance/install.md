@@ -13,35 +13,35 @@ editor) can turn into `chmod +s /bin/sh`.
 
 A root-owned system timer gets the same unattended result with no standing
 `NOPASSWD` grant. That is why the script installs to `/usr/local/sbin`
-(root-owned, not writable by the game user) rather than running from `~/realmcradle`.
+(root-owned, not writable by the game user) rather than running from `~/worldcradle`.
 
 **The files in this directory are a staging copy and ARE user-writable.** They are
-not what runs. Only the installed copy at `/usr/local/sbin/realmcradle-os-maintenance.sh`
+not what runs. Only the installed copy at `/usr/local/sbin/worldcradle-os-maintenance.sh`
 executes, and re-installing from here is a privileged action — re-read the script
 before you do it.
 
 ## Install (one time, as root)
 
 ```bash
-# run as the account that runs RealmCradle (not root), from the RealmCradle folder
-cd ~/realmcradle/deploy/maintenance
+# run as the account that runs WorldCradle (not root), from the WorldCradle folder
+cd ~/worldcradle/deploy/maintenance
 
 # 1. the script — filled in with your account, root-owned, not writable by the game user
-sed -e "s/__GAME_USER__/$(id -un)/" -e "s/__GAME_UID__/$(id -u)/" realmcradle-os-maintenance.sh \
-    | sudo install -o root -g root -m 0755 /dev/stdin /usr/local/sbin/realmcradle-os-maintenance.sh
+sed -e "s/__GAME_USER__/$(id -un)/" -e "s/__GAME_UID__/$(id -u)/" worldcradle-os-maintenance.sh \
+    | sudo install -o root -g root -m 0755 /dev/stdin /usr/local/sbin/worldcradle-os-maintenance.sh
 
 # 2. the units
 sudo install -o root -g root -m 0644 \
-    realmcradle-os-maintenance.service realmcradle-os-maintenance.timer \
+    worldcradle-os-maintenance.service worldcradle-os-maintenance.timer \
     /etc/systemd/system/
 
 # 3. activate the weekly timer
 sudo systemctl daemon-reload
-sudo systemctl enable --now realmcradle-os-maintenance.timer
+sudo systemctl enable --now worldcradle-os-maintenance.timer
 
 # 4. confirm
-systemctl status realmcradle-os-maintenance.timer
-systemctl list-timers realmcradle-os-maintenance.timer
+systemctl status worldcradle-os-maintenance.timer
+systemctl list-timers worldcradle-os-maintenance.timer
 ```
 
 ## Preview without changing anything
@@ -51,14 +51,14 @@ non-destructive), then logs what it *would* do instead of stopping servers,
 installing anything, or rebooting:
 
 ```bash
-sudo /usr/local/sbin/realmcradle-os-maintenance.sh --dry-run
+sudo /usr/local/sbin/worldcradle-os-maintenance.sh --dry-run
 ```
 
 ## Run the window now instead of waiting
 
 ```bash
-sudo systemctl start realmcradle-os-maintenance.service
-journalctl -u realmcradle-os-maintenance.service -f
+sudo systemctl start worldcradle-os-maintenance.service
+journalctl -u worldcradle-os-maintenance.service -f
 ```
 
 ## Schedule
@@ -71,7 +71,7 @@ Not `Persistent=true` — if the box is off at 10:00 we do **not** want the flee
 stopped and rebooted at whatever random time it next boots. A missed week just
 waits for the next one.
 
-To change the day/time: `sudo systemctl edit realmcradle-os-maintenance.timer`.
+To change the day/time: `sudo systemctl edit worldcradle-os-maintenance.timer`.
 
 ## Safety behaviour
 
@@ -86,16 +86,16 @@ To change the day/time: `sudo systemctl edit realmcradle-os-maintenance.timer`.
 | No reboot required | Restarts exactly the servers it stopped. |
 
 Servers are discovered at runtime from `systemctl --user`, so servers added or
-removed via the dashboard are picked up automatically. `realmcradle.service` (the
-dashboard itself) is not a `realmcradle-*` unit and is never stopped.
+removed via the dashboard are picked up automatically. `worldcradle.service` (the
+dashboard itself) is not a `worldcradle-*` unit and is never stopped.
 
 Servers you stopped in the dashboard are not set to start with the computer, so they stay
 stopped after a reboot — on purpose. Servers that were running come back.
 
 ## Log
 
-`/var/log/realmcradle-os-maintenance.log`, plus the systemd journal:
+`/var/log/worldcradle-os-maintenance.log`, plus the systemd journal:
 
 ```bash
-journalctl -u realmcradle-os-maintenance.service --since "1 month ago"
+journalctl -u worldcradle-os-maintenance.service --since "1 month ago"
 ```

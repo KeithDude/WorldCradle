@@ -40,7 +40,7 @@ class StationeersGame(SimpleGame):
 
     @staticmethod
     def _save(server_dir):
-        return "rc_" + os.path.basename(server_dir).replace("-", "_")
+        return "wc_" + os.path.basename(server_dir).replace("-", "_")
 
     def command(self, spec, ports, name, server_dir, install):
         world = self.option(spec, "world")

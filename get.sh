@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# RealmCradle — download and install in one step.
+# WorldCradle — download and install in one step.
 #
-#   wget -qO- https://raw.githubusercontent.com/KeithDude/RealmCradle/main/get.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/KeithDude/WorldCradle/main/get.sh | bash
 #   (or: curl -fsSL …/get.sh | bash — a fresh Ubuntu desktop has wget but not curl)
 #
-# Installs the newest RealmCradle package from GitHub Releases (checked against its published
-# checksum) and sets it up for your account. Later updates: realmcradle update.
+# Installs the newest WorldCradle package from GitHub Releases (checked against its published
+# checksum) and sets it up for your account. Later updates: worldcradle update.
 # With --from-source, or while no release is published yet, it downloads the source into
-# ~/realmcradle with git and runs install.sh instead.
+# ~/worldcradle with git and runs install.sh instead.
 # Other options are passed on (e.g.  ... | bash -s -- --minimal).
 set -euo pipefail
-PROJECT="KeithDude/RealmCradle"
-DEST="${REALMCRADLE_DIR:-$HOME/realmcradle}"
+PROJECT="KeithDude/WorldCradle"
+DEST="${WORLDCRADLE_DIR:-$HOME/worldcradle}"
 FROM_SOURCE=0; ARGS=()
 for arg in "$@"; do
     if [ "$arg" = --from-source ]; then FROM_SOURCE=1; else ARGS+=("$arg"); fi
@@ -31,7 +31,7 @@ if [ "$FROM_SOURCE" = 0 ]; then
        && python3 - "$work/release.json" > "$work/urls" <<'PICK'
 import json, re, sys
 assets = {a["name"]: a["browser_download_url"] for a in json.load(open(sys.argv[1])).get("assets", [])}
-deb = next(n for n in assets if re.fullmatch(r"realmcradle_[A-Za-z0-9.+~-]+_all\.deb", n))
+deb = next(n for n in assets if re.fullmatch(r"worldcradle_[A-Za-z0-9.+~-]+_all\.deb", n))
 print(deb, assets[deb], assets[deb + ".sha256"])
 PICK
     then
@@ -56,9 +56,9 @@ PICK
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${APT[@]}" "$work/$name"
         rm -rf "$work"; trap - EXIT
         # when piped from curl, setup's questions need the keyboard, not the pipe
-        exec realmcradle setup "${SETUP[@]}" </dev/tty
+        exec worldcradle setup "${SETUP[@]}" </dev/tty
     fi
-    echo "== No RealmCradle package is published yet — installing from the source instead."
+    echo "== No WorldCradle package is published yet — installing from the source instead."
 fi
 
 if ! command -v git >/dev/null 2>&1; then
@@ -66,10 +66,10 @@ if ! command -v git >/dev/null 2>&1; then
     sudo apt-get update && sudo apt-get install -y git
 fi
 if [ -d "$DEST/.git" ]; then
-    echo "== Updating RealmCradle in $DEST"
+    echo "== Updating WorldCradle in $DEST"
     git -C "$DEST" pull --ff-only
 else
-    echo "== Downloading RealmCradle into $DEST"
+    echo "== Downloading WorldCradle into $DEST"
     git clone --depth 1 "https://github.com/$PROJECT.git" "$DEST"
 fi
 exec bash "$DEST/install.sh" "${ARGS[@]}" </dev/tty

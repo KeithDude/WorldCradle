@@ -29,10 +29,10 @@ function controlsRow(v) {
   const life = v.online ? [btn("restart", "Restart", "warn"), btn("stop", "Stop", "danger"),
                            btn("kill", "Force stop", "danger")]
                         : [btn("start", "Start", "go")];
-  if (v.managed === "realmcradle") life.push(btn("removesrv", "Remove", "danger"));
+  if (v.managed === "worldcradle") life.push(btn("removesrv", "Remove", "danger"));
   if (v.online && can("save")) life.push(btn("save", "Save"));
   // the other buttons, after a thin divider
-  const editBtn = v.managed === "realmcradle" ? btn("editscript", "Launch script") : "";
+  const editBtn = v.managed === "worldcradle" ? btn("editscript", "Launch script") : "";
   const bkBtn = `<a class="ctl" href="/admin/backups#bk-${esc(v.key)}" title="${esc(ACTION_TITLES.backups)}">Backups</a>`;
   const acts = (v.online
     ? [can("broadcast") ? btn("broadcast", "Message") : "",
@@ -138,7 +138,7 @@ function renderAdmin(snap) {
   stamp(snap.ts);
 }
 
-// Host OS (apt) update tile. RealmCradle keeps its own package lists, so a
+// Host OS (apt) update tile. WorldCradle keeps its own package lists, so a
 // count here is genuinely fresh rather than however stale the system's
 // /var/lib/apt/lists happens to be — the tooltip states when we last looked.
 function renderOsUpdates(u) {

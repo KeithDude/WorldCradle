@@ -40,4 +40,4 @@ class WineGame(SimpleGame):
         return f'WINEPREFIX="{common.wine_prefix(self.kind, spec["key"])}" wineserver -k 2>/dev/null\n'
 
     def proc_pattern(self, spec, ports, server_dir):
-        return f"realmcradle-servers\\{spec['key']}\\"
+        return f"worldcradle-servers\\{spec['key']}\\"

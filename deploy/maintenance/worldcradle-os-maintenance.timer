@@ -1,5 +1,5 @@
 [Unit]
-Description=realmcradle: weekly OS maintenance window (daytime, clear of play hours)
+Description=worldcradle: weekly OS maintenance window (daytime, clear of play hours)
 
 [Timer]
 # Wednesday 10:00 local — deliberately mid-morning. Observed play sessions on

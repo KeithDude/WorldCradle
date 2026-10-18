@@ -1,7 +1,7 @@
 #!/bin/bash
-# realmcradle-os-maintenance.sh — unattended OS patching for the game-server box.
+# worldcradle-os-maintenance.sh — unattended OS patching for the game-server box.
 #
-# Runs as root from realmcradle-os-maintenance.timer. The sequence is deliberately
+# Runs as root from worldcradle-os-maintenance.timer. The sequence is deliberately
 # conservative, because this box hosts live game worlds:
 #
 #   1. Refuse to run if ANY player is online (checked via the dashboard's
@@ -20,16 +20,16 @@
 # it runs as root on a timer, so a user-writable copy would be a root
 # escalation. See install.md.
 #
-# Usage: realmcradle-os-maintenance.sh [--dry-run]
+# Usage: worldcradle-os-maintenance.sh [--dry-run]
 set -uo pipefail
 
-# Filled in by the install step in install.md (the account that runs RealmCradle).
+# Filled in by the install step in install.md (the account that runs WorldCradle).
 GAME_USER="__GAME_USER__"
 GAME_UID="__GAME_UID__"
-case "$GAME_USER$GAME_UID" in *__*) echo "realmcradle-os-maintenance: not configured — see install.md" >&2; exit 1 ;; esac
-DASH_PORT=8443            # the dashboard's port (realmcradle.service)
+case "$GAME_USER$GAME_UID" in *__*) echo "worldcradle-os-maintenance: not configured — see install.md" >&2; exit 1 ;; esac
+DASH_PORT=8443            # the dashboard's port (worldcradle.service)
 DASH_URL="https://127.0.0.1:${DASH_PORT}/api/public.json"
-LOG="/var/log/realmcradle-os-maintenance.log"
+LOG="/var/log/worldcradle-os-maintenance.log"
 STOP_TIMEOUT=300          # seconds to wait for a graceful game-server stop
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
@@ -102,8 +102,8 @@ fi
 
 # --- 3. back up saves before touching anything -------------------------------
 log "backing up all server saves…"
-# the dashboard's own daily-backup service: it knows where RealmCradle and its settings live
-if run as_user systemctl --user start realmcradle-backup.service >>"$LOG" 2>&1; then
+# the dashboard's own daily-backup service: it knows where WorldCradle and its settings live
+if run as_user systemctl --user start worldcradle-backup.service >>"$LOG" 2>&1; then
   log "backups: ok"
 else
   log "ABORT: save backup failed — refusing to patch without a good backup."
@@ -112,10 +112,10 @@ fi
 
 # --- 4. stop the fleet gracefully --------------------------------------------
 # Discover running game units rather than hardcoding, so servers added or
-# removed via the dashboard are picked up automatically. realmcradle.service (the
+# removed via the dashboard are picked up automatically. worldcradle.service (the
 # dashboard) and the backup unit are not game servers — leave them alone.
-mapfile -t UNITS < <(as_user systemctl --user list-units --state=running --no-legend 'realmcradle-*.service' 2>/dev/null \
-  | awk '{print $1}' | grep -vE '^realmcradle-backup\.service$')
+mapfile -t UNITS < <(as_user systemctl --user list-units --state=running --no-legend 'worldcradle-*.service' 2>/dev/null \
+  | awk '{print $1}' | grep -vE '^worldcradle-backup\.service$')
 
 if [ "${#UNITS[@]}" -eq 0 ]; then
   log "no running game servers found"

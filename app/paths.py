@@ -1,10 +1,10 @@
-"""paths.py — where RealmCradle keeps its runtime data, separate from the code.
+"""paths.py — where WorldCradle keeps its runtime data, separate from the code.
 
 Code lives in the repo (``app/``); runtime data lives in a data root so updating
 or shipping the code never touches a user's config/saves/logs. The data root is
-``$REALMCRADLE_HOME`` if set, else ``~/.config/realmcradle``. It holds config.json,
+``$WORLDCRADLE_HOME`` if set, else ``~/.config/worldcradle``. It holds config.json,
 servers.json, the secrets file, certs/ and logs/. Save backups default under
-``~/.local/share/realmcradle/backups`` (override via the ``backups_dir`` setting).
+``~/.local/share/worldcradle/backups`` (override via the ``backups_dir`` setting).
 
 This module has no dependencies so every other module can import it freely.
 """
@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 
-HOME = os.environ.get("REALMCRADLE_HOME") or os.path.expanduser("~/.config/realmcradle")
+HOME = os.environ.get("WORLDCRADLE_HOME") or os.path.expanduser("~/.config/worldcradle")
 
 
 def data(*parts: str) -> str:
@@ -25,7 +25,7 @@ SECRETS_FILE = data("secrets.conf")          # default for FRESH installs
 CERTS_DIR = data("certs")
 LOG_DIR = data("logs")
 # setup.sh creates this folder; the "backups_dir" setting overrides it
-DEFAULT_BACKUP_ROOT = os.environ.get("REALMCRADLE_BACKUPS") or os.path.expanduser("~/.local/share/realmcradle/backups")
+DEFAULT_BACKUP_ROOT = os.environ.get("WORLDCRADLE_BACKUPS") or os.path.expanduser("~/.local/share/worldcradle/backups")
 
 
 def ensure_home() -> str:
