@@ -71,7 +71,7 @@ class ArkGame(SimpleGame):
     def extra_fields(self) -> list[dict]:
         return [
             {"name": "map", "label": "Map", "type": "select", "options": self.installed_maps(),
-             "help": "Official maps found in this install."},
+             "default": self.installed_maps()[0][0], "help": "Official maps found in this install."},
             {"name": "map_custom", "label": "Custom map code — mod maps only (overrides Map)",
              "placeholder": "", "help": "The map's code as used on the launch line; needs its mod ID below."},
             {"name": "maxplayers", "label": "Max players (1-127)", "type": "number",
@@ -123,7 +123,8 @@ class ArkGame(SimpleGame):
 
     @staticmethod
     def _map(spec) -> str:
-        mapcode = (spec.get("map_custom") or "").strip() or (spec.get("map") or "").strip()
+        mapcode = ((spec.get("map_custom") or "").strip() or (spec.get("map") or "").strip()
+                   or ArkGame.installed_maps()[0][0])          # blank: the first map this install has
         if not re.match(r"^[A-Za-z0-9_]{3,40}$", mapcode):
             raise ActionError("Map code must be 3-40 letters/digits/underscores (e.g. TheCenter).")
         return mapcode
