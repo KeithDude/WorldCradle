@@ -82,7 +82,12 @@ class SatisfactoryGame(SimpleGame):
                 "SAVE\n")
 
     def pre(self, spec, ports, name, server_dir, install):
-        return f'export HOME="{server_dir}"\n'
+        # Its admin API (HTTPS, on the game port over TCP) quietly moves to the next port up when
+        # that one is still busy — as it is for a few seconds after a restart, while the last
+        # connections close — and the dashboard then can't reach it. Wait for the port to clear.
+        return (f'export HOME="{server_dir}"\n'
+                f'i=0; while [ $i -lt 60 ] && ss -Htan "( sport = :{ports["game"]} )" 2>/dev/null | grep -q .; '
+                "do sleep 1; i=$((i+1)); done\n")
 
     def save_dir(self, server_dir, install):
         return os.path.join(server_dir, ".config/Epic/FactoryGame/Saved/SaveGames")
