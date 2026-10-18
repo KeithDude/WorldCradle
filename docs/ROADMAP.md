@@ -242,6 +242,10 @@ right before the repository is made public.
          by the package), a broken update rolled back to the previous version by itself,
          `apt remove` (dashboard stopped, settings and game server kept), reinstall + setup picked
          up the same settings and servers. *(2026-10-16)*
+   - [x] **Tested again under the WorldCradle name** on the VM (2026-10-18): fresh `apt install` +
+         setup, `worldcradle update` (7 s), a broken update rolled back in 30 s — it used to wait the
+         full 10 minutes; now three crash-restarts of the new version are enough — and `worldcradle
+         uninstall` + `apt remove` + reinstall picking up the same settings. *(2026-10-18)*
    - [x] GitHub Actions: tests, unused-code check and a package build on every push
          (`.github/workflows/tests.yml`); pushing a tag `v<version>` checks VERSION and CHANGELOG
          agree, builds the package and creates the release with it, its checksum and the
@@ -254,7 +258,11 @@ right before the repository is made public.
          you when the package is installed from the Ubuntu App Center (no terminal at all).
 2. [ ] **WorldCradle apt repository** (signed, hosted on GitHub Pages or similar) — then installing is
        `apt install worldcradle` after adding the repository once, and updates arrive with the
-       computer's normal system updates (`apt upgrade`).
+       computer's normal system updates (`apt upgrade`). **Wanted as a future update — not for the
+       first public release** (Keith, 2026-10-18; until then: `get.sh`, or the `.deb` from the
+       Releases page). Needs: a signing key kept as a GitHub secret, a publish step in `release.yml`,
+       `get.sh` adding the repository, and a way to keep `worldcradle update`'s automatic roll-back
+       when an update comes through `apt upgrade` instead.
 3. [ ] **Launchpad PPA** (`sudo add-apt-repository ppa:…/worldcradle`) — the most familiar route for
        Ubuntu users; Launchpad builds from source, which takes more packaging work.
 
