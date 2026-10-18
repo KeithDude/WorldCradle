@@ -164,6 +164,17 @@ def link_farm(install: str, server_dir: str, own: set[str]) -> None:
             os.symlink(os.path.join(install, entry), link)
 
 
+def wine_runs_32bit() -> bool:
+    """Can this computer's Wine run 32-bit Windows programs? Newer Wine (Ubuntu 26.04's 10.0) has the
+    32-bit parts built in; older Wine (Ubuntu 22.04 and 24.04) needs the separate 32-bit package."""
+    import glob
+    return any(glob.glob(p) for p in (
+        "/usr/lib/x86_64-linux-gnu/wine/i386-windows/ntdll.dll",   # built into 64-bit Wine
+        "/usr/lib/i386-linux-gnu/wine/i386-windows/ntdll.dll",     # the wine32 package
+        "/usr/lib/wine/i386-windows/ntdll.dll",
+        "/opt/wine*/lib*/wine/i386-windows/ntdll.dll"))           # WineHQ's own packages
+
+
 def wine_prefix(kind: str, key: str) -> str:
     """Each Wine server gets its own prefix: a shared one shares a single
     wineserver, so stopping one server would take the others down with it."""

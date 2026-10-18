@@ -45,7 +45,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | SCUM | Not Tested | Windows server via Wine | Steam app 3792580 | Joining, and which port to type; Public listing |
 | Sons of the Forest | Not Tested | Windows server via Wine | Steam app 2465200 | Joining |
 | Soulmask | Not Tested | Linux native | Steam app 3017300 | Joining; Save-and-quit on stop |
-| Space Engineers | Not Tested | Windows server via Wine | Steam app 298740 · EULA tick required | Joining; World kept after a restart with real builds |
+| Space Engineers | Not Tested | Windows server via Wine — on Ubuntu 22.04 and 24.04 it also needs 32-bit Wine (the Games panel shows the commands to add it) | Steam app 298740 · EULA tick required | Joining; World kept after a restart with real builds; 32-bit Wine on Ubuntu 24.04 actually making its .NET set-up work |
 | Squad | Not Tested | Linux native | Steam app 403240 · EULA tick required | Joining; Join password; Player list |
 | Squad 44 | Not Tested | Linux native | Steam app 746200 | Joining — its game traffic goes through Steam's network (the game port isn't an ordinary open port; only the query port is); Join password |
 | StarRupture | Not Tested | Windows server via Wine | Steam app 3809400 · EULA tick required | Joining; Loading the saved session after a restart |

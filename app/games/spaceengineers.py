@@ -86,6 +86,7 @@ class SpaceEngineersGame(WineGame):
     kind = "spaceengineers"
     label = "Space Engineers"
     steam_app = 298740
+    needs_wine32 = True          # Microsoft's .NET installer, run once, has 32-bit parts
     requires = ["wine", "xvfb-run", "winetricks", "cabextract", "curl"]   # for the one-off runtime setup
     exe = EXE
     run_dir = "DedicatedServer64"

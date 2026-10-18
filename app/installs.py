@@ -32,11 +32,33 @@ def is_installed(game) -> bool:
     return os.path.exists(os.path.join(config.install_dir(game.kind), game.install_marker))
 
 
+# the system package that provides each program or library a game can need
+_PACKAGE = {"wine": "wine", "xvfb-run": "xvfb", "winetricks": "winetricks", "cabextract": "cabextract",
+            "curl": "curl", "java": "default-jre-headless", "libgdiplus": "libgdiplus"}
+WINE32 = "32-bit Wine"
+
+
 def _missing(game) -> list[str]:
-    """Programs this game's server needs that aren't on this computer."""
+    """What this game's server needs that isn't on this computer."""
     import ctypes.util
-    return [prog for prog in game.requires if not shutil.which(prog)] + \
-           [f"lib{lib}" for lib in game.requires_libs if not ctypes.util.find_library(lib)]
+    from games import common
+    out = [prog for prog in game.requires if not shutil.which(prog)] + \
+          [f"lib{lib}" for lib in game.requires_libs if not ctypes.util.find_library(lib)]
+    if game.needs_wine32 and "wine" not in out and not common.wine_runs_32bit():
+        out.append(WINE32)
+    return out
+
+
+def fix_commands(missing: list[str]) -> list[str]:
+    """The commands to type, as yourself, to add what's missing — each needs administrator rights,
+    so the person types the sudo."""
+    pkgs = [_PACKAGE.get(m, m) for m in missing if m != WINE32]
+    cmds = []
+    if WINE32 in missing:     # 32-bit software has to be switched on for the whole computer first
+        cmds += ["sudo dpkg --add-architecture i386", "sudo apt update", "sudo apt install wine32:i386"]
+    if pkgs:
+        cmds.append("sudo apt install " + " ".join(pkgs))
+    return cmds
 
 
 def steam_terms_url() -> str:
@@ -57,7 +79,7 @@ def catalog() -> list[dict]:
             "installed": is_installed(g), "dir": d,
             "size_gb": g.install_gb, "ram_note": g.ram_note, "about": g.about,
             "eula": g.eula, "steam": bool(g.steam_app),
-            "missing": _missing(g), "free_gb": round(free_gb, 1) if free_gb is not None else None,
+            "missing": _missing(g), "fix": fix_commands(_missing(g)), "free_gb": round(free_gb, 1) if free_gb is not None else None,
         })
     return out
 
@@ -71,8 +93,8 @@ def start(kind: str) -> dict:
         raise ActionError("A game update is running — wait for it to finish, then try again.")
     missing = _missing(game)
     if missing:
-        raise ActionError(f"{game.label} needs {', '.join(missing)} on this computer first. "
-                          f"Run the WorldCradle installer again with that option, then come back.")
+        raise ActionError(f"{game.label} needs {', '.join(missing)} on this computer first. To add it, "
+                          f"run these in a terminal, then come back:  " + "  ·  ".join(fix_commands(missing)))
     if is_installed(game):
         raise ActionError(f"{game.label} is already installed. To get a newer version, use "
                           f"“Update now” on one of its servers.")

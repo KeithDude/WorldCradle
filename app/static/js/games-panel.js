@@ -24,7 +24,7 @@ export async function loadGames() {
   }
   list.innerHTML = d.games.map((g) => {
     const need = g.missing.length
-      ? `<div class="g-need bad">Needs ${esc(g.missing.join(", "))} on this computer first — run the WorldCradle installer again to add it.</div>`
+      ? `<div class="g-need bad">Needs ${esc(g.missing.join(", "))} on this computer first. To add it, run in a terminal:${(g.fix || []).map((c) => `<br><code>${esc(c)}</code>`).join("")}</div>`
       : `<div class="g-need">About ${esc(g.size_gb)} GB of disk${g.ram_note ? " · " + esc(g.ram_note) : ""}</div>`;
     const side = g.installed
       ? pill("on", "installed") + `<button class="linkbtn hint-sm" data-uninstall="${esc(g.kind)}" data-label="${esc(g.label)}">Uninstall</button>`

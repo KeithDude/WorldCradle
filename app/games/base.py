@@ -100,6 +100,7 @@ class GameType:
     steam_beta: str | None = None      # Steam branch to install, when the Linux build lives on one
     requires: list[str] = []        # programs the server needs on this computer (e.g. "wine")
     requires_libs: list[str] = []   # system libraries it needs, by short name (e.g. "gdiplus")
+    needs_wine32 = False            # also runs 32-bit Windows programs (see common.wine_runs_32bit)
     ram_note: str = ""              # plain-language memory guidance
     about: str = ""                 # one line for the Games list
     actions: set[str] = set()       # supported controls: save/broadcast/kick/ban/chat
