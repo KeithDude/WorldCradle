@@ -410,6 +410,14 @@ def _answers(timeout: int = 60) -> bool:
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE                 # self-signed certificate is normal here
+    import systemd
+
+    def restarts() -> int:
+        try:
+            return int(systemd.show(UNIT, "NRestarts").get("NRestarts", "0") or 0)
+        except Exception:
+            return 0
+    first = restarts()
     end = time.time() + timeout
     while time.time() < end:
         try:
@@ -418,6 +426,10 @@ def _answers(timeout: int = 60) -> bool:
                     return True
         except Exception:
             pass
+        # A version that can't start keeps crashing and being restarted; there's no point waiting
+        # out the whole time (which is there for a first start that installs new libraries).
+        if restarts() - first >= 3:
+            return False
         time.sleep(2)
     return False
 
