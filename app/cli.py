@@ -670,7 +670,7 @@ def cmd_uninstall(args) -> int:
         _say(f"  • the WorldCradle program folder: {REPO}  — delete it with:  rm -rf {REPO}")
     if installs:
         _say("  • your games and saves: " + ", ".join(installs))
-    if os.path.isfile("/etc/fail2ban/jail.d/worldcradle.conf"):
+    if not PACKAGED and os.path.isfile("/etc/fail2ban/jail.d/worldcradle.conf"):   # the package removes its own
         _say("  • the login-protection rule: sudo rm /etc/fail2ban/jail.d/worldcradle.conf "
              "/etc/fail2ban/filter.d/worldcradle.conf && sudo systemctl reload fail2ban")
     _say("  • system packages installed for the games (Wine, Java, …): remove with apt if you no longer need them.")

@@ -17,10 +17,10 @@ if [ "$1" = remove ]; then
         rm -f /etc/fail2ban/jail.d/worldcradle.conf /etc/fail2ban/filter.d/worldcradle.conf
         systemctl restart fail2ban >/dev/null 2>&1 || true
     fi
-    echo "WorldCradle: the dashboard is stopped. Your settings, game servers and saves are kept"
-    echo "          (in ~/.config/worldcradle and the game folders); installing WorldCradle again uses them."
-    echo "          Game servers you created keep running; to remove those too, reinstall WorldCradle"
-    echo "          and run: worldcradle uninstall"
+    echo "WorldCradle: the program is removed. Anything \"worldcradle uninstall\" didn't delete is kept —"
+    echo "          settings in ~/.config/worldcradle, games and saves in their folders — and installing"
+    echo "          WorldCradle again picks them up. (Game servers keep running until you run"
+    echo "          \"worldcradle uninstall\" before removing the program.)"
 fi
 find /usr/lib/worldcradle -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 exit 0
