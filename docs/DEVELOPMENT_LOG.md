@@ -9,6 +9,24 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-18 — Fresh-install test on Ubuntu 24.04, and sudo only where you type it
+
+- **Installing no longer asks for a password behind your back.** `get.sh` is retired; installing is
+  download, `sudo apt install`, `worldcradle setup`. The package does the jobs that need root when it
+  is installed (start with the computer, the firewall, fail2ban); `worldcradle setup` never asks for a
+  password. Updating is `sudo worldcradle update` (or by hand, the same way as installing); installing
+  from the source is `sudo bash install.sh`. Run as root, WorldCradle writes nothing in the account's
+  folders.
+- **Fresh Ubuntu 24.04 LTS server**, tested by Claude and then by Keith following the guide: install in
+  under a minute, setup with no password prompt, first visit, and Terraria, Minecraft, Eco, Valheim,
+  Palworld, V Rising and Abiotic Factor running. **Keith installed Abiotic Factor himself and joined
+  it.** `sudo bash install.sh` tested too.
+- **Space Engineers on Ubuntu 22.04/24.04 needs 32-bit Wine** for its one-time .NET install (26.04's
+  Wine has it built in). The Games panel now says so with the commands to type; whether it then fully
+  works on 24.04 is still to be confirmed.
+- The six getting-started screenshots retaken under the new name; a finished job's message now shows
+  for 10 minutes instead of for good; uninstall messages corrected.
+
 ## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
 
 - **Every game on the shared bases.** All game types now build on `SimpleGame` / `WineGame`, keeping
