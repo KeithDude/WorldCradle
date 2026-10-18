@@ -1,6 +1,6 @@
 // The Games panel (install and uninstall game servers) and the Add-a-server form.
 import { loadChecklist, refreshAdminNow } from "./admin.js";
-import { api, esc, pill, poll, safeUrl, toast } from "./core.js";
+import { api, esc, pill, poll, recentlyFinished, safeUrl, toast } from "./core.js";
 
 // ---- Games panel: what's installed, and install the rest ----
 const gamesState = { lastJob: "", wired: false };
@@ -71,7 +71,7 @@ export async function loadGames() {
 }
 
 // called on every admin poll with the install job's state
-export function renderInstallJob(job) {
+export function renderInstallJob(job, now) {
   const box = document.getElementById("games-job");
   if (!box) return;
   const sig = job ? `${job.state}:${job.kind || ""}` : "";
@@ -81,7 +81,7 @@ export function renderInstallJob(job) {
     document.getElementById("games-job-text").textContent =
       `Installing ${job.label}: ${job.step || "working"}${job.percent ? ` — ${job.percent}%` : ""}`;
     document.getElementById("games-job-bar").style.width = `${Math.min(100, job.percent || 0)}%`;
-  } else if (job && (job.state === "done" || job.state === "failed")) {
+  } else if (recentlyFinished(job, now)) {
     box.hidden = false;
     document.getElementById("games-job-text").textContent = (job.state === "done" ? "✓ " : "✗ ") + (job.message || "");
     document.getElementById("games-job-bar").style.width = job.state === "done" ? "100%" : "0";

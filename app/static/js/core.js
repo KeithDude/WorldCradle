@@ -48,6 +48,14 @@ export function closeModal(id) {
 }
 
 // ---- admin (full) ----
+// A finished job's ✓/✗ message is shown for this long, then the box goes away (it used to stay
+// for good, so a fresh page could show "Added …" from hours earlier). Measured against the
+// snapshot's server time, so a computer whose clock is off doesn't matter.
+const JOB_MESSAGE_SECONDS = 600;
+export const recentlyFinished = (job, now) =>
+  !!job && (job.state === "done" || job.state === "failed")
+  && (!job.finished_ts || !now || now - job.finished_ts < JOB_MESSAGE_SECONDS);
+
 export const pill = (cls, txt) => `<span class="pill ${cls}">${txt}</span>`;
 
 export const reachPill = (v) => (v.reachable ? pill("on", "yes") : pill("bad", "no"));

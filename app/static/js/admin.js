@@ -1,6 +1,6 @@
 // The signed-in dashboard: the server cards and their buttons, the computer's resource use,
 // operating-system updates and the Getting started checklist.
-import { api, esc, fmtDur, pill, poll, reachPill, stamp, toast } from "./core.js";
+import { api, esc, fmtDur, pill, poll, reachPill, recentlyFinished, stamp, toast } from "./core.js";
 import { loadGames, renderInstallJob, wireAddServer } from "./games-panel.js";
 import { doAction } from "./server-actions.js";
 import { DASH, applyFeed, cardHead, gameTitle, joinButton, playersBlock, rows, wireJoin } from "./servers.js";
@@ -123,14 +123,14 @@ function renderAdmin(snap) {
   set("b-mem", `${b.mem_used_gb} / ${b.mem_total_gb} GB`);
   if (b.disk_total_gb != null) set("b-disk", `${b.disk_used_gb} / ${b.disk_total_gb} GB`);
   renderOsUpdates(snap.os_updates);
-  renderInstallJob(snap.install_job);
+  renderInstallJob(snap.install_job, snap.ts);
 
   const pj = snap.provision_job, provEl = document.getElementById("as-prov");
   if (provEl) {
     if (pj && pj.state === "running") {
       provEl.hidden = false;
       provEl.textContent = `⏳ Provisioning ${pj.key || ""}: ${pj.step || "working"}…`;
-    } else if (pj && (pj.state === "done" || pj.state === "failed")) {
+    } else if (recentlyFinished(pj, snap.ts)) {
       provEl.hidden = false;
       provEl.textContent = (pj.state === "done" ? "✓ " : "✗ ") + (pj.message || "");
     } else { provEl.hidden = true; }
