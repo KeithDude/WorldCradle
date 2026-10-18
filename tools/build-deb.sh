@@ -58,7 +58,7 @@ gzip -9n -c "$src/CHANGELOG.md" > "$doc/changelog.gz"
 # permissions: everything readable, only the programs executable
 find "$root" -type d -exec chmod 755 {} +
 find "$root" -type f -exec chmod 644 {} +
-chmod 755 "$lib/setup.sh" "$lib"/bin/worldcradle "$lib"/bin/worldcradle-ensure-venv "$lib"/bin/worldcradle-preflight
+chmod 755 "$lib/setup.sh" "$lib"/bin/worldcradle "$lib"/bin/worldcradle-ensure-venv "$lib"/bin/worldcradle-preflight "$lib"/bin/worldcradle-system-setup
 
 # --- package information -------------------------------------------------------------
 group() { sed -n "s/^$1:[[:space:]]*//p" "$src/deploy/packages.conf"; }

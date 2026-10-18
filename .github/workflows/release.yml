@@ -40,7 +40,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           awk -v v="$version" '$0 ~ "^## "v"( |$)" {on=1; next} /^## / && on {exit} on' CHANGELOG.md > notes.md
-          printf '\n---\nInstall: see [Getting started](%s/blob/%s/docs/GETTING_STARTED.md). Already installed: `worldcradle update`.\n' \
+          printf '\n---\nInstall: see [Getting started](%s/blob/%s/docs/GETTING_STARTED.md). Already installed: `sudo worldcradle update`.\n' \
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" >> notes.md
       - name: Create the release
         env:

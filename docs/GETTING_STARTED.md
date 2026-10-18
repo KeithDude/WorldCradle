@@ -28,6 +28,9 @@ worldcradle setup
 4. sets WorldCradle up for your account and starts it — no `sudo`, no password. It checks the
    computer is suitable first.
 
+(Tip: it's a good idea to bring the computer up to date first, with `sudo apt update` and then
+`sudo apt upgrade`. Not required.)
+
 When it's done it shows:
 
 - the **address** to open in your browser (and a QR code for your phone),
@@ -120,7 +123,7 @@ server going down, a server that keeps crashing, or a backup that failed.
 | Back up or restore a world | **Backups** (a backup is also made every night) | `worldcradle backup <name>` / `worldcradle backup list <name>` |
 | Message the players | **Message** on the card (games that support it) | — |
 | Forgot the dashboard password | — | `worldcradle reset-password` |
-| Update WorldCradle | — | `worldcradle update` |
+| Update WorldCradle | — | `sudo worldcradle update` |
 | Check alerts reach you | **Settings → Alerts → Test** | `worldcradle test-alert` |
 | Get help | — | `worldcradle help` |
 

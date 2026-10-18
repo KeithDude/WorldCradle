@@ -17,11 +17,15 @@ from logging.handlers import RotatingFileHandler
 import paths
 
 LOG_DIR = paths.LOG_DIR
-os.makedirs(LOG_DIR, exist_ok=True)
-try:
-    os.chmod(LOG_DIR, 0o700)
-except OSError:
-    pass
+# Run as root (only ever `sudo worldcradle update`), WorldCradle writes nothing in the account's
+# folders: a log file created by root there would lock the dashboard out of it later.
+AS_ROOT = os.geteuid() == 0
+if not AS_ROOT:
+    os.makedirs(LOG_DIR, exist_ok=True)
+    try:
+        os.chmod(LOG_DIR, 0o700)
+    except OSError:
+        pass
 
 
 def _logger(name: str, filename: str, level: int = logging.INFO) -> logging.Logger:
@@ -29,15 +33,18 @@ def _logger(name: str, filename: str, level: int = logging.INFO) -> logging.Logg
     lg.setLevel(level)
     lg.propagate = False
     if not lg.handlers:
-        path = os.path.join(LOG_DIR, filename)
-        fh = RotatingFileHandler(path, maxBytes=2_000_000, backupCount=5)
-        fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s",
-                                          "%Y-%m-%d %H:%M:%S"))
-        lg.addHandler(fh)
-        try:
-            os.chmod(path, 0o600)
-        except OSError:
-            pass
+        if AS_ROOT:
+            lg.addHandler(logging.NullHandler())
+        else:
+            path = os.path.join(LOG_DIR, filename)
+            fh = RotatingFileHandler(path, maxBytes=2_000_000, backupCount=5)
+            fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s",
+                                              "%Y-%m-%d %H:%M:%S"))
+            lg.addHandler(fh)
+            try:
+                os.chmod(path, 0o600)
+            except OSError:
+                pass
         if not os.environ.get("WORLDCRADLE_QUIET_LOG"):   # the `worldcradle` command keeps its screen clean
             sh = logging.StreamHandler()  # → stderr → journald (journalctl --user -u worldcradle)
             sh.setFormatter(logging.Formatter("%(name)s %(levelname)s %(message)s"))

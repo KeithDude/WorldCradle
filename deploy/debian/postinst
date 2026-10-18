@@ -7,6 +7,9 @@ set -e
 python3 -m compileall -q /usr/lib/worldcradle/app >/dev/null 2>&1 || true
 
 if [ "$1" = configure ]; then
+    # the jobs that need administrator rights (starting with the computer, the firewall, fail2ban),
+    # done now — the person typed sudo for this — so `worldcradle setup` never asks for a password
+    /usr/lib/worldcradle/bin/worldcradle-system-setup "${SUDO_USER:-}" || true
     if [ -n "$2" ]; then
         # An upgrade: restart the dashboard of every account that runs one, so the new version
         # takes over. It installs any new Python libraries it needs as it starts.

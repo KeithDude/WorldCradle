@@ -97,7 +97,7 @@ Last updated: 2026-10-15
       published. The release workflow refuses to build while it's still there. *(removed 2026-10-18)*
 - [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, commit, then
       `git tag v0.2.0 && git push origin v0.2.0` — the release workflow builds and publishes the
-      package. Then check the one-line installer and `worldcradle update` against the real release.
+      package. Then check the install steps and `sudo worldcradle update` against the real release.
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44

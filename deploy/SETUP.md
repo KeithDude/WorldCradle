@@ -20,8 +20,9 @@ administrator rights: apt installs WorldCradle and the system packages the games
 also has the same package under its versioned name, `worldcradle_<version>_all.deb`.
 
 **2. From the source** (for development, or before a release exists): clone or download the
-repository into your home folder, then `bash install.sh` in it. It installs the same system packages
-the package would, then runs the same setup.
+repository into your home folder, then `sudo bash install.sh` in it, from your own account. As root it
+installs the same system packages the package would and does the same system jobs (below); then it
+runs the same setup as you.
 
 Both end the same way: the dashboard running at `https://<this computer>:8443/`, a one-time
 setup code for choosing your password in the browser, and the password friends need to join.
@@ -47,19 +48,35 @@ downloader, plus some that particular games load). Optional extras: Java (Minecr
 (Windows-only servers), winetricks + cabextract (Space Engineers), fail2ban. The package lists the
 optional ones as "recommended", which apt installs unless you add `--no-install-recommends`.
 
-**What setup does** (`worldcradle setup`, or the last step of `install.sh`; safe to repeat): checks the
-computer, builds the Python libraries, creates the settings folder with random game passwords and a
-self-signed certificate, starts the dashboard and the daily 05:00 backup, lets WorldCradle keep running
-after you log out (linger), lets the dashboard through the `ufw` firewall if it's on, and sets up
-fail2ban if it's installed. It never overwrites existing settings, passwords, certificate or
-servers. Options: `--no-fail2ban`, `--force` (carry on despite failed checks).
+**What installing does as root** (the `sudo apt install` step, or `sudo bash install.sh`): lets
+WorldCradle keep running after you log out and start with the computer (linger), lets the dashboard
+through the `ufw` firewall if it's on, and sets up fail2ban, if it's installed, to block addresses that
+keep getting the dashboard password wrong. Run it again with `sudo dpkg-reconfigure worldcradle`.
+
+**What setup does** (`worldcradle setup`, or the last step of `install.sh`; runs as you, never asks for a
+password; safe to repeat): checks the computer, builds the Python libraries, creates the settings folder
+with random game passwords and a self-signed certificate, and starts the dashboard and the daily 05:00
+backup. If one of the root jobs above is missing, it says which command to run. It never overwrites
+existing settings, passwords, certificate or servers. Option: `--force` (carry on despite failed checks).
 
 ## Updating
 
-`worldcradle update` — shows what's new, installs it, checks the new version answers, and puts the
-previous version back by itself if it doesn't. Game servers keep running throughout.
-- Package install: downloads the newest release's package, checks its checksum, installs it with apt.
-- Source install: fetches the newest code with git.
+It's a good idea to bring the computer up to date first — `sudo apt update`, then `sudo apt upgrade`
+— before installing or updating WorldCradle. (Not required: WorldCradle refreshes the package lists
+itself.)
+
+**Package install:** `sudo worldcradle update`. It needs `sudo` because it replaces a system package.
+It shows what's new, downloads the newest release's package, checks its checksum, installs it with apt,
+checks the new version answers, and puts the previous version back by itself if it doesn't. Game
+servers keep running throughout.
+
+**Or by hand**, the same way as the first install — no automatic check or roll-back:
+```
+wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+sudo apt install /tmp/worldcradle.deb
+```
+
+**Source install:** `worldcradle update`, without sudo — it fetches the newest code with git, as you.
 
 Your settings, servers and saves are never touched by an update.
 

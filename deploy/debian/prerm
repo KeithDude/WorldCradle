@@ -11,6 +11,12 @@ if [ "$1" = remove ]; then
         systemctl --user -M "$user@" disable --now worldcradle.service worldcradle-backup.timer \
             >/dev/null 2>&1 || true
     done
+    # undo what the package set up as root (worldcradle-system-setup); the firewall rule is left,
+    # in case the port is used for something else
+    if [ -e /etc/fail2ban/jail.d/worldcradle.conf ]; then
+        rm -f /etc/fail2ban/jail.d/worldcradle.conf /etc/fail2ban/filter.d/worldcradle.conf
+        systemctl restart fail2ban >/dev/null 2>&1 || true
+    fi
     echo "WorldCradle: the dashboard is stopped. Your settings, game servers and saves are kept"
     echo "          (in ~/.config/worldcradle and the game folders); installing WorldCradle again uses them."
     echo "          Game servers you created keep running; to remove those too, reinstall WorldCradle"

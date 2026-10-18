@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 # WorldCradle — install from a downloaded copy (the WorldCradle package doesn't need this: after
-# installing it, run "worldcradle setup").
+# installing it, run "worldcradle setup"). Run it with sudo, from your own account:
 #
-#   bash install.sh            install everything — no questions (it only asks for your password)
-#   bash install.sh --ask      ask before each optional extra (Java, Wine, fail2ban)
-#   bash install.sh --minimal  skip the optional extras (add them later by running it again)
-#   bash install.sh --check    show what would be done, change nothing
-#   bash install.sh --force    install even if the computer checks fail
+#   sudo bash install.sh            install everything — no questions
+#   sudo bash install.sh --ask      ask before each optional extra (Java, Wine, fail2ban)
+#   sudo bash install.sh --minimal  skip the optional extras (add them later by running it again)
+#   sudo bash install.sh --check    show what would be done, change nothing
+#   sudo bash install.sh --force    install even if the computer checks fail
 #
 # What it does, in order:
 #   1. checks this computer can run WorldCradle;
-#   2. installs the system packages WorldCradle and the game servers need (deploy/packages.conf) —
-#      the only part that needs your computer's admin password;
-#   3. sets WorldCradle up for your account and starts it (setup.sh), then shows the address to open
-#      in your browser and a one-time setup code.
+#   2. as root: installs the system packages WorldCradle and the game servers need
+#      (deploy/packages.conf), and does the other jobs that need administrator rights — starting with
+#      the computer, the firewall, fail2ban (bin/worldcradle-system-setup);
+#   3. as you, not root: sets WorldCradle up for your account and starts it (setup.sh), then shows the
+#      address to open in your browser and a one-time setup code.
 #
 # It is safe to run again at any time — nothing already set up is overwritten.
 # (--yes is accepted for older instructions; not asking is already the default.)
@@ -28,11 +29,26 @@ for arg in "$@"; do
         --minimal) MINIMAL=1 ;;
         --check)  CHECK=1 ;;
         --force)  FORCE=(--force) ;;
-        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
 
+# It needs root for the system packages, and your account for everything else: run it as
+# `sudo bash install.sh` from your own account.
+if [ "$(id -u)" != 0 ]; then
+    echo "Installing system packages needs administrator rights. Run it with sudo:  sudo bash $0 $*"; exit 1
+fi
+U="${SUDO_USER:-}"
+if [ -z "$U" ] || [ "$U" = root ]; then
+    echo "Run this from the account that will run WorldCradle, with sudo in front (not logged in as root)."; exit 1
+fi
+UHOME="$(getent passwd "$U" | cut -d: -f6)"; UUID_="$(id -u "$U")"
+# a command as that account, with its own background-services manager
+as_user() {
+    runuser -u "$U" -- env HOME="$UHOME" USER="$U" LOGNAME="$U" PATH="$PATH" \
+        XDG_RUNTIME_DIR="/run/user/$UUID_" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UUID_/bus" "$@"
+}
 say()  { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 ask()  {  # ask "Question?"  → 0 for yes. Default: yes without asking; --ask asks; --minimal says no.
@@ -60,12 +76,12 @@ packages() {
 
 # --- 1. Can this computer run WorldCradle? -------------------------------------------
 if [ "$CHECK" = 1 ]; then
-    "$REPO/bin/worldcradle-preflight" --check
+    as_user "$REPO/bin/worldcradle-preflight" --check
 else
-    "$REPO/bin/worldcradle-preflight" "${FORCE[@]}" || exit 1
+    as_user "$REPO/bin/worldcradle-preflight" "${FORCE[@]}" || exit 1
 fi
 case "$REPO" in
-    "$HOME/Downloads"/*|/tmp/*)
+    "$UHOME/Downloads"/*|/tmp/*)
         note ""
         note "⚠ WorldCradle will run from this folder: $REPO"
         note "  Don't delete or move it later. (A tidier place is your home folder, e.g. ~/worldcradle —"
@@ -87,9 +103,8 @@ if ask "Minecraft Bedrock, Terraria, Factorio and the other Linux games need not
         read -ra more <<< "$(packages wine-extras)"; WANT+=("${more[@]}")
     fi
 fi
-FAIL2BAN=--no-fail2ban
 if ask "Block people who keep guessing the dashboard password (installs fail2ban — recommended)?"; then
-    WANT+=("$(packages fail2ban)"); FAIL2BAN=--fail2ban
+    WANT+=("$(packages fail2ban)")
 fi
 
 MISSING=()
@@ -102,12 +117,10 @@ elif [ "$CHECK" = 1 ]; then
     note "would install: ${MISSING[*]}"
 else
     note "To install: ${MISSING[*]}"
-    note "This needs your computer's admin password (the one you log in with)."
     # apt prints thousands of lines; keep them in a log and show progress instead
     APTLOG="$(mktemp /tmp/worldcradle-install-XXXXXX.log)"
-    sudo -v || { note "The admin password is needed to install the packages above."; exit 1; }
     note "Downloading and installing — this can take several minutes…"
-    if ! { sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING[@]}"; } >"$APTLOG" 2>&1; then
+    if ! { apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y "${MISSING[@]}"; } >"$APTLOG" 2>&1; then
         note "Installing the packages failed. The last lines of the log ($APTLOG):"
         tail -n 15 "$APTLOG" | sed 's/^/     /'
         exit 1
@@ -117,7 +130,12 @@ fi
 
 # --- 3. WorldCradle itself --------------------------------------------------------
 if [ "$CHECK" = 1 ]; then
-    note "would run: setup.sh $FAIL2BAN   (nothing was changed)"
+    note "would run: worldcradle-system-setup $U, then setup.sh as $U   (nothing was changed)"
     exit 0
 fi
-WORLDCRADLE_FROM_INSTALLER=1 exec "$REPO/setup.sh" "$FAIL2BAN"
+# the other jobs that need root: starting with the computer, the firewall, fail2ban
+"$REPO/bin/worldcradle-system-setup" "$U"
+# starting with the computer also starts the account's background-services manager, which setup needs
+for _ in 1 2 3 4 5 6 7 8 9 10; do [ -S "/run/user/$UUID_/bus" ] && break; sleep 1; done
+say "Setting WorldCradle up for $U"
+as_user env WORLDCRADLE_FROM_INSTALLER=1 "$REPO/setup.sh"

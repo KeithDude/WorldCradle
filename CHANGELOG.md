@@ -17,14 +17,15 @@ footer of the dashboard when signed in.
   which asks no questions, checks first that the computer can run WorldCradle, and shows a QR code to
   open the dashboard on a phone and the password your friends need to join.
 - **A WorldCradle package** (`.deb`) for Ubuntu and Debian: download it, `sudo apt install` it, then
-  `worldcradle setup` — the only `sudo` is the one you type. `worldcradle update` installs new versions
-  of it (and puts the old one back if the new one doesn't start).
+  `worldcradle setup` — the only `sudo` is the one you type; setup itself never asks for a password.
+  `sudo worldcradle update` installs new versions of it (and puts the old one back if the new one
+  doesn't start).
 - WorldCradle's Python libraries are **exact, checksum-verified versions**, so every install gets
   exactly what was tested.
 - **The `worldcradle` command** for everyday jobs: `status`, `passwords`, `reset-password`, `restart`,
   `logs`, `servers`, `server start|stop|restart <server>`, `backup`, `backup list|restore`, `unban`,
   `update`, `uninstall`, `check`, `qr`. Type `worldcradle help` for the list.
-- **Safe updates:** `worldcradle update` installs the new version and puts the old one back by itself if
+- **Safe updates:** `sudo worldcradle update` installs the new version and puts the old one back by itself if
   the new one doesn't start.
 - **Repairs itself after an Ubuntu upgrade** that changes the Python version.
 - **Licence terms:** where a game's publisher requires it, you accept its EULA when adding a server.

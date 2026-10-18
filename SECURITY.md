@@ -27,7 +27,7 @@ game up in an unsafe way (for example exposes its admin console), that is in sco
 
 ## Supported versions
 
-Fixes go into the latest version. Update with `worldcradle update`.
+Fixes go into the latest version. Update with `sudo worldcradle update`.
 
 ## Good practice for owners
 

@@ -48,7 +48,7 @@ worldcradle setup
 `sudo apt` installs WorldCradle and the system packages the games need (that's the only step that
 needs administrator rights); `worldcradle setup` then sets it up for your account, as you — not with
 sudo. It prints the address to open and a one-time setup code. (From a downloaded copy of the source
-instead: `bash install.sh` in its folder.) A step-by-step walk-through with
+instead: `sudo bash install.sh` in its folder.) A step-by-step walk-through with
 screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
 **https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
 your password, then follow the *Getting started* checklist. Details and
@@ -85,7 +85,7 @@ worldcradle servers            list the game servers
 worldcradle server restart <server>
 worldcradle backup all
 worldcradle passwords          show the game passwords (the one friends need to join)
-worldcradle update             update WorldCradle itself (rolls back if the new version fails)
+sudo worldcradle update        update WorldCradle itself (rolls back if the new version fails)
 worldcradle uninstall          remove WorldCradle (asks first; never deletes games or saves)
 worldcradle qr                 a QR code to open the dashboard on a phone
 worldcradle test-alert         send a test alert to every place alerts are set up to go

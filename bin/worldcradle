@@ -2,6 +2,31 @@
 # worldcradle — command-line tools for WorldCradle. "worldcradle help" lists them.
 # A git checkout links ~/.local/bin/worldcradle here (setup.sh); the package installs /usr/bin/worldcradle.
 WORLDCRADLE_CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
+if [ "$(id -u)" = 0 ]; then
+    # Only updating WorldCradle — a system package — needs root ("sudo worldcradle update"). Every
+    # other command runs as the account that uses WorldCradle: as root it would act on root's (empty)
+    # settings, or leave root-owned files in the account's folders that the dashboard can't use.
+    if [ "${1:-}" != update ]; then
+        echo "Run worldcradle without sudo (only \"sudo worldcradle update\" needs it)."; exit 1
+    fi
+    if [ -z "${SUDO_USER:-}" ] || [ "$SUDO_USER" = root ]; then
+        echo "Run it from the account that uses WorldCradle:  sudo worldcradle update"; exit 1
+    fi
+    # act for that account: its home folder, settings and Python environment
+    HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"; export HOME
+    if [ -z "${WORLDCRADLE_HOME:-}" ]; then
+        WORLDCRADLE_HOME="$(sed -n 's/^Environment=WORLDCRADLE_HOME=//p' "$HOME/.config/systemd/user/worldcradle.service" 2>/dev/null | head -1)"
+        [ -n "$WORLDCRADLE_HOME" ] || unset WORLDCRADLE_HOME
+    fi
+    # the package's Python environment lives in the account's home (a git checkout keeps its own,
+    # but a checkout updates itself with git, as its owner — never with sudo)
+    WORLDCRADLE_VENV="$(sed -n 's/^Environment=WORLDCRADLE_VENV=//p' "$HOME/.config/systemd/user/worldcradle.service" 2>/dev/null | head -1)"
+    [ -n "$WORLDCRADLE_VENV" ] || WORLDCRADLE_VENV="$HOME/.local/share/worldcradle/venv"
+    export WORLDCRADLE_VENV
+    # the account's Python environment as it is — never rebuilt by root (its files would be root's)
+    . "$WORLDCRADLE_CODE/bin/worldcradle-env.sh"
+    exec "$WORLDCRADLE_VENV/bin/python" -B "$WORLDCRADLE_CODE/app/cli.py" "$@"
+fi
 # use the same data folder as the running dashboard
 if [ -z "${WORLDCRADLE_HOME:-}" ]; then
     WORLDCRADLE_HOME="$(systemctl --user show worldcradle.service -p Environment --value 2>/dev/null \

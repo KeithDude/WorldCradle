@@ -99,9 +99,12 @@ def download(release: dict, folder: str) -> str:
 
 
 def install(path: str) -> None:
-    """Install a downloaded package (asks for the computer's password). The package restarts the
+    """Install a downloaded package (as root: `sudo worldcradle update`). The package restarts the
     dashboard itself."""
-    r = subprocess.run(["sudo", "apt-get", "install", "-y", "--allow-downgrades", os.path.abspath(path)])
+    # `sudo worldcradle update` runs this as root; refresh the package lists first, in case the new
+    # version needs a system package the computer's lists don't know about yet
+    subprocess.run(["apt-get", "update", "-qq"])
+    r = subprocess.run(["apt-get", "install", "-y", "--allow-downgrades", os.path.abspath(path)])
     if r.returncode != 0:
         raise ReleaseError("installing the package failed (see the messages above)")
 

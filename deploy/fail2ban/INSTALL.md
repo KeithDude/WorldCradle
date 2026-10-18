@@ -2,8 +2,8 @@
 
 Bans IPs that repeatedly fail the dashboard login, at the firewall, on port 8443
 only. Watches WorldCradle's `audit.log` (in the data root, default
-`~/.config/worldcradle/logs/audit.log`). Needs root. (`setup.sh --fail2ban` does all
-of this for you, substituting the real log path.)
+`~/.config/worldcradle/logs/audit.log`). Needs root. (Installing the WorldCradle package — or
+`sudo bash install.sh` — does all of this for you, watching every account's log.)
 
 ## Install
 First set the log path in the jail file — replace `__WORLDCRADLE_LOGS__` with the

@@ -23,7 +23,8 @@ Usage: worldcradle <command> [options]
   backup restore <server> <number>   Put a backup back (a safety copy is made first)
   unban <address>            Let an address that mistyped the password too often sign in again
 
-  update                     Update WorldCradle itself (puts the old version back if the new one fails)
+  update                     Update WorldCradle itself — "sudo worldcradle update" for the package
+                             (puts the old version back if the new one fails)
   uninstall                  Remove WorldCradle (asks before each step; never deletes games or saves)
   test-alert                 Send a test alert to every place alerts are set up to go
   check                      Quick health check: service, disk space, certificate, admin password
@@ -48,7 +49,7 @@ UNIT = os.environ.get("WORLDCRADLE_UNIT", "worldcradle.service")   # overridable
 DEFAULT_PORT = int(os.environ.get("WORLDCRADLE_PORT") or 8443)
 # Installed from the package: the program folder belongs to the system, and the package manager
 # installs new versions. Otherwise this is a git checkout that updates itself with git.
-PACKAGED = not os.access(REPO, os.W_OK)
+PACKAGED = not os.access(REPO, os.W_OK) or os.path.realpath(REPO).startswith("/usr/lib/")   # (root can write anywhere)
 
 
 def _say(text: str = "") -> None:
@@ -482,11 +483,11 @@ def _update_package(args) -> int:
         _say(f"  {line}")
     if not _confirm_update(args):
         return _err("cancelled — nothing changed")
-    folder = os.path.join(os.path.expanduser("~/.cache/worldcradle"), "updates")
+    folder = "/var/cache/worldcradle/updates"     # root's own place (this runs as root, via sudo)
     try:
         _say("Downloading and checking it…")
         path = release.download(new, folder)
-        _say("Installing (this asks for your computer's password)…")
+        _say("Installing it…")
         release.install(path)
     except release.ReleaseError as e:
         return _err(f"{e}. Nothing was changed.")
@@ -506,11 +507,18 @@ def _update_package(args) -> int:
 
 def cmd_update(args) -> int:
     """Update WorldCradle itself; roll back if the new version fails."""
+    root = os.geteuid() == 0
     if PACKAGED:
+        if not root:   # it replaces a system package: the sudo is the person's own
+            return _err("updating WorldCradle installs a new version of its system package, so it needs "
+                        "administrator rights. Run:  sudo worldcradle update")
         return _update_package(args)
+    if root:           # a git checkout belongs to its owner; root's changes would lock them out of it
+        return _err("this copy of WorldCradle updates itself with git, as you — run it without sudo:  "
+                    "worldcradle update")
     if not os.path.isdir(os.path.join(REPO, ".git")):
         return _err("this copy of WorldCradle wasn't installed with git, so it can't update itself. "
-                    "Download the new version and run install.sh again.")
+                    "Download the new version and run: sudo bash install.sh")
     if _git("status", "--porcelain"):
         return _err("WorldCradle's files have been changed on this computer, so updating could lose those "
                     "changes. Nothing was done.")

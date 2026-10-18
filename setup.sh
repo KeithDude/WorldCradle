@@ -3,11 +3,13 @@
 # dashboard's certificate, the background services, and the final "here's how to open it" screen.
 #
 #   worldcradle setup              after installing the WorldCradle package
-#   ./install.sh                from a downloaded copy (installs the system packages, then runs this)
+#   sudo bash install.sh           from a downloaded copy (installs the system packages, then runs this)
 #
-# Options:  --fail2ban / --no-fail2ban   set up (or skip) blocking of password guessers; the
-#                                        default is to set it up when fail2ban is installed
-#           --force                      carry on even if the computer checks fail
+# It never asks for a password: the parts that need administrator rights (starting with the computer,
+# the firewall, fail2ban) are done by the package when it is installed, or by `sudo bash install.sh`
+# (bin/worldcradle-system-setup). If one of them is missing, it says which command to run.
+#
+# Options:  --force                      carry on even if the computer checks fail
 #
 # Safe to run again at any time: it never overwrites existing settings, passwords, certificate
 # or server list. Data: $WORLDCRADLE_HOME (default ~/.config/worldcradle). Backups: $WORLDCRADLE_BACKUPS
@@ -20,13 +22,12 @@ CODE="$WORLDCRADLE_CODE"; VENV="$WORLDCRADLE_VENV"; DATA="$WORLDCRADLE_HOME"; PO
 BACKUPS="${WORLDCRADLE_BACKUPS:-$HOME/.local/share/worldcradle/backups}"
 UNITS="$HOME/.config/systemd/user"
 PACKAGED=0; [ -w "$CODE" ] || PACKAGED=1      # the package's program folder belongs to the system
-FAIL2BAN=auto; FORCE=()
+FORCE=()
 for arg in "$@"; do
     case "$arg" in
-        --fail2ban) FAIL2BAN=yes ;;
-        --no-fail2ban) FAIL2BAN=no ;;
+        --fail2ban|--no-fail2ban) ;;      # older instructions; fail2ban is set up with the package now
         --force) FORCE=(--force) ;;
-        -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg  (try --help)"; exit 2 ;;
     esac
 done
@@ -112,43 +113,28 @@ if [ "$PACKAGED" = 0 ]; then
 fi
 
 # --- 5. Keep running after you log out, and start with the computer --------------------
+# (normally done by the package or install.sh, as root; --no-ask-password: never prompt here)
+if [ "$PACKAGED" = 1 ]; then AS_ROOT="sudo dpkg-reconfigure worldcradle"; else AS_ROOT="sudo bash $CODE/install.sh"; fi
 if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -q 'Linger=yes'; then
     :
-elif loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER"; then
+elif loginctl --no-ask-password enable-linger "$USER" 2>/dev/null; then
     note "WorldCradle keeps running after you log out and starts with the computer."
 else
-    note "⚠ Couldn't set WorldCradle to start with the computer. Run: sudo loginctl enable-linger $USER"
+    note "⚠ WorldCradle won't start by itself when the computer starts. To fix it, run:  sudo loginctl enable-linger $USER"
 fi
 
 # --- 6. The computer's firewall, if it has one switched on ------------------------------
 UFW_ACTIVE=0
 if command -v ufw >/dev/null 2>&1 && grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then
     UFW_ACTIVE=1
-    note "This computer's firewall (ufw) is on — letting the dashboard through (port $PORT); this asks for your password."
-    sudo ufw allow "$PORT/tcp" >/dev/null || note "⚠ Couldn't change the firewall. Run: sudo ufw allow $PORT/tcp"
+    if [ "$PORT" != 8443 ]; then     # the package let the usual port (8443) through
+        note "This computer's firewall (ufw) is on. To let the dashboard through, run:  sudo ufw allow $PORT/tcp"
+    fi
 fi
 
 # --- 7. Block people who keep guessing the dashboard password (fail2ban) --------------
-if [ "$FAIL2BAN" = auto ]; then
-    command -v fail2ban-client >/dev/null 2>&1 && FAIL2BAN=yes || FAIL2BAN=no
-fi
-if [ "$FAIL2BAN" = yes ]; then
-    jail="$(sed -e "s#__WORLDCRADLE_LOGS__#$DATA/logs#" -e "s#__PORT__#$PORT#" "$CODE/deploy/fail2ban/worldcradle-jail.conf")"
-    settings() { grep -v '^[[:space:]]*\(#\|$\)'; }    # compare what fail2ban reads, not the comments
-    if [ "$(settings <<< "$jail")" = "$(settings < /etc/fail2ban/jail.d/worldcradle.conf 2>/dev/null)" ] \
-       && [ "$(settings < "$CODE/deploy/fail2ban/worldcradle-filter.conf")" = \
-            "$(settings < /etc/fail2ban/filter.d/worldcradle.conf 2>/dev/null)" ]; then
-        :   # already set up
-    else
-        note "Setting up protection against password guessing (fail2ban) — this asks for your password."
-        if printf '%s\n' "$jail" | sudo tee /etc/fail2ban/jail.d/worldcradle.conf >/dev/null \
-           && sudo cp "$CODE/deploy/fail2ban/worldcradle-filter.conf" /etc/fail2ban/filter.d/worldcradle.conf \
-           && sudo systemctl enable --quiet --now fail2ban && sudo systemctl restart fail2ban; then
-            note "Done: an address that gets the dashboard password wrong 4 times is blocked for an hour."
-        else
-            note "⚠ Couldn't set up fail2ban. WorldCradle still slows down password guessing by itself."
-        fi
-    fi
+if command -v fail2ban-client >/dev/null 2>&1 && [ ! -e /etc/fail2ban/jail.d/worldcradle.conf ]; then
+    note "fail2ban is installed but not yet watching WorldCradle's sign-ins. To set it up, run:  $AS_ROOT"
 fi
 
 # --- 8. How to open it ----------------------------------------------------------

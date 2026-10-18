@@ -1,0 +1,67 @@
+#!/bin/sh
+# The parts of setting WorldCradle up that need administrator rights, run as root — by the package
+# when it is installed (`sudo apt install …`) and by `sudo bash install.sh`. So `worldcradle setup`,
+# which the person runs as themselves, never has to ask for a password.
+#
+#   worldcradle-system-setup [USER]     USER: the account that will run WorldCradle (default: $SUDO_USER)
+#
+#   1. lets USER's background services run without anyone logged in and start with the computer;
+#   2. lets the dashboard through the computer's firewall (ufw), if it is switched on;
+#   3. sets up fail2ban, if it is installed, to block addresses that keep getting the dashboard
+#      password wrong.
+# Safe to run again; each step is skipped when it is already done or doesn't apply.
+set -u
+[ "$(id -u)" = 0 ] || { echo "worldcradle-system-setup must run as root (it is run by the package)." >&2; exit 1; }
+CODE="$(dirname "$(dirname "$(readlink -f "$0")")")"
+USER_NAME="${1:-${SUDO_USER:-}}"
+[ "$USER_NAME" = root ] && USER_NAME=""
+note() { echo "WorldCradle: $*"; }
+
+home=""; port=8443
+if [ -n "$USER_NAME" ] && getent passwd "$USER_NAME" >/dev/null; then
+    home="$(getent passwd "$USER_NAME" | cut -d: -f6)"
+    # the port this account's dashboard uses (its service says, once it is set up)
+    p="$(sed -n 's/.*--bind 0\.0\.0\.0:\([0-9][0-9]*\).*/\1/p' "$home/.config/systemd/user/worldcradle.service" 2>/dev/null | head -1)"
+    [ -n "$p" ] && port="$p"
+fi
+
+# --- 1. keep running after logging out, and start with the computer --------------------------
+if [ -n "$home" ] && ! loginctl show-user "$USER_NAME" -p Linger 2>/dev/null | grep -q 'Linger=yes'; then
+    loginctl enable-linger "$USER_NAME" 2>/dev/null \
+        && note "$USER_NAME's WorldCradle will keep running after logging out and start with the computer." \
+        || note "couldn't set $USER_NAME's WorldCradle to start with the computer (loginctl enable-linger $USER_NAME)."
+fi
+
+# --- 2. the firewall, if it is switched on ------------------------------------------------------
+if command -v ufw >/dev/null 2>&1 && grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then
+    ufw allow "$port/tcp" >/dev/null 2>&1 \
+        && note "the firewall (ufw) lets the dashboard through (port $port)." \
+        || note "couldn't change the firewall — run: sudo ufw allow $port/tcp"
+fi
+
+# --- 3. fail2ban ----------------------------------------------------------------------------------
+if command -v fail2ban-client >/dev/null 2>&1; then
+    # fail2ban stops watching a jail whose log file doesn't exist, so make the account's (empty)
+    # audit log now, owned by it, before its dashboard has ever started
+    if [ -n "$home" ]; then
+        group="$(id -gn "$USER_NAME")"
+        for d in "$home/.config" "$home/.config/worldcradle" "$home/.config/worldcradle/logs"; do
+            [ -d "$d" ] || install -d -o "$USER_NAME" -g "$group" -m 700 "$d"
+        done
+        [ -e "$home/.config/worldcradle/logs/audit.log" ] \
+            || install -o "$USER_NAME" -g "$group" -m 600 /dev/null "$home/.config/worldcradle/logs/audit.log"
+    fi
+    jail="$(sed -e "s#__WORLDCRADLE_LOGS__/audit.log#/home/*/.config/worldcradle/logs/audit.log#" \
+                -e "s#__PORT__#$port#" "$CODE/deploy/fail2ban/worldcradle-jail.conf")"
+    if [ "$jail" != "$(cat /etc/fail2ban/jail.d/worldcradle.conf 2>/dev/null)" ] \
+       || ! cmp -s "$CODE/deploy/fail2ban/worldcradle-filter.conf" /etc/fail2ban/filter.d/worldcradle.conf; then
+        printf '%s\n' "$jail" > /etc/fail2ban/jail.d/worldcradle.conf
+        install -m 644 "$CODE/deploy/fail2ban/worldcradle-filter.conf" /etc/fail2ban/filter.d/worldcradle.conf
+        if systemctl enable --quiet --now fail2ban 2>/dev/null && systemctl restart fail2ban 2>/dev/null; then
+            note "fail2ban blocks an address for an hour after 4 wrong dashboard passwords."
+        else
+            note "couldn't start fail2ban — WorldCradle still slows password guessing down by itself."
+        fi
+    fi
+fi
+exit 0

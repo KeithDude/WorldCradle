@@ -60,3 +60,19 @@ def test_uninstall_finishes_even_if_deleting_stops_part_way(tmp_path, monkeypatc
     assert not installs.is_installed(game)                     # gone from WorldCradle already
     assert installs._clear_leftovers(str(folder))             # and the rest clears next time
     assert not list(tmp_path.iterdir())
+
+
+def test_updating_the_package_needs_the_sudo_typed_by_the_person(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "PACKAGED", True)
+    monkeypatch.setattr(cli.os, "geteuid", lambda: 1000)
+    assert cli.cmd_update([]) != 0
+    out = capsys.readouterr()
+    assert "sudo worldcradle update" in out.err + out.out
+
+
+def test_a_git_copy_is_never_updated_as_root(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "PACKAGED", False)
+    monkeypatch.setattr(cli.os, "geteuid", lambda: 0)
+    assert cli.cmd_update([]) != 0
+    out = capsys.readouterr()
+    assert "without sudo" in out.err + out.out
