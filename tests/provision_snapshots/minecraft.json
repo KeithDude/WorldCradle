@@ -31,9 +31,9 @@
   "installs/minecraft/worldcradle-test-stop.sh": "#!/bin/sh\n# worldcradle-managed graceful stop: ask the server to save and quit, then wait.\n. <ROOT>/secrets.conf\n\"<PYTHON>\" - 25585 \"$GAME_ADMIN_PASSWORD\" <<'STOP'\nimport sys\nsys.path.insert(0, '<APP>')\nimport monitor\nfor cmd in ['stop']:\n    monitor.source_rcon(int(sys.argv[1]), sys.argv[2], cmd, timeout=15)\nSTOP\ni=0\nwhile [ $i -lt 45 ] && pgrep -f -- 'servers/test' >/dev/null; do sleep 1; i=$((i+1)); done\nexit 0\n"
  },
  "permissions": {
-  "installs/minecraft/servers/test/eula.txt": "0o664",
+  "installs/minecraft/servers/test/eula.txt": "0o644",
   "installs/minecraft/servers/test/server.properties": "0o600",
-  "installs/minecraft/servers/test/worldcradle-gamerules.txt": "0o664",
+  "installs/minecraft/servers/test/worldcradle-gamerules.txt": "0o644",
   "installs/minecraft/worldcradle-test-run.sh": "0o755",
   "installs/minecraft/worldcradle-test-stop.sh": "0o755"
  },

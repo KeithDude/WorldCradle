@@ -30,7 +30,7 @@
  },
  "permissions": {
   "installs/astroneer/worldcradle-servers/test/Saved/Config/WindowsServer/AstroServerSettings.ini": "0o600",
-  "installs/astroneer/worldcradle-servers/test/Saved/Config/WindowsServer/Engine.ini": "0o664",
+  "installs/astroneer/worldcradle-servers/test/Saved/Config/WindowsServer/Engine.ini": "0o644",
   "installs/astroneer/worldcradle-test-run.sh": "0o755",
   "installs/astroneer/worldcradle-test-stop.sh": "0o755"
  },

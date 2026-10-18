@@ -82,7 +82,10 @@ def _counter_token(prefix: str):
 
 def record_all() -> dict[str, dict]:
     """{game kind: {"fields": what setup returned, "files": {path: text}}} for every game."""
-    root = tempfile.mkdtemp(prefix="gdsnap-")
+    root = tempfile.mkdtemp(prefix="wcsnap-")
+    # New files' permissions follow the machine's umask (002 here, 022 on GitHub's machines):
+    # fix it, so a recording made on one machine matches a check on any other.
+    old_umask = os.umask(0o022)
     sys.path.insert(0, os.path.join(os.path.dirname(HERE), "app"))
     import config
     import games
@@ -139,6 +142,7 @@ def record_all() -> dict[str, dict]:
         (config.secrets_path, config.install_dir, secrets.token_hex, secrets.token_urlsafe,
          secrets.choice, os.urandom) = saved
         os.path.expanduser = real_expanduser
+        os.umask(old_umask)
     import monitor
     return _placeholders(json.loads(json.dumps(out, default=str)), root, monitor.lan_ip())
 
