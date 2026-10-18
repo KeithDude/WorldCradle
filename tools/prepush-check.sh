@@ -42,7 +42,9 @@ T
 
 # 3b. Automated tests (tests/; needs: venv/bin/pip install -r requirements-dev.txt)
 if "$PY" -c "import pytest" 2>/dev/null; then
-  out=$(cd "$REPO" && "$PY" -m pytest -q tests 2>&1 | tail -1)
+  # with umask 022, as on GitHub's machines, so a test that only passes with this computer's
+  # settings is caught here rather than after the push
+  out=$(cd "$REPO" && umask 022 && "$PY" -m pytest -q tests 2>&1 | tail -1)
   case "$out" in *failed*|*error*) bad "tests: $out" ;; *passed*) ok "tests: $out" ;; *) bad "tests didn't run: $out" ;; esac
 else
   bad "pytest isn't installed — run: venv/bin/pip install -r requirements-dev.txt"
