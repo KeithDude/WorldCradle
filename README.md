@@ -114,6 +114,12 @@ the dashboard then shows the server as running without a player count.
   see [deploy/SETUP.md](deploy/SETUP.md), section 6.
 - What changed in each version: **[CHANGELOG.md](CHANGELOG.md)**. Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
 
+## About
+
+WorldCradle is designed, developed and maintained by Keith, with the help of an AI assistant
+(Claude). Every change goes through automated tests, and the servers are run for real before
+anything is released.
+
 ## Support the project
 
 WorldCradle is free for noncommercial use. If it's useful to you, you can support its development on
