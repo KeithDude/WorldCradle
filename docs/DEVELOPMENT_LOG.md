@@ -9,6 +9,34 @@ The list of games and their test status is kept separately in
 
 ---
 
+## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
+
+- **Every game on the shared bases.** All game types now build on `SimpleGame` / `WineGame`, keeping
+  only what each game really needs. Keith's own servers (ARK ×4, Palworld, Valheim, Satisfactory,
+  Abiotic Factor) were moved onto the standard launch with `provision.adopt()`: same worlds and
+  settings, a player check and 1-minute warning before each stop, saves confirmed after each.
+- **Renamed to WorldCradle** — "A Cradle for your Worlds" (after GameDash, WorldSeed and
+  RealmCradle: the first two were taken). Everything was renamed, including service and folder names;
+  Keith's box and the test VM were moved over.
+- **Server-side tests of every game** with `tools/test-game.py` on the test VM: install, add, run,
+  answer, players, Save/Message buttons, clean stop, remove, uninstall. 41 of 43 pass everything.
+  Squad 44 and Icarus run, are listed and stop cleanly, but their game traffic goes through Steam's
+  network rather than an ordinary open port — whether players can join needs a real player.
+  DST (needs a Klei token) and Dragonwilds (needs an owner ID) were not run.
+- **Bugs found by the tests and fixed:** Steam's 64-bit client library was never set up on a fresh
+  computer (Eco couldn't start); Stop / Restart / updates gave up after 130 s on games that take
+  minutes to save (Soulmask); ARK's stop never waited for the process (a `?` in its pattern);
+  Satisfactory didn't save on stop, needed claiming in-game before the dashboard could see it, and
+  its API moved port when restarted quickly; Windrose's and ARK Ascended's cards promised rows they
+  could never fill; removing a server left its scripts behind; a blank ARK map or Valheim world name
+  was refused.
+- **The package, re-tested with apt** under the new name: install, update, a broken update rolled
+  back (now in 30 s instead of 10 minutes), uninstall and reinstall keeping the settings.
+- **GitHub Actions** failed only because the setup tests depended on the machine's umask; fixed, and
+  the pre-push check now uses GitHub's.
+- **Decided:** install stays the one-line `get.sh` (or the `.deb`) for the first release; our own apt
+  repository is wanted for a later update (see ROADMAP).
+
 ## 2026-10-17 — Code clean-up, part 2
 
 All checked in a browser or on real servers on the test VM, and by a new safety net.

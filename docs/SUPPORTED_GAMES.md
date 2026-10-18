@@ -29,7 +29,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | Factorio | Not Tested | Linux native | factorio.com | Joining; In-game admins |
 | Garry's Mod | Not Tested | Linux native | Steam app 4020 | Joining |
 | HumanitZ | Not Tested | Linux native | Steam app 2728330 | Joining; Ping showing in the server browser |
-| Icarus | Not Tested | Windows server via Wine | Steam app 2089300 | Joining; Server staying up for hours with nobody on |
+| Icarus | Not Tested | Windows server via Wine | Steam app 2089300 | Joining — its game traffic goes through Steam's network (the game port isn't an ordinary open port; only the query port is); Server staying up for hours with nobody on |
 | Insurgency: Sandstorm | Not Tested | Linux native | Steam app 581330 | Joining |
 | Killing Floor 2 | Not Tested | Linux native | Steam app 232130 | Joining |
 | Left 4 Dead 2 | Not Tested | Linux native | Steam app 222860 | Joining; Game mode taking effect; Max players |
@@ -47,7 +47,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | Soulmask | Not Tested | Linux native | Steam app 3017300 | Joining; Save-and-quit on stop |
 | Space Engineers | Not Tested | Windows server via Wine | Steam app 298740 · EULA tick required | Joining; World kept after a restart with real builds |
 | Squad | Not Tested | Linux native | Steam app 403240 · EULA tick required | Joining; Join password; Player list |
-| Squad 44 | Not Tested | Linux native | Steam app 746200 | Joining; Join password |
+| Squad 44 | Not Tested | Linux native | Steam app 746200 | Joining — its game traffic goes through Steam's network (the game port isn't an ordinary open port; only the query port is); Join password |
 | StarRupture | Not Tested | Windows server via Wine | Steam app 3809400 · EULA tick required | Joining; Loading the saved session after a restart |
 | Stationeers | Not Tested | Linux native | Steam app 600760 | Joining; Progress kept after a restart |
 | Team Fortress 2 | Not Tested | Linux native | Steam app 232250 | Joining |
