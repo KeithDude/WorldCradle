@@ -63,6 +63,16 @@ footer of the dashboard when signed in.
   uses the right port, and when a service refuses a message you're told its actual reason.
 - A server that **keeps crashing** now says so on its card (and sends an alert), instead of looking
   "running" between crashes.
+- **Satisfactory:** a new server is claimed for you with your passwords and its name (no claiming it
+  in the game first), and every stop **saves the world first** (the game itself doesn't). Its admin
+  connection no longer goes missing after a quick restart.
+- **Stop, Restart and updates wait for slow games** (some take minutes to save, like Soulmask) instead
+  of reporting a failure while the server is still saving.
+- **Steam games start on a fresh computer:** Steam's own library is set up for them (Eco, among
+  others, couldn't start without it).
+- **A broken update is undone in seconds**, not after a 10-minute wait.
+- Removing a server also removes its launch files (its world is still kept).
+- Each server's card shows only what its game can actually report.
 
 ### Good to know
 - Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.
