@@ -1,4 +1,4 @@
-# WorldCradle
+# WorldCradle™
 
 *A Cradle for your Worlds.*
 
@@ -159,6 +159,10 @@ friends.
 WorldCradle is free for noncommercial use. If it's useful to you, you can support its development on
 **[Patreon](https://www.patreon.com/KeithDude)**. The dashboard shows the same link at the bottom of
 each page; it only opens the Patreon page and nothing in WorldCradle depends on it.
+
+## Trademark
+
+WorldCradle™ is a trademark of KeithDude.
 
 ## License
 
