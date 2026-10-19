@@ -1,685 +1,175 @@
 # Development log
 
-A running record of how WorldCradle has developed: what was built, what was found, and what is still
-open. Newest entries first. Add an entry whenever something notable changes — a feature, a game, a
-bug found and fixed, or a decision and the reason for it.
+*How WorldCradle grew, one feature (and the occasional burn) at a time. Newest first.*
 
-The list of games and their test status is kept separately in
+I started WorldCradle so my friends and I could play together on our own private servers. It began
+as a few scripts on my home server and grew, feature by feature, into something anyone can install.
+What's in each release is in [CHANGELOG.md](../CHANGELOG.md); which games have been played on is in
 [SUPPORTED_GAMES.md](SUPPORTED_GAMES.md).
 
-**How it started.** WorldCradle was born out of Keith's drive to host private game servers for his
-friends and himself. It began as a handful of hand-written scripts on one home server and
-grew, step by step, into a dashboard anyone can install. The entries below the October ones tell
-that part of the story; dates before 2026-09-29 come from the project's notes rather than a full
-record, so some are approximate.
+— Keith
 
 ---
 
-## 2026-10-19 — 0.2.0, the first release
-
-- Quick start and Getting started: one command per step, each with a one-sentence description.
-- The welcome screen's address and QR code open the setup page (`/setup`) until a dashboard password
-  exists, instead of the public status page; tested on the test VM with a fresh data folder.
-- The README's About section gained Keith's background.
-- **Keith's own server now matches the releases:** WorldCradle runs from the package, the games
-  moved into `~/worldcradle-games`, the passwords file into `~/.config/worldcradle`, the old
-  hand-made scripts retired; every server's launch remade, all six regular servers back up. New
-  versions are tried on the test VM first.
-- **Released 0.2.0** (tag `v0.2.0`); the repository went public. The release workflow's first run
-  published the package; the install link and its checksum checked out from outside, and
-  `sudo worldcradle update` took the test VM, then Keith's own server, to 0.2.0 with every server
-  still running. Next version: 0.2.1-dev.
-
-## 2026-10-18 — Fresh-install test on Ubuntu 24.04, and sudo only where you type it
-
-- **Installing no longer asks for a password behind your back.** `get.sh` is retired; installing is
-  download, `sudo apt install`, `worldcradle setup`. The package does the jobs that need root when it
-  is installed (start with the computer, the firewall, fail2ban); `worldcradle setup` never asks for a
-  password. Updating is `sudo worldcradle update` (or by hand, the same way as installing); installing
-  from the source is `sudo bash install.sh`. Run as root, WorldCradle writes nothing in the account's
-  folders.
-- **Fresh Ubuntu 24.04 LTS server**, tested by Claude and then by Keith following the guide: install in
-  under a minute, setup with no password prompt, first visit, and Terraria, Minecraft, Eco, Valheim,
-  Palworld, V Rising and Abiotic Factor running. **Keith installed Abiotic Factor himself and joined
-  it.** `sudo bash install.sh` tested too.
-- **Space Engineers on Ubuntu 22.04/24.04 needs 32-bit Wine** for its one-time .NET install (26.04's
-  Wine has it built in). The Games panel now says so with the commands to type; whether it then fully
-  works on 24.04 is still to be confirmed.
-- The six getting-started screenshots retaken under the new name; a finished job's message now shows
-  for 10 minutes instead of for good; uninstall messages corrected.
-- **Games now install in `~/worldcradle-games`**, each in a folder named after the game
-  (`ARK-Survival-Evolved`, `Garrys-Mod`, `7-Days-to-Die`). A game installed by an earlier version in
-  `~/<game>server` keeps its folder (it's recorded as that game's own when the dashboard starts), so
-  nothing moves. Settings → General lists only the installed games and their folders.
-- **Default server names:** the Add form opens with a name and short ID filled in for the chosen
-  game (*Valheim Server*, then *Valheim Server 2*…; ARK is named after its map), and the server fills
-  them in too if they're left empty. A new test sets up every game with nothing typed and every option
-  at its default: all pass except Don't Starve Together and Dragonwilds, which need a value from the
-  owner's game account. Checked in a browser on a throwaway dashboard.
-
-## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
-
-- **Every game on the shared bases.** All game types but 7 Days to Die now build on `SimpleGame` /
-  `WineGame`, keeping
-  only what each game really needs. Keith's own servers (ARK ×4, Palworld, Valheim, Satisfactory,
-  Abiotic Factor) were moved onto the standard launch with `provision.adopt()`: same worlds and
-  settings, a player check and 1-minute warning before each stop, saves confirmed after each.
-- **Renamed to WorldCradle** — "A Cradle for your Worlds" (after the original working name,
-  WorldSeed and RealmCradle: the first two were taken). Everything was renamed, including service and folder names;
-  Keith's box and the test VM were moved over.
-- **Server-side tests of every game** with `tools/test-game.py` on the test VM: install, add, run,
-  answer, players, Save/Message buttons, clean stop, remove, uninstall. 41 of 43 pass everything.
-  Squad 44 and Icarus run, are listed and stop cleanly, but their game traffic goes through Steam's
-  network rather than an ordinary open port — whether players can join needs a real player.
-  DST (needs a Klei token) and Dragonwilds (needs an owner ID) were not run.
-- **Bugs found by the tests and fixed:** Steam's 64-bit client library was never set up on a fresh
-  computer (Eco couldn't start); Stop / Restart / updates gave up after 130 s on games that take
-  minutes to save (Soulmask); ARK's stop never waited for the process (a `?` in its pattern);
-  Satisfactory didn't save on stop, needed claiming in-game before the dashboard could see it, and
-  its API moved port when restarted quickly; Windrose's and ARK Ascended's cards promised rows they
-  could never fill; removing a server left its scripts behind; a blank ARK map or Valheim world name
-  was refused.
-- **The package, re-tested with apt** under the new name: install, update, a broken update rolled
-  back (now in 30 s instead of 10 minutes), uninstall and reinstall keeping the settings.
-- **GitHub Actions** failed only because the setup tests depended on the machine's umask; fixed, and
-  the pre-push check now uses GitHub's.
-- **Decided:** our own apt repository is wanted for a later update (see ROADMAP). (The same entry
-  first said install would stay the one-line `get.sh`; that was reversed later the same day — see
-  the entry above.)
-
-## 2026-10-17 — Code clean-up, part 2
-
-All checked in a browser or on real servers on the test VM, and by a new safety net.
-
-- **The dashboard page:**
-  - **Windows:** one helper replaces six hand-built ones. Each now closes on Escape, a click
-    outside or ✕.
-  - **Players-online question:** one shared step replaces five copies.
-  - **Card buttons:** they live in one table.
-  - **Game knowledge moved out of the page:** each game declares its own "How to join" steps and
-    its in-game buttons. This gave Terraria and other console-driven games the Save and Message
-    buttons they were missing.
-  - **Split into modules:** the 1,290-line `app.js` became eight modules
-    (`app/static/js/`), each page loading only its own, with no build step.
-  - **No inline styles:** the security policy no longer allows `'unsafe-inline'` styles.
-- **Safety net for game setup:** `tests/provision_snapshots.py` records, for all 45 games, what
-  creating a server writes:
-  - launch scripts, settings files and their permissions;
-  - the server record;
-  - each settings file after its password-sync step runs with a changed password.
-  
-  The recording is identical on every computer, because paths, the Python, random values and the
-  LAN address become placeholders. Every step below was checked against it.
-- **Game setup reworked:**
-  - **Password sync:** one way to put the passwords into a game's settings at start
-    (`common.password_sync` / `json_password_sync`), replacing ~20 snippets.
-  - **Form limits** are written once, in the form field (`GameType.option`), replacing 139 copies.
-  - **Shared helpers:** `common.write_private` (21 copies) and `empty_probe()` (33 copies).
-  - **One file per game:** `more.py` and `winegames.py` split.
-  - **Result:** every game writes the same files as before, with one exception — a found bug, below.
-- **Found and fixed:** Squad and Squad 44 kept their admin-console password (Squad 44 also the
-  join password) in settings files other accounts could read.
-- **Plumbing:**
-  - `systemd.py` is now the one way to run `systemctl`, replacing six. Stop, start, restart and
-    force stop were tested on the VM, with start-at-boot following each.
-  - `jobs.Job` is the one helper for background tasks, replacing four.
-- **Still to do** (roadmap):
-  - the smaller shared helpers (player lists, admin commands, downloads);
-  - moving the older game types onto the shared bases. That changes their launch scripts, so each
-    one needs a real server test.
-
-## 2026-10-16 — A real package; one setup for every way of installing
-
-The owner made the package and the install/update process the priority before going public.
-
-- **`.deb` package** (`tools/build-deb.sh`). The program goes in `/usr/lib/worldcradle`. Each account's
-  Python libraries live in its home folder (`~/.local/share/worldcradle/venv`), not in the package:
-  the package stays `all`-architecture and small (~200 KB), and Python upgrades are handled by the
-  existing self-repair.
-  - System packages are listed once, in `deploy/packages.conf`. The package Depends only on what
-    WorldCradle itself needs; game libraries and extras are Recommends, so it still installs where a
-    game library is missing.
-  - postinst restarts every account's running dashboard after an upgrade. prerm stops them on
-    removal; settings, servers and saves are always kept.
-- **Pinned libraries:** `requirements.lock` (generated with `uv pip compile --universal
-  --generate-hashes` for Python 3.10+, `tools/lock-requirements.sh`) installed with
-  `--require-hashes`. The environment remembers which list it was built from, so a new version
-  that needs different libraries gets them on its first start.
-  - The pre-push check now checks the licence of every pinned library (it used to check only the
-    direct ones) and that the lock matches `requirements.txt`.
-- **One setup:** `setup.sh` now does everything account-level, including the computer checks (now
-  `bin/worldcradle-preflight`, shared with `install.sh`), linger, the firewall, fail2ban and the
-  final screen (now `worldcradle welcome`). (Linger, the firewall and fail2ban moved to the package
-  install on 2026-10-18, so setup never needs a password.)
-  - `install.sh` is just: checks, system packages, setup.
-  - `worldcradle setup` runs the same setup after installing the package.
-  - The dashboard's port is set in one place for the scripts (`bin/worldcradle-env.sh`).
-- **Updates:** `worldcradle update` on a package install finds the newest GitHub release, checks the
-  download against its published SHA-256 checksum, installs it with apt, and reinstalls the
-  previous release if the new one doesn't answer. `get.sh` installs the newest release's package
-  (checksum-checked) and falls back to the source while none is published.
-- **Smaller fixes:**
-  - The OS-maintenance script now backs up through the dashboard's own backup service instead
-    of a hard-coded program path.
-  - `worldcradle version` no longer crashes without git.
-- Tested on the VM: the source install re-run (libraries moved to the pinned versions), and the
-  package's files run as a package install would (libraries built in the home folder in 13 s;
-  dashboard, backup service, `status`, `version`, `update`). `install.sh --check` too.
-  Later the same day, **tested with apt for real** on the VM:
-  - install, then setup;
-  - an update to a newer package;
-  - a deliberately broken update, which rolled back to the previous version by itself;
-  - removal, with settings and the game server kept;
-  - a reinstall that picked up the same settings and servers.
-  
-  All steps passed.
-- Found on the way: a commercial game-server panel already uses the project's original working name.
-  The owner was told before going public; the project was renamed on 2026-10-18.
-
-## 2026-10-16 — Alerts checked against each service's documentation; code clean-up
-
-Every alert service was compared with its own developer documentation, and the whole codebase was
-reviewed for dead code, duplication and comments that no longer matched the code. Fixed:
-
-- **Alerts, per the services' documentation:**
-  - Matrix: new rooms couldn't be saved. Their IDs have no `:server` part since room version 12.
-  - Email: "SSL" with the port left empty connected on 587 instead of 465. Messages also lacked the
-    Date and Message-ID headers.
-  - Telegram: "bot was kicked" and "chat not found" were reported as a bad token; the message now
-    says what Telegram said. A group upgraded to a supergroup gives its new chat ID.
-  - Discord: alerts can no longer ping @everyone.
-  - Slack: `&`, `<` and `>` are escaped.
-  - Teams: the card's `contentUrl`, the current template name, and a note that Teams accepts a
-    message before posting it.
-  - Pushover: keys are exactly 30 characters.
-  - ntfy: titles with accents or emoji survive.
-  - All services: a "too many messages" answer is retried once if the wait is short. Matrix,
-    Pushover and Slack now show the service's own reason when they refuse something.
-- **Real bugs found by the review:**
-  - The Getting-started "alerts" step could never be ticked.
-  - A signed-out dashboard froze on stale data instead of returning to the login page.
-  - `worldcradle uninstall` stopped a server the owner had chosen to leave running, and ignored a
-    custom backup folder.
-  - Don't Starve Together never picked up a changed join password.
-  - The lenient RCON client could hang on a malformed reply.
-  - The update checker's thread could die silently.
-  - The pre-push check's "shell scripts parse" line depended on earlier failures, and
-    `install.sh --help` printed a line of code.
-  - The OS-maintenance dry run waited 5 minutes for servers it hadn't stopped.
-  - Clone-install games all ran Palworld's folder clean-up.
-  - Barotrauma servers share one campaign-save folder. It isn't fixed yet, but the Add form now says so.
-- **Clean-up (no change in behaviour):**
-  - One CSRF check and one error handler instead of about 17 copies each in `app.py`.
-  - One request helper in `app.js` instead of about 30 hand-written ones.
-  - One LAN-address lookup instead of three.
-  - Game types share the default save location (21 copies removed) and the "never forward the
-    admin console" text (10 copies).
-  - Dead code removed: unused helpers, constants and imports, and a field that was never filled in.
-  - Outdated docstrings and comments corrected.
-  - `pyflakes` added to the pre-push check so unused code can't creep back.
-- Tested: 176 automated tests (new: every admin route refuses a missing or wrong CSRF token and a
-  signed-out caller; the alert fixes; uninstall; DST password sync; RCON garbage). The dashboard
-  was clicked through in a real browser on the test VM. **Alerts are still not tested with real
-  accounts.**
-- **Still to do (roadmap, *Code clean-up, part 2*):** the larger restructuring the review proposed.
-  It touches how servers are launched, so each step needs testing on real servers.
-
-## 2026-10-16 — Servers simply start and stop
-
-- **Shared ports, simpler:** any ports can be typed when adding a server, even ones another server
-  uses. Start checks the ports first and, if they're taken, says which server (or other program) has
-  them. The "parked" state, its card warning and the extra questions were removed.
-- **Stop means stopped:** Start and Stop now also decide whether a server comes back when the computer
-  restarts. Before, a stopped server started again after a reboot.
-
-## 2026-10-16 — Alerts: ten services, several destinations, an honest Test button
-
-- **Bug: the "send test" button always reported success.** Delivery errors were swallowed and an
-  error answer from the service (e.g. a mistyped Discord address) still counted as sent, so the
-  alerts — which the maintainer had never tried — couldn't be trusted. Each send now reports what
-  happened, in plain words ("the service refused it — check the token", "that address doesn't
-  exist", "couldn't reach the service"…).
-- **`app/notifiers.py`:** Discord, Telegram, email (SMTP with STARTTLS/SSL), Slack, Microsoft Teams
-  (Workflows / Adaptive Card), Pushover, ntfy, Gotify, Matrix and a generic webhook. Each has a form
-  with plain help on where to find the token or address, and checks that values look right before
-  saving. Tokens, passwords and webhook addresses are never sent back to the browser (shown as
-  "saved"; kept unless replaced).
-- **Several destinations at once** (up to 10), each with its own Test button; "Save & test all";
-  `worldcradle test-alert`. Older single-destination settings are read as one destination.
-- Tested: every service against stand-in servers on this machine (HTTP and a small SMTP server),
-  including the failure messages (122 tests); the Settings page in a real browser on the test VM
-  (webhook test reached a local receiver; a wrong Discord address was refused; secrets stayed hidden
-  after a reload). **Not yet tested with real accounts** — on the roadmap.
-- Found while checking: the maintainer's dashboard had no alert destination set, so no alert had
-  ever been sent.
-
-## 2026-10-16 — Automated tests
-
-- `tests/` (pytest, a development-only dependency in `requirements-dev.txt`): 113 tests in half a
-  second — port allocation, WorldCradle's RCON client against a fake RCON server (multi-packet replies,
-  wrong password, nothing listening), `port_listening` never connecting to the game, the
-  never-forward rule and form for all 45 game types, EULA enforcement for every game that requires
-  it, player-list parsers (Minecraft, ARK, Squad), the 7 Days to Die commented-setting fix, Terraria's
-  no-connect rule, command names. Tests run against a throwaway data folder.
-- Checked that they catch real bugs: with the 7 Days to Die and Terraria fixes undone in a scratch
-  copy, exactly those two tests failed.
-- `tools/prepush-check.sh` now runs the tests; CONTRIBUTING asks for a test with every bug fix.
-
-## 2026-10-16 — "Keeps crashing" warning
-
-- systemd restarts a crashed server by itself, so a crash-looping server showed "running" most of
-  the time (19 restarts went unnoticed in testing). The poller now watches each server's automatic
-  restart counter (`NRestarts`): two or more automatic restarts within 15 minutes, or a server waiting
-  to be restarted, puts a red "Keeps crashing — … Open Logs to see why." on its card and sends one
-  alert through the configured channel. A normal restart by the owner resets it. Tested on the VM by
-  killing a Terraria server twice: no warning after one crash, warning after the second, cleared by
-  a normal restart. ARK's crash on a requested stop is not an automatic restart, so it doesn't count.
-
-## 2026-10-16 — Getting started guide; WorldCradle was crashing Terraria servers
-
-- **`docs/GETTING_STARTED.md`** with six screenshots taken on the test VM's WorldCradle (public page,
-  dashboard, Games, Add a server, Can friends connect?, phone). The VM was given a placeholder public
-  address first so no real address appears.
-- **Bug found while taking them: WorldCradle crashed Terraria servers.** The dashboard's "answering?"
-  check opened a TCP connection to the game and closed it straight away; Terraria's server dies on
-  that (`ObjectDisposedException` in `Netplay.UpdateConnectedClients`), so a WorldCradle-managed
-  Terraria server crashed and restarted every minute or two (19 times in the test). The short tests
-  done earlier ended before it showed. Fix: local checks now ask the operating system whether the
-  port is listening (`monitor.port_listening`, no contact with the game) — used for Terraria,
-  Minecraft Java, Bedrock and Windrose; *Can friends connect?* no longer tests Terraria by connecting
-  (`survives_connect_test = False`). Verified: 5 minutes of polling plus a *Can friends connect?*
-  check, no crash. The card had said "running" throughout — recorded in the roadmap.
-- **Phone layout:** the top menu ran off the right edge (Settings and Log out unreachable without
-  sideways scrolling) — it now wraps onto a second line.
-- "Ark: Survival Evolved" → "ARK: Survival Evolved".
-- **Testing from outside the home, made concrete:** "try from a phone on mobile data" didn't say how to
-  test a game. *Can friends connect?*, the Getting started guide, the testing steps and the test-report
-  form now say: turn on the phone's **Mobile Hotspot**, connect the computer you play on to it (not
-  to the home Wi-Fi), and join with the public address — exactly how a friend outside connects.
-
-## 2026-10-16 — Version number and release notes
-
-- `VERSION` (0.2.0-dev) read by `app/version.py`; `worldcradle version` shows it with the git build,
-  and the dashboard footer shows it to signed-in admins only — the public page doesn't reveal the
-  version, so it can't be used to look up known problems.
-- `CHANGELOG.md`: user-facing release notes (0.2.0 not yet released; 0.1.0 = private alpha), kept
-  separate from this log.
-
-## 2026-10-16 — Contributor files, backups and unban from the terminal
-
-- GitHub issue forms (`.github/ISSUE_TEMPLATE/`): a **game test report** that asks exactly what was
-  checked, a bug report, a game request; blank issues allowed; a link sends security reports to
-  GitHub's private reporting. `CONTRIBUTING.md` (testing first, plain-language and internet-facing
-  rules for code, no GPL dependencies, licence of contributions) and `SECURITY.md`.
-- `worldcradle backup list <server>` and `worldcradle backup restore <server> <number>`: on the test VM a
-  Terraria world was deliberately damaged (7 bytes), then restored byte-for-byte (same checksum);
-  a safety copy of the damaged state was made first and the server restarted.
-- `worldcradle unban <address>`: on the VM a test address was blocked in fail2ban and the command
-  lifted it after one password prompt; it also clears the dashboard's own short lock-out.
-- The `worldcradle` command no longer prints internal log lines on screen (they still go to the log
-  files).
-
-## 2026-10-16 — Ubuntu 26.04, uninstall, passwords on screen
-
-- **Upgrade 24.04 → 26.04** on the test VM with WorldCradle installed (Python 3.12 → 3.14): on the
-  first boot the dashboard rebuilt its Python environment by itself and came back — no help needed
-  this time. V Rising (Wine 10) and Terraria ran; a clean install on 26.04 passed too.
-- **`worldcradle uninstall`:** confirms, offers to stop and unregister the game servers (asking per
-  server when players are online), removes the dashboard service, backup timer, certificate-renewal
-  timer and the command, asks separately before deleting settings and backups, and never deletes
-  games or saves; ends with a list of what's left and how to remove it. A bug on the first try
-  (the closing summary read the settings after they had been deleted) was fixed and the test
-  repeated: the game and both world files were kept, everything else was gone.
-- **`worldcradle passwords`**, and the installer's last screen now shows the join password (new
-  installs pick a random one).
-- **Self-repair without internet** stops after a few seconds with a message naming both possible
-  causes (no internet, or the python3-venv package missing).
-- **Keep-alive 5 s → 30 s:** a client reusing an idle connection at the exact moment the server
-  closed it got a dropped request (browsers retry, scripts may not). With the gevent worker idle
-  connections are cheap; re-checked that 50 held connections still don't slow the dashboard.
-- A Terraria card briefly shows "not answering" while the world is being generated — expected; it
-  switches by itself once the port opens.
-
-## 2026-10-15 — Ubuntu 24.04: upgrade survival and clean install
-
-- **Upgrade test:** the test VM (WorldCradle installed) was upgraded 22.04 → 24.04.5 with
-  `do-release-upgrade`. Afterwards the dashboard was stuck in a restart loop (`No module named
-  'gunicorn'`) and the `worldcradle` command crashed: the Python environment was tied to Python 3.10,
-  which the upgrade replaced with 3.12. (The same had happened once on the maintainer's server.)
-- **Fix — self-repair:** `bin/worldcradle-ensure-venv` checks the environment and rebuilds it with the
-  current Python (falling back to fetching pip when the venv module is missing). It runs before the
-  dashboard starts (`ExecStartPre`, with a 15-minute start allowance) and from the `worldcradle`
-  command, and setup.sh uses it too. On the upgraded VM, a restart rebuilt the environment and the
-  dashboard was answering within 17 s.
-- **Clean install on 24.04** (WorldCradle and every package it installed removed first): 82 s; setup
-  code, sign-in, Terraria and V Rising (Wine 9) installed, run, removed, uninstalled; no Wine
-  environment left behind.
-- **Random game passwords:** a new install used to start with the example file's placeholder
-  passwords — known to anyone who reads the repository. setup.sh now picks random ones (10-character
-  join password, 20-character admin password, letters and digits only so every game accepts them).
-- Quieter install: no certificate-generation noise; first-install wording for the environment step.
-- The maintainer's own dashboard service got the same self-repair step.
-
-## 2026-10-15 — First fresh-machine test (Ubuntu 22.04 desktop VM)
-
-Installed from a downloaded copy on a clean Ubuntu 22.04.5 desktop VM (8 cores, 16 GB, 40 GB disk).
-The install took 1 min 45 s; first-visit setup with the code, sign-in, the dashboard, installing,
-running, messaging, saving, stopping and removing Terraria (Linux) and V Rising (Windows-only, under
-Wine 6.0) all worked, as did the `worldcradle` command, the QR code and the CPU/RAM figures.
-Problems found and fixed:
-- A fresh Ubuntu desktop has **no curl**: the README's `curl … | bash` would fail → the README now
-  uses `wget -qO- … | bash` (curl still mentioned), and get.sh says so.
-- The installer's **internet check used curl** and so reported "no internet" on such a machine →
-  now uses Python, which every Ubuntu has.
-- A downloaded copy unpacks to `WorldCradle-main`, not `worldcradle`, and WorldCradle then runs from wherever
-  it was unpacked → the README explains moving it to the home folder, and the installer warns when
-  it is run from Downloads or /tmp.
-- **Old Wine on 22.04** (6.0; our Windows-only servers were tested with Wine 10) → the installer
-  warns; V Rising was confirmed to work with 6.0, so the warning says "some may not work".
-- apt printed ~1,900 lines → the installer shows "Downloading and installing…" / "Done" and keeps
-  the full output in a log file (shown only if something fails).
-- setup.sh repeated an outdated, very long "get a setup code" command right before the installer's
-  own final screen → removed when run from the installer; standalone it says `worldcradle setup-code`.
-  pip's ~35 "Requirement already satisfied" lines → one "Python libraries ready." line.
-- **Removing a Windows-only server left its Wine environment** (~1 GB) behind → it is now deleted
-  with the server (saves are still left alone).
-
-## 2026-10-15 — `worldcradle update`
-
-- Updates WorldCradle from its repository: lists what's new, asks (or `--yes`), fast-forwards the code,
-  installs the Python libraries, checks the new version loads (web app, every game type, pages),
-  restarts the dashboard and waits for it to answer. If any step fails it resets to the previous
-  version, reinstalls its libraries and restarts it. Refuses when the copy has local edits or
-  commits that aren't published. Settings, passwords, servers and saves are never touched (they
-  live outside the code).
-- Tested in a sandbox (separate install, stand-in repository, throwaway dashboard on a spare port):
-  already up to date; a good update; a broken update (rolled back, dashboard kept answering); local
-  edits (refused). Not yet tested: a version that loads but then fails to start.
-
-## 2026-10-15 — QR code for phones
-
-- The installer's last screen and the new `worldcradle qr` command show a QR code of the dashboard's
-  home-network address, so it can be opened on a phone by pointing the camera at it. Uses `segno`
-  (BSD). Checked by decoding the code with an independent reader (zxing-cpp).
-
-## 2026-10-15 — Installer checks the computer first
-
-- `install.sh` now checks, before installing anything: operating system (Ubuntu 22.04+ / Debian 12+),
-  64-bit Intel/AMD processor and AVX, memory, free disk space, background services (systemd for the
-  user), whether port 8443 is free, and internet access. Each result is one plain line (✓ / ⚠ / ✗);
-  any ✗ stops the install with the reason (`--force` overrides). Tested here (all ✓) and with
-  stand-in tools simulating an ARM processor, a full disk, no systemd and a busy port.
-- Roadmap: a *Packaging* plan (a `.deb` on GitHub Releases → a WorldCradle apt repository → possibly a
-  Launchpad PPA).
-
-## 2026-10-15 — Patreon support link
-
-- The "Support the developer on Patreon" link (https://www.patreon.com/KeithDude) is switched on in
-  the dashboard footer; the README gains a "Support the project" section and GitHub a *Sponsor*
-  button via `.github/FUNDING.yml`.
-
-## 2026-10-15 — Dashboard outage: connection exhaustion fixed
-
-- **What happened:** the live dashboard stopped answering while its service still showed "running".
-  A single internet address (most likely a scanner) held 8 connections open without sending a
-  request. The web server ran 8 threads, one connection each, with no time limit for a silent
-  client, so nobody else could get in. Reproduced locally: 8 connections that complete the TLS
-  handshake and then go quiet, or send a request very slowly, lock everyone out.
-- **Fix:** gunicorn now uses the event-based **gevent** worker (`--worker-class gevent
-  --worker-connections 1000 --keep-alive 5`), so idle and slow clients cost almost nothing.
-  Verified with 300 silent and 300 slow connections held open: normal requests still answered in
-  about 0.01 s. The whole app (sign-in, every admin page, background polling of the real servers,
-  CPU/RAM figures) was exercised on a test copy before switching the live service.
-- New dependencies: `gevent` (MIT) and `packaging` (Apache-2.0 / BSD).
-
-## 2026-10-15 — Command line, simpler install, accurate CPU figures
-
-- **`worldcradle` command** (`bin/worldcradle`, installed to `~/.local/bin` by setup): status, address,
-  reset-password, setup-code, start/stop/restart of the dashboard,
-  logs, servers, `server start|stop|restart|logs <server>` (asks first when players are online),
-  backup, check, version, help. Reset-password tested end to end on a copy of the settings.
-- **Installer:** no questions by default (it installs the optional extras too; `--ask` and
-  `--minimal` change that); `get.sh` downloads WorldCradle and runs the installer in one line.
-- **CPU figures:** the top bar says *Total CPU usage* (the whole computer). Each server's CPU is now
-  its share of the whole computer, and its RAM is the total of all its processes, measured from the
-  server's systemd control group (game servers are often several processes, e.g. under Wine). On the
-  live machine the six servers' figures added up to about 6% against 8% total CPU usage.
-- **Footer:** a link to the project, and an optional "Support the developer on Patreon" link that
-  appears once `SUPPORT_URL` is set in `app/project.py` (only plain https addresses are accepted).
-- Roadmap expanded (principles, milestones, install, command line, testing, dashboard, security);
-  a C++ rewrite was considered and judged not worthwhile (see the roadmap).
-
-## 2026-10-15 — Licence
-
-- Licensed under the **PolyForm Noncommercial License 1.0.0** (`LICENSE.md`): free for any
-  noncommercial use; commercial use needs the author's permission.
-- Removed the only GPL-licensed dependency (the `rcon` package), whose licence could not be combined
-  with a noncommercial licence. WorldCradle now has its own Source RCON client (`monitor.source_rcon`),
-  used by the player lists, controls, the ARK stop helper and generated stop scripts. Checked on live
-  ARK servers (player list, world save) and on Minecraft (player list, save, messages, long
-  multi-part replies, graceful stop) with identical results to the old library.
-- Remaining dependencies are BSD, MIT or Apache licensed.
-- **Pre-push checks** (`tools/prepush-check.sh`, run automatically before every push): clean tree,
-  code and pages load, no control port marked for forwarding, script syntax, no passwords or personal
-  data in the repository, no GPL dependencies, dashboard answers. Anything not verified on a running
-  server is raised with the maintainer before pushing.
-- Verified the ARK stop path through the new RCON client with a real restart: the world saved and the
-  map came back. ARK still exits with a crash (SIGABRT) right after saving, as it did before this
-  change — recorded in the roadmap.
-- Added [ROADMAP.md](ROADMAP.md), a living plan.
-
-## 2026-10-14 — Documentation, port safety, clearer figures
-
-- **Supported-games list moved into the documentation.** Each game is marked *Tested* (real players
-  have played on it) or *Not Tested* (server-side testing only) in `docs/SUPPORTED_GAMES.md`, kept by
-  hand. A short-lived in-dashboard badge was removed again: test status is project documentation, not
-  part of the product, and it is not updated automatically from anyone's testing.
-- **Control ports are never forwarded.** Every admin console (RCON) and other control port is marked
-  "keep closed, never forward" on the Add-a-server form, listed under "Never forward these" in *Can
-  friends connect?*, and explained in plain words in `deploy/SETUP.md`. None is ever included in the
-  ports-to-forward list.
-- **System figures:** memory is labelled *RAM*, sizes use binary units (1 GB = 1024³ bytes), the top
-  bar gains *Storage used*, and the load figure is explained.
-- **Palworld launch flags:** Palworld's documentation for v1.0 suggests dropping
-  `-useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS`. Tried on a live server: it then never
-  finished loading its world (admin console never came up). The flags stay.
-- Prepared for publishing: README rewritten, development log and supported-games list added, the
-  OS-maintenance helper no longer contains a hard-coded user name.
-
-## 2026-10-13 — Documentation audit of every game
-
-Every game setup was compared with the publisher's own dedicated-server documentation (several
-official sites refuse automated reading, so some findings came from community wikis and were treated
-as leads to test). Confirmed problems, fixed and re-tested on real installs:
-
-- **Space Engineers** — every restart reloaded the blank starting world, discarding the saved one
-  (`-ignorelastsession`). Removed; restarts now continue the saved world.
-- **7 Days to Die** — the save-folder setting sits inside a comment in the shipped config file, so it
-  never took effect and worlds were saved outside the server's folder (backups were empty). Commented
-  settings are now replaced with live ones.
-- **StarRupture** — the engine's remote-control web interface answered on the game port with no
-  login. It is now switched off, only UDP is forwarded, and the session starts from `DSSettings.txt`
-  automatically. Its passwords use an encrypted format only the game can write, so the shared join
-  password cannot be applied (stated in the Add form).
-- **Minecraft Java** — PvP and command blocks are game rules since 1.21.9, no longer
-  `server.properties` settings; they are now set through the admin console on first start.
-- **Eco** — stopped with SIGTERM (the documented save-and-exit) instead of SIGINT; admin console bound
-  to this computer only.
-- **VEIN** — Steam library link added (its connection to Steam never started without it); several
-  admins now use the documented `+` syntax; settings verified through the server's own status.
-- **ARK: Survival Ascended** — admin password moved to the last launch option as documented;
-  "crossplay off" now means PC only. Stopping saves the world but takes about 2½ minutes under Wine.
-
-Changed to match the documentation but not yet confirmed with a player: Factorio admin list file,
-per-server Terraria ban list, Squad / Squad 44 ports and Squad 44's password setting, Don't Starve
-Together Caves shutdown and home-network port range, Palworld clean stop for new servers, ARK: Survival
-Evolved crossplay address, Stationeers player limit, plus many corrections to form wording and limits.
-
-Still unresolved: Dragonwilds' mandatory admin password (the server strips the obvious setting);
-Astroneer may need Wine 10.6+ for players to join; s&box cannot start its Steam session (not added).
-
-## 2026-10-13 — EULAs and Windows-only games
-
-- **Licence terms:** a game's EULA is a property of its game type. Where the terms cover the server
-  itself, the Add-a-server form requires a tick (with a link) and the acceptance is written to the
-  audit log; where the publisher only has terms for the game, a link is shown. The Games panel notes
-  that Steam downloads fall under the Steam Subscriber Agreement.
-- **Windows-only servers through Wine:** SCUM, Astroneer, Voyagers of Nera, Windrose and StarRupture
-  added (shared `winegames.py` base). Windrose and s&box first failed with "illegal instruction"; the
-  cause was a virtual CPU without AVX — setting the VM's CPU type to *host* fixed Windrose.
-- Minecraft Java and SCP: Secret Laboratory finished and tested once their EULAs were accepted.
-
-## 2026-10-12 — Many more games, ease of use, security review
-
-- **Add-a-server form matches each game's real options** (typed fields: checkboxes, lists, number
-  ranges), and every game has its own port boxes (blank = automatic).
-- **Shared ports with a clear warning:** a server may reuse another's ports on purpose (only one can run
-  at a time); the form explains this before allowing it. (Simplified on 2026-10-16: see that day.)
-- **Security review** for an internet-facing dashboard: content-security policy with per-response
-  nonces, secure cookies, CSRF on every change, sessions tied to the password, atomic config writes,
-  safe backup restore, fail2ban support.
-- **Ease of use for non-technical owners:** one-step `install.sh`, first-run setup code, a Getting
-  started checklist, game installs from the dashboard, *Can friends connect?* with router instructions,
-  and an optional free HTTPS certificate.
-- **Games added** (one at a time, each installed, started on spare ports, stopped and uninstalled):
-  Don't Starve Together, Minecraft (Java and Bedrock), Terraria, 7 Days to Die, Project Zomboid, Rust,
-  Factorio, Counter-Strike 2, Garry's Mod, Left 4 Dead 2, Unturned, Core Keeper, Enshrouded, V Rising,
-  Conan Exiles, Sons of the Forest, ARK: Survival Ascended, Space Engineers, Icarus; then Team
-  Fortress 2, Necesse, Barotrauma, Insurgency: Sandstorm, Killing Floor 2, Arma Reforger, HumanitZ,
-  Soulmask, RuneScape: Dragonwilds, Stationeers, Squad, Squad 44, Eco, VEIN.
-- **Not added, with reasons:** Arma 3 and DayZ (need a Steam account that owns the game), The Isle
-  (needs Epic credentials), Romestead (needs .NET 8, risk of save corruption), Euro Truck Simulator 2 /
-  American Truck Simulator (need files exported from the game client), Farming Simulator 25 (needs a
-  second paid licence).
-- **Abiotic Factor** added (Windows server under Wine) including a player list read from its log.
-
-## 2026-10-10 — Abiotic Factor's players, and the port boxes back
-
-- **Bug reported by Keith: Abiotic Factor's card never showed anyone online.** The game doesn't report
-  its players to Steam's server query (the count stays 0), so the player list is now read from the
-  server's own log (who joined, who left). Checked by replaying a real three-player session. This
-  also made the "players online?" question before a stop work for this game.
-- **Regression reported by Keith:** the rebuilt Add form had lost the port boxes ("Each game should
-  have a spot for the ports that the game supports"). Every game got its own port boxes back;
-  blank = automatic.
-- Wine questions answered: no need to switch to Proton; the newer Wine "ntsync" speed-up needs Wine
-  10.16 or newer.
-
-## 2026-10-08 — Abiotic Factor joined; a security review; open to the internet by design
-
-- **Keith joined the Abiotic Factor server** (in-game server search and direct connect) — its first
-  real-player test. It then became a proper game type: update button, player names, its own "How to
-  join" text and log in the log viewer, and the in-game admin switched on.
-- **Wine put a console window on the desktop:** the server's background service inherited the desktop
-  session. Removing the display setting wasn't enough (Wine fell back to Wayland); the launch now
-  points Wine at no display at all. Keith confirmed the window was gone.
-- **The Add form rebuilt** to match each game's real options (lists, tick boxes, numbers with
-  limits). Throwaway servers were started for Valheim, Satisfactory and Abiotic Factor.
-- **Bug found by that testing: Valheim backups had failed silently since 2026-09-29.** A game update
-  changed Valheim worlds from two files into a folder, and the backup still looked for the files.
-- **Security review** at Keith's request. Seven findings, all fixed: a restore could overwrite a world
-  with no safety copy (now an automatic pre-restore snapshot); a damaged settings file was silently
-  replaced with defaults and saves had no lock; backup failures were silent (now an alert and a
-  "backup is old" warning); backup download/delete accepted `../` in a name; there was no
-  content-security policy (now strict, with per-page nonces); the log viewer showed game passwords;
-  changing the dashboard password didn't sign other sessions out. Cookies were hardened and settings
-  validated at the same time.
-- **Decided by Keith:** the dashboard is never to be restricted to the home network or a VPN — "if i
-  wanted that i just wont open the port to the outside. but we should always expect the user to open
-  this to the outside and we should make sure that security is tight." Every later change is judged
-  as internet-facing.
-
-## 2026-10-06 — Abiotic Factor, under Wine
-
-- Keith asked whether the Abiotic Factor dedicated server runs on Linux. It doesn't (Windows only).
-  Keith offered to install Docker for it; it runs under the computer's own Wine instead, because the
-  community Docker image was an unmaintained wrapper around an older Wine, Docker's ports bypass the
-  firewall, and it would have been a second way of managing servers next to systemd.
-- At Keith's request it reuses the ports of an ARK map that was parked (stopped on purpose), which
-  were already forwarded on the router; the dashboard refuses to start one while the other runs.
-- **A join problem that wasn't the server:** Keith's game client sent a password remembered from
-  another server. Typing the password in the in-game prompt fixed it.
-
-## 2026-09-29 — An Ubuntu upgrade, and weekly patching switched on
-
-- **The upgrade to Ubuntu 26.04 broke the dashboard:** Python went from 3.13 to 3.14 and the
-  dashboard's Python environment was tied to the old one, so the service crash-looped for about 20
-  minutes; the ARK stop helper and the nightly backup, which use the same environment, were broken
-  too. The environment was rebuilt. (This is what later became the automatic self-repair, 2026-10-15.)
-- **Found on the way:** `requirements.txt` was missing `python-a2s`, which the dashboard imports — a
-  fresh install would have failed. Added. The security settings were re-checked on the live dashboard.
-- **Weekly OS patching installed:** Keith typed the root steps from `deploy/maintenance/install.md`
-  himself; a dry run found 0 players and nothing to install, and the timer was switched on (first
-  run Wednesday 2026-09-30, mid-morning).
-- The old hand-made service files, kept switched off since June in case of a roll-back, were deleted.
-
-## 2026-07-20 — Operating-system updates on the dashboard
-
-- An **OS updates** tile: how many updates are waiting, how many are security fixes, and whether a
-  restart is needed; the dashboard's "Check for updates" button now checks the games and the OS.
-- **Weekly, player-aware OS patching** prepared (`deploy/maintenance/`): it backs up every save, only
-  runs when no one is playing (and gives up if it can't tell), and restarts only if needed. Keith
-  first asked for a passwordless `sudo` rule; it runs from a root systemd timer instead, because any
-  script the game account can edit — including through the dashboard's launch-script editor — must
-  never be runnable as root.
-
-## 2026-06-25 to 06-27 — Made installable by others
-
-- The code moved into `app/`, and everything that belongs to one computer (settings, server list,
-  certificate, logs, backups) moved out of the code into a data folder (`~/.config/worldcradle`), so
-  an update can never touch it. Personal details were taken out of the code and became settings.
-- First `setup.sh`, `requirements.txt`, example files, systemd templates, `deploy/SETUP.md` and a
-  general README.
-- **Change the game passwords from the dashboard** (Settings), never written to the logs.
-- A full security re-check after the move passed (every admin page needs signing in, every change
-  needs the CSRF token, hardened headers and cookies, private file permissions).
-
-## 2026-06-19 — The whole fleet run by the dashboard
-
-- Every one of Keith's servers (four ARK maps, Palworld, Valheim, Satisfactory) became a
-  dashboard-managed service with a generated launch, keeping its world, ports and the ARK cluster. The
-  old hand-made services were kept switched off for a roll-back.
-- Settings that were specific to Keith's computer (public address, cluster name, folders) became
-  dashboard settings, so it could be handed to someone else.
+## 2026-10-19 — 0.2.0: out in the wild
+
+- **First public release**, and the repository went public.
+- Installing is four lines, each with a one-sentence description.
+- The welcome screen's link and QR code take you straight to the setup page.
+- My own servers now run the same release everyone else gets. New versions are tried on a test
+  machine first.
+
+## 2026-10-18 — A new name, and every game on the same footing
+
+- **Renamed to WorldCradle** — *A Cradle for your Worlds*. The first names I picked were taken.
+- Every game rebuilt on the same foundations, then each one installed, started, stopped and removed
+  on a test machine. 41 of 43 passed everything.
+- Installing is download, `sudo apt install`, `worldcradle setup` — the only `sudo` is one you type,
+  and setup itself never asks for a password.
+- `sudo worldcradle update` puts the previous version back within 30 seconds if the new one doesn't
+  start.
+- Games install into `~/worldcradle-games`, each in a folder named after the game.
+- Every game comes with a server name and settings filled in, so you can add a server without typing
+  anything.
+- Satisfactory saves its world when stopped (the game itself doesn't), and slow savers like Soulmask
+  get the minutes they need.
+- Tested a fresh install start to finish, then installed a game and joined it myself.
+
+## 2026-10-17 — A big clean-up under the hood
+
+- No new buttons, but the code got much simpler, which made adding and fixing games easier.
+- Terraria and other console-driven games got the Save and Message buttons they were missing.
+- Fixed: Squad's and Squad 44's password files could be read by other accounts on the computer.
+
+## 2026-10-16 — A real package, and alerts that actually alert
+
+- **A proper package** for Ubuntu and Debian, with exact, checksum-verified libraries.
+- **Alerts to ten services** — Discord, Telegram, email, Slack, Teams, Pushover, ntfy, Gotify, Matrix
+  or a webhook — several at once, each with a Test button that tells the truth.
+  **Burned by:** the old Test button said "sent" every single time. Then I found out I'd never set an
+  alert up, so not one had ever been sent.
+- **"Keeps crashing" warning** on a server's card, plus an alert.
+  **Burned by:** WorldCradle's own "are you alive?" check was crashing Terraria servers every couple
+  of minutes — 19 times in one test — and the card said "running" the whole time. The check now asks
+  the computer instead of poking the game.
+- Servers simply start and stop: a stopped server stays stopped after a reboot, and servers can share
+  ports and take turns.
+- The Getting started guide, with screenshots. The dashboard works on phones.
+- From the terminal: `uninstall`, `passwords`, `backup list` / `restore`, `unban`, `version`.
+- Automated tests, a version number, release notes, and forms for bug reports and game test reports.
+- Survives an upgrade to Ubuntu 26.04 without help.
+
+## 2026-10-15 — The `worldcradle` command, and a bot that held me hostage
+
+- **The `worldcradle` command** for everyday jobs: status, passwords, restart, logs, backups, start
+  and stop servers.
+- **`worldcradle update`** checks the new version works and puts the old one back if it doesn't.
+- The installer checks the computer first, ends with a QR code for your phone, and picks random game
+  passwords.
+- **Repairs itself after an Ubuntu upgrade.**
+  **Burned by:** the September upgrade swapped Python out from under the dashboard. It crash-looped,
+  and took the nightly backup and ARK's clean shutdown down with it.
+- **Copes with thousands of idle connections.**
+  **Burned by:** something on the internet opened 8 connections and just… sat there. Nobody could get
+  in, and the dashboard swore it was "running" the whole time.
+- Licensed under PolyForm Noncommercial, with my own admin-console client replacing a GPL library.
+- Accurate CPU and RAM figures per server; a Patreon link; the roadmap.
+
+## 2026-10-14 — Honest about testing; control ports stay closed
+
+- The supported-games list, with every game marked *Tested* (real players have played on it) or
+  *Not Tested*.
+- Admin consoles and other control ports are marked "keep closed, never forward" everywhere.
+- Clearer figures: RAM, storage, binary gigabytes.
+
+## 2026-10-13 — Every game checked against its own documentation
+
+- Compared every game's setup with its publisher's instructions. The worst finds: Space Engineers
+  reloaded its starting world on every restart, 7 Days to Die saved its world where backups couldn't
+  see it, and StarRupture left a remote-control page open with no login. All fixed.
+- Games whose licence requires it ask you to accept it before a server is created.
+- More Windows-only servers running through Wine: SCUM, Astroneer, Voyagers of Nera, Windrose,
+  StarRupture.
+
+## 2026-10-12 — From my servers to anyone's
+
+- **Goal: someone with almost no technical knowledge can set this up and use it.**
+- Install games from the dashboard; a one-time setup code on first visit; a Getting started
+  checklist; **Can friends connect?** with router steps; a free trusted certificate from Let's
+  Encrypt.
+- **30+ games added**, one at a time, each installed, run and removed: Minecraft, Terraria, Rust,
+  Factorio, Counter-Strike 2, 7 Days to Die, Project Zomboid, V Rising, Enshrouded and many more.
+  Rule from here on: if Steam has a Linux dedicated server for it, WorldCradle supports it.
+
+## 2026-10-10 — Who's actually online
+
+- Abiotic Factor's player list is read from the server's own log.
+  **Burned by:** the card said nobody was online while three of us were playing.
+- Every game has its own port boxes again (blank = automatic).
+
+## 2026-10-08 — Locked down for the open internet
+
+- **Decided:** the dashboard is built to be reachable from anywhere, so security has to hold up to
+  that. Restricting it to the home network isn't the answer — if you don't want it open, don't open
+  the port.
+- A security review: a safety copy before every restore, alerts when a backup fails, a strict
+  content-security policy, no game passwords in the log viewer, and changing the password signs
+  everyone else out.
+  **Burned by:** Valheim's backups had been failing silently for ten days after a game update changed
+  how worlds are saved.
+- The Add-a-server form shows each game's real options: lists, tick boxes, numbers with limits.
+- Windows-only servers run with no window popping up.
+  **Burned by:** a Windows console window kept appearing on my desktop every time Abiotic Factor
+  started.
+
+## 2026-10-06 — Windows-only servers, through Wine
+
+- First Windows-only server, Abiotic Factor, running under Wine instead of Docker — one way of
+  running servers, not two.
+
+## 2026-07-20 — Patching the computer without kicking anyone off
+
+- An OS-updates tile: how many updates are waiting, how many are security fixes, whether a restart is
+  needed.
+- Weekly operating-system patching that backs up every save first and only runs when nobody is
+  playing — and gives up if it can't tell.
+
+## 2026-06-25 — Installable by someone other than me
+
+- Settings, passwords and servers moved out of the code, so updating can never touch them.
+- A setup script and an install guide; personal details became settings.
+- Change the game passwords from the dashboard.
+
+## 2026-06-19 — The dashboard runs everything
+
+- Every server runs as a dashboard-managed service with a generated launch, instead of my
+  hand-made ones.
 
 ## 2026-06-18 — From a status page to a control panel
 
-- **One file for the game passwords** — one join password friends share, one private admin password —
-  instead of a copy in every server's settings.
-- **One module per game** (`games/`), each knowing how to check, start, stop and talk to its server;
-  the server list moved into one file; the first **Add a server** (a Valheim world could be created
-  from the dashboard).
-- **Update checks** (installed build against Steam's latest), **logs** (access, audit, app) and
-  **fail2ban** blocking addresses that keep getting the password wrong.
-- **Fixed a Palworld server nobody could join:** it crashed on every join because the world, converted
-  from an early single-player save, was damaged. A fresh world fixed it.
+- One join password friends share and one private admin password, instead of a copy per server.
+- **Add a server** from the dashboard, one module per game.
+- **Update checks** against Steam's latest build.
+  **Burned by:** friends couldn't join ARK. My update script had its options in the wrong order and
+  had quietly done nothing for over a year, so the game refused the out-of-date server.
+- Logs, and fail2ban blocking anyone who keeps guessing the password.
 
 ## 2026-06-17 — The first dashboard
 
-- A web dashboard (Python and Flask over HTTPS) for Keith's ARK, Palworld, Valheim and Satisfactory
-  servers, replacing a plain-text status page: which servers are up, who is playing, and controls.
-  Two levels from the start, as Keith designed them: a public page (online/offline, player counts, how
-  to join) and a signed-in admin page with everything else.
-- Over the following weeks (exact dates not recorded): backups and restore, daily automatic backups,
-  alerts (Discord / ntfy / webhook), the launch-script editor and the port pool.
+- A web page showing which servers are up and who's playing, with start, stop and restart.
+- Two levels from day one: a public page friends can see, and a signed-in admin page with everything
+  else.
+- Over the following weeks: backups and restore, daily automatic backups, alerts, a launch-script
+  editor and a port pool.
 
-## 2026-06-14 to 06-16 — The ARK cluster, and lessons that became rules
+## 2026-06-14 — The day I froze my friend in ARK
 
-- Several ARK maps set up as one cluster, so characters and dinos travel between them.
-- **Players stranded:** an attempt to pause empty ARK servers (`SetGlobalPause`) froze the server's
-  admin console too, while Keith and a friend were playing; only a restart (losing a few minutes of
-  play) got them back. Two rules came from it, both later built into WorldCradle: **always check for
-  players before stopping, restarting or pausing a server**, and pausing ARK is a dead end.
-- **Friends couldn't join ARK** ("failed to query server for invite"): the update script had its
-  steamcmd options in the wrong order, so the server hadn't updated for over a year and the game
-  refused it. Fixed, along with a steamcmd state that blocked the update.
-- Stopping empty servers and waking them on demand was looked at and **declined by Keith**: there was
-  no shortage of memory, and ARK's 4–5-minute start made waking on demand clumsy.
-- Windows-only servers (ARK: Survival Ascended, Sons of the Forest) were removed for now: they needed
-  Proton, which Keith didn't want then. (Wine support came later, in October.)
+- **WorldCradle checks who's online before it stops, restarts or updates anything, and warns them
+  first.**
+  **Burned by:** trying to pause an "empty" ARK server to save power. It wasn't empty. My friend and I
+  were stuck in a frozen world until a restart rolled us back.
 
-## Before 2026 — Hand-written scripts
+## Before 2026 — Scripts on my home server
 
-- Keith ran the servers with scripts written by hand: backing up ARK, updating Palworld, ARK: Survival
-  Ascended and Satisfactory with steamcmd, and talking to ARK through its admin console. They are where
-  the dashboard's first commands came from.
+- Hand-written scripts to back up ARK, update my servers with steamcmd, and talk to ARK's admin
+  console. That's where the first dashboard commands came from.
