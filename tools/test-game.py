@@ -199,7 +199,8 @@ def main(argv) -> int:
                     say(f"✓ deleted the test server's world ({own})")
         # a game that needs its own copy per server leaves that copy behind on removal (some keep
         # their world in it) — delete the test's own copy
-        for leftover in glob.glob(os.path.expanduser(f"~/*-{key}")):
+        for leftover in glob.glob(os.path.expanduser(f"~/*-{key}")) \
+                + glob.glob(os.path.expanduser(f"~/worldcradle-games/*-{key}")):
             if os.path.isdir(leftover) and key.startswith("gt-"):
                 subprocess.run(["rm", "-rf", "--", leftover])
                 say(f"✓ deleted the test server's copy of the game ({leftover})")

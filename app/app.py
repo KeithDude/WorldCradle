@@ -9,6 +9,7 @@ The background poller refreshes a cached fleet snapshot; requests read the cache
 from __future__ import annotations
 
 import functools
+import os
 import re
 import resource
 import secrets
@@ -40,6 +41,10 @@ from applog import access_log, app_log, audit_log
 from poller import poller
 
 cfg = config.load()
+try:
+    installs.keep_old_folders()   # games installed by an earlier version stay where they are
+except Exception:  # noqa: BLE001 — never stop the dashboard over it
+    app_log.exception("couldn't check for games in their old folders")
 
 
 def _raise_open_file_limit() -> None:
@@ -494,10 +499,17 @@ def _settings_changes(data: dict, current: dict) -> tuple[dict, list[str]]:
             path = str(data["install_dirs"].get(kind, "")).strip()
             if path and not _PATH_RE.match(path):
                 errors.append(f"{kind} install dir: plain path characters only")
+            elif path and os.path.expanduser(path) == config.default_install_dir(kind):
+                dirs.pop(kind, None)          # the default needs no setting
             elif path:
                 dirs[kind] = path
         changes["install_dirs"] = dirs
     return changes, errors
+
+
+def _tilde(path: str) -> str:
+    home = os.path.expanduser("~")
+    return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
 
 
 @app.route("/admin/config", methods=["GET", "POST"])
@@ -522,6 +534,9 @@ def admin_config():
         "satisfactory_api_token": current.get("satisfactory_api_token", ""),
         "default_backup_keep": current.get("default_backup_keep", config.DEFAULT_BACKUP_KEEP),
         "install_dirs": current.get("install_dirs", {}),
+        # the installed games and where each one is (Settings lists only these)
+        "game_dirs": [{"kind": g["kind"], "label": g["title"], "dir": _tilde(g["dir"])}
+                      for g in installs.catalog() if g["installed"]],
         "backup_schedule": "Daily at 05:00 local (worldcradle-backup.timer)",
         "backup_timer_enabled": timer_on,
     })

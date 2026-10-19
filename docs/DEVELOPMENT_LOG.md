@@ -26,6 +26,10 @@ The list of games and their test status is kept separately in
   works on 24.04 is still to be confirmed.
 - The six getting-started screenshots retaken under the new name; a finished job's message now shows
   for 10 minutes instead of for good; uninstall messages corrected.
+- **Games now install in `~/worldcradle-games`**, each in a folder named after the game
+  (`ARK-Survival-Evolved`, `Garrys-Mod`, `7-Days-to-Die`). A game installed by an earlier version in
+  `~/<game>server` keeps its folder (it's recorded as that game's own when the dashboard starts), so
+  nothing moves. Settings → General lists only the installed games and their folders.
 
 ## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
 

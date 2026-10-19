@@ -13,12 +13,7 @@
       <label title="Optional text put in front of each new ARK server's name in the in-game list (for example “MyCrew-”), so yours are easy to spot.">Prefix for ARK server names — optional <input type="text" id="gen-prefix" placeholder="(none)" autocomplete="off"></label>
       <label title="Advanced. The file where the two game passwords below are kept. Leave it alone unless you know you need to move it.">Password file location (advanced) <input type="text" id="gen-secrets" placeholder="~/.config/worldcradle/secrets.conf" autocomplete="off"></label>
       <label title="Advanced and optional. Lets the dashboard talk to a Satisfactory server with an access token instead of the admin password.">Satisfactory access token — optional (advanced) <input type="password" id="gen-sf-token" autocomplete="off"></label>
-      <fieldset class="settings-fs"><legend>Where each game's files live (advanced — set automatically when you install a game)</legend>
-        <label>ARK <input type="text" id="gen-dir-ark" placeholder="~/arkserver" autocomplete="off"></label>
-        <label>Palworld <input type="text" id="gen-dir-palworld" placeholder="~/palworldserver" autocomplete="off"></label>
-        <label>Valheim <input type="text" id="gen-dir-valheim" placeholder="~/valheimserver" autocomplete="off"></label>
-        <label>Satisfactory <input type="text" id="gen-dir-satisfactory" placeholder="~/satisfactoryserver" autocomplete="off"></label>
-        <label>Abiotic Factor <input type="text" id="gen-dir-abiotic" placeholder="~/abioticserver" autocomplete="off"></label>
+      <fieldset class="settings-fs" id="gen-dirs" hidden><legend>Where each installed game's files are (advanced — changing this doesn't move the files)</legend>
       </fieldset>
       <div class="alerts-btns"><button class="btn" id="gen-save">Save general settings</button></div>
     </div>

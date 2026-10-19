@@ -11,10 +11,15 @@ async function loadGeneral() {
   set("gen-public-host", cfg.public_host); set("gen-cluster", cfg.ark_cluster_id);
   set("gen-prefix", cfg.server_name_prefix);
   set("gen-secrets", cfg.secrets_conf); set("gen-sf-token", cfg.satisfactory_api_token);
-  const dirs = cfg.install_dirs || {};
-  set("gen-dir-ark", dirs.ark); set("gen-dir-palworld", dirs.palworld);
-  set("gen-dir-valheim", dirs.valheim); set("gen-dir-satisfactory", dirs.satisfactory);
-  set("gen-dir-abiotic", dirs.abiotic);
+  const dirsBox = document.getElementById("gen-dirs");
+  const gameDirs = cfg.game_dirs || [];
+  if (dirsBox) {
+    dirsBox.querySelectorAll("label").forEach((e) => e.remove());
+    for (const g of gameDirs) {
+      dirsBox.insertAdjacentHTML("beforeend", `<label>${esc(g.label)} <input type="text" data-kind="${esc(g.kind)}" value="${esc(g.dir)}" autocomplete="off"></label>`);
+    }
+    dirsBox.hidden = !gameDirs.length;
+  }
   set("bk-default-keep", cfg.default_backup_keep);
   const sched = document.getElementById("bk-sched");
   if (sched) sched.textContent = `${cfg.backup_schedule || "Daily backup"} — timer ${cfg.backup_timer_enabled ? "enabled ✓" : "disabled"}.`;
@@ -25,9 +30,8 @@ async function loadGeneral() {
       public_host: val("gen-public-host"), ark_cluster_id: val("gen-cluster"),
       server_name_prefix: val("gen-prefix"),
       secrets_conf: val("gen-secrets"), satisfactory_api_token: val("gen-sf-token"),
-      install_dirs: { ark: val("gen-dir-ark"), palworld: val("gen-dir-palworld"),
-        valheim: val("gen-dir-valheim"), satisfactory: val("gen-dir-satisfactory"),
-        abiotic: val("gen-dir-abiotic") },
+      install_dirs: Object.fromEntries([...document.querySelectorAll("#gen-dirs input[data-kind]")]
+        .map((e) => [e.dataset.kind, e.value.trim()])),
     });
     if (r) toast(r.data.ok ? "General settings saved." : (r.data.error || "Save failed."), !r.data.ok);
   };

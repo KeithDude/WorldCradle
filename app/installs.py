@@ -32,6 +32,20 @@ def is_installed(game) -> bool:
     return os.path.exists(os.path.join(config.install_dir(game.kind), game.install_marker))
 
 
+def keep_old_folders() -> list[str]:
+    """Earlier versions installed each game in ~/<kind>server. A game still installed there keeps
+    that folder (it is recorded as the game's own), so updating never moves anything."""
+    dirs = config.load().get("install_dirs", {})
+    old = {g.kind: f"~/{g.kind}server" for g in _installable()
+           if g.kind not in dirs and not is_installed(g)
+           and os.path.exists(os.path.join(os.path.expanduser(f"~/{g.kind}server"), g.install_marker))}
+    if old:
+        config.update(lambda cfg: cfg.setdefault("install_dirs", {}).update(
+            {k: v for k, v in old.items() if k not in cfg.get("install_dirs", {})}))
+        audit_log.info("kept the existing game folders: %s", ", ".join(f"{k}={v}" for k, v in old.items()))
+    return sorted(old)
+
+
 # the system package that provides each program or library a game can need
 _PACKAGE = {"wine": "wine", "xvfb-run": "xvfb", "winetricks": "winetricks", "cabextract": "cabextract",
             "curl": "curl", "java": "default-jre-headless", "libgdiplus": "libgdiplus"}
@@ -100,6 +114,10 @@ def start(kind: str) -> dict:
                           f"“Update now” on one of its servers.")
     d = config.install_dir(kind)
     _clear_leftovers(d)   # an earlier uninstall that couldn't finish
+    try:
+        os.makedirs(os.path.dirname(d.rstrip("/")), exist_ok=True)   # ~/worldcradle-games
+    except OSError:
+        pass
     try:
         free = shutil.disk_usage(os.path.dirname(d.rstrip("/")) or "/").free
     except OSError:

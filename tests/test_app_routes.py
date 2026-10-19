@@ -85,3 +85,15 @@ def test_pages_have_no_inline_styles():
 def test_security_policy_allows_no_inline_styles(client):
     csp = client.get("/").headers["Content-Security-Policy"]
     assert "style-src 'self';" in csp + ";" and "unsafe-inline" not in csp
+
+
+def test_settings_lists_folders_only_for_installed_games(client, monkeypatch):
+    import config
+    import installs
+    _sign_in(client)
+    monkeypatch.setattr(installs, "catalog", lambda: [
+        {"kind": "valheim", "title": "Valheim", "installed": True,
+         "dir": config.os.path.expanduser("~/worldcradle-games/Valheim")},
+        {"kind": "gmod", "title": "Garry's Mod", "installed": False, "dir": "/x"}])
+    r = client.get("/admin/config").get_json()
+    assert r["game_dirs"] == [{"kind": "valheim", "label": "Valheim", "dir": "~/worldcradle-games/Valheim"}]

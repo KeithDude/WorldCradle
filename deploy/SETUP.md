@@ -35,7 +35,7 @@ setup code for choosing your password in the browser, and the password friends n
 | Its Python libraries | `~/.local/share/worldcradle/venv` | `venv/` in that folder |
 | Settings, passwords, server list, certificate, logs | `~/.config/worldcradle` | same |
 | Save backups | `~/.local/share/worldcradle/backups` | same |
-| Game servers | each game's folder in your home folder (e.g. `~/valheimserver`) | same |
+| Game servers | `~/worldcradle-games`, one folder per game named after it (e.g. `~/worldcradle-games/Valheim`, `~/worldcradle-games/Garrys-Mod`) | same |
 | Background services | `worldcradle.service`, `worldcradle-backup.timer` (your account's systemd) | same |
 
 The Python libraries are exact versions with checksums (`requirements.lock`); pip refuses

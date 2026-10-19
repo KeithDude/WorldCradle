@@ -78,6 +78,8 @@ footer of the dashboard when signed in.
 ### Good to know
 - Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.
 - Licensed under PolyForm Noncommercial 1.0.0 — free for noncommercial use.
+- Games install in `~/worldcradle-games`, each in a folder named after the game (for example
+  `~/worldcradle-games/Valheim`). Games installed by 0.1.0 in `~/<game>server` stay where they are.
 
 ## 0.1.0 — Private alpha (2026-06 to 2026-09)
 

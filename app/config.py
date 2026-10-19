@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import secrets
 import tempfile
 import threading
@@ -62,24 +63,28 @@ DEFAULTS = {
                                              # for NEW instances; empty → use each game
                                              # template's built-in default ports (see ports.py)
     "default_backup_keep": DEFAULT_BACKUP_KEEP,  # default retention for a new server's backups
-    "install_dirs": {                        # per-game install dirs (provisioning templates)
-        "ark": "~/arkserver",
-        "valheim": "~/valheimserver",
-        "palworld": "~/palworldserver",
-        "satisfactory": "~/satisfactoryserver",
-        "abiotic": "~/abioticserver",
-        "dst": "~/dstserver",
-        "minecraft": "~/minecraftserver",
-    },
+    "install_dirs": {},                      # a game's folder when it isn't the default one
 }
+
+GAMES_DIR = "~/worldcradle-games"            # where games are installed by default
+
+
+def folder_name(title: str) -> str:
+    """A game's default folder name: its name with hyphens, e.g. "Garry's Mod" → Garrys-Mod."""
+    return re.sub(r"[^A-Za-z0-9]+", "-", re.sub(r"['’]", "", title)).strip("-")
+
+
+def default_install_dir(kind: str) -> str:
+    import games                             # (games imports config)
+    game = games.get(kind)
+    name = folder_name((game.title or game.label) if game else kind) or kind
+    return os.path.expanduser(f"{GAMES_DIR}/{name}")
 
 
 def install_dir(kind: str) -> str:
-    """Expanded install dir for a game kind (from config, with a sane default)."""
-    # games added later don't need a DEFAULTS entry: they live in ~/<kind>server
-    d = (load().get("install_dirs", {}).get(kind) or DEFAULTS["install_dirs"].get(kind)
-         or f"~/{kind}server")
-    return os.path.expanduser(d)
+    """Where a game is installed: the folder set for it, or ~/worldcradle-games/<Game-Name>."""
+    d = load().get("install_dirs", {}).get(kind)
+    return os.path.expanduser(d) if d else default_install_dir(kind)
 
 
 def secrets_path() -> str:
