@@ -186,18 +186,30 @@ export async function wireAddServer() {
       : (t.custom ? CUSTOM_HINT : (t.hint || "")) + note;
     b.disabled = missing;
     syncPortBoxes();
+    defaultNames(t);
   };
-  kindSel.onchange = render;
-  render();
   const nameBox = document.getElementById("as-name"), keyBox = document.getElementById("as-key");
+  // Each game comes with a name and short ID ready, so a server can be added without typing
+  // anything; whatever the person types instead is kept when they switch games.
+  const defaultNames = (t) => {
+    if (!nameBox || !keyBox) return;
+    nameBox.placeholder = t.named_after ? `Leave empty to name it after ${t.named_after}` : "My Server";
+    keyBox.placeholder = t.custom ? "myserver" : "filled in for you";
+    if (!nameBox._touched) nameBox.value = t.default_name || "";
+    if (!keyBox._touched) keyBox.value = nameBox._touched ? slug(nameBox.value) : (t.default_key || "");
+  };
+  const slug = (v) => v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
   if (nameBox && keyBox && !nameBox._slugWired) {
     nameBox._slugWired = true;
     keyBox.addEventListener("input", () => { keyBox._touched = keyBox.value !== ""; });
     nameBox.addEventListener("input", () => {
+      nameBox._touched = nameBox.value !== "";
       if (keyBox._touched) return;
-      keyBox.value = nameBox.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+      keyBox.value = slug(nameBox.value);
     });
   }
+  kindSel.onchange = render;
+  render();
 
   const val = (id) => { const e = document.getElementById(id); return e ? e.value.trim() : ""; };
   // Shared-ports confirmation. Resolves true ("continue") or false ("go back").
@@ -239,7 +251,13 @@ export async function wireAddServer() {
       }
       const d = res.data;
       toast(d.ok ? (d.message || "Added.") : (d.error || "Add failed."), !d.ok);
-      if (d.ok) setTimeout(refreshAdminNow, 1200);
+      if (d.ok) {
+        setTimeout(refreshAdminNow, 1200);
+        // the next server gets the next free name ("… Server 2")
+        nameBox._touched = keyBox._touched = false;
+        const tr = await api.get("/admin/servers/types").catch(() => null);
+        if (tr && tr.ok) { types = tr.data.types || types; render(); }
+      }
     } catch (e) { toast("Add failed.", true); }
     finally { b.disabled = false; }
   };

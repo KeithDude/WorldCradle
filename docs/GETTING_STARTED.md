@@ -77,9 +77,13 @@ asked to tick a box when you add a server.
 
 ## 5. Add a server
 
-Open **Add a server**, pick the game, give the server a name, and change any options you like — every
-game shows the options it really has. Leave the port boxes empty: WorldCradle picks free ones for you.
-Keep **start it now** ticked and press **Add server**.
+Open **Add a server** and pick the game. Everything is already filled in — a name (for example
+*Valheim Server*), sensible options and automatic ports — so you can press **Add server** straight
+away, or first change the name and any options you like (every game shows the options it really has).
+Leave the port boxes empty: WorldCradle picks free ones for you. Keep **start it now** ticked.
+
+Two games need something only you can get: Don't Starve Together needs a free server token from your
+Klei account, and RuneScape: Dragonwilds needs your Player ID — the form says where to find each.
 
 ![Adding a server](images/04-add-server.png)
 

@@ -1,4 +1,6 @@
 """Rules every game type must follow, and the parsers that read player lists."""
+import os
+
 import pytest
 
 import games
@@ -140,3 +142,52 @@ def test_status_check_of_a_stopped_server_is_a_plain_result(g, tmp_path, monkeyp
                save_root=str(tmp_path), install_dir=str(tmp_path))
     out = g.probe(s)
     assert {"players", "player_names", "player_detail", "max_players", "reachable"} <= set(out)
+
+
+def test_a_server_can_be_added_without_typing_a_name(monkeypatch):
+    import types
+    import provision
+    import registry
+    import store
+    taken = [types.SimpleNamespace(key="valheim-server", name="Valheim · Valheim Server")]
+    monkeypatch.setattr(registry, "load_servers", lambda: taken)
+    monkeypatch.setattr(store, "load", lambda: [])
+    vh = games.get("valheim")
+    assert vh.default_name({}) == "Valheim Server" and not vh.named_after
+    assert provision.unique_name("Valheim Server") == "Valheim Server 2"     # the next free one
+    assert provision.unique_key("Valheim Server 2", "valheim") == "valheim-server-2"
+    assert provision.unique_name("Terraria Server") == "Terraria Server"
+    assert provision.unique_key("!!", "terraria") == "terraria"              # nothing usable in the name
+    assert provision.KEY_RE.match(provision.unique_key("x" * 60, "x"))      # long names still fit
+    assert games.get("ark").named_after == "the map"                        # ARK: named after its map
+
+
+def test_every_game_sets_up_with_the_form_as_it_opens(monkeypatch, tmp_path):
+    """Nothing typed, every option at its default: only the games that need a value from the
+    person's own game account (a Klei token, a Dragonwilds player ID) ask for anything."""
+    import config
+    from provision_snapshots import FIXTURES
+    home = str(tmp_path / "home")
+    monkeypatch.setattr(os.path, "expanduser", lambda p: home + p[1:] if p.startswith("~") else p)
+    secrets_file = tmp_path / "secrets.conf"
+    secrets_file.write_text('GAME_SERVER_PASSWORD="joinpw"\nGAME_ADMIN_PASSWORD="adminpw"\n')
+    monkeypatch.setattr(config, "secrets_path", lambda: str(secrets_file))
+    refused = set()
+    for g in games.all_types():
+        if not g.provisionable or g.kind == "custom":
+            continue
+        install = tmp_path / "installs" / g.kind
+        for rel, text in {**({g.install_marker: ""} if g.install_marker else {}),
+                          **FIXTURES.get(g.kind, {}).get("files", {})}.items():
+            (install / rel).parent.mkdir(parents=True, exist_ok=True)
+            (install / rel).write_text(text)
+        install.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(config, "install_dir", lambda kind, install=install: str(install))
+        spec = {"key": "test", "name": g.default_name({}) if not g.named_after else "",
+                "install_dir": str(install), "eula": True}
+        spec.update({f["name"]: f["default"] for f in g.extra_fields if f.get("default") is not None})
+        try:
+            g.provision(spec, g.provision_ports(set(), False, {}))
+        except ActionError:
+            refused.add(g.kind)
+    assert refused == {"dst", "dragonwilds"}

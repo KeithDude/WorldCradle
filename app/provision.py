@@ -259,19 +259,53 @@ def adopt(key: str, spec: dict, ports: dict) -> dict:
             "kept": [f"{p}.before-adopt-{stamp}" for p in kept], "entry": new}
 
 
+def _display(name: str) -> str:
+    """A server's own name, without the game in front ("Valheim · TheDudes" → TheDudes)."""
+    return name.split(" · ", 1)[1] if " · " in name else name
+
+
+def unique_name(name: str) -> str:
+    """`name`, or "name 2", "name 3"… if a server already has it."""
+    taken = {_display(s.name).lower() for s in registry.load_servers()}
+    n, out = 1, name
+    while out.lower() in taken:
+        n += 1
+        out = f"{name} {n}"
+    return out
+
+
+def unique_key(name: str, fallback: str) -> str:
+    """A free short ID made from a name: lowercase letters, digits and dashes."""
+    base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:27].strip("-")
+    if len(base) < 2:
+        base = fallback[:27]
+    taken = {s.key for s in registry.load_servers()} | {e.get("key") for e in store.load()}
+    n, out = 1, base
+    while out in taken:
+        n += 1
+        out = f"{base}-{n}"
+    return out
+
+
 def create(spec: dict) -> dict:
     """Create a worldcradle-managed server: custom (kind='custom', caller gives the
     launch command) or a game template (kind in games, auto config+ports).
     Games that need their own copy of the install go through the background job."""
+    kind = spec.get("kind", "custom")
+    game = games.get(kind) if kind != "custom" else None
+    if game is not None:          # nothing typed: the game's default name and a short ID made from it
+        spec = dict(spec)
+        if not (spec.get("name") or "").strip():
+            spec["name"] = unique_name(game.default_name(spec))
+        if not (spec.get("key") or "").strip():
+            spec["key"] = unique_key(spec["name"], game.kind)
     key = (spec.get("key") or "").strip().lower()
     if not KEY_RE.match(key):
         raise ActionError("Key must be lowercase letters/digits/dashes (2-31 chars).")
     if store.get(key) or registry.by_key().get(key):
         raise ActionError(f"A server with key '{key}' already exists.")
-    kind = spec.get("kind", "custom")
     use_pool = bool(spec.get("use_pool"))
 
-    game = games.get(kind) if kind != "custom" else None
     eula = game.eula if game is not None else None
     if eula and eula.get("required") and spec.get("eula") is not True:
         raise ActionError(f"Please read the {eula['name']} ({eula['url']}) and tick the box to agree — "

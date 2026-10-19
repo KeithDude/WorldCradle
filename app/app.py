@@ -735,7 +735,11 @@ def admin_server_types():
     # Custom stays first; the games follow in alphabetical order.
     for game in sorted(games.all_types(), key=lambda t: t.label.lower()):
         if game.provisionable:
+            # what "Add server" uses when the name and short ID are left as they are
+            name = "" if game.named_after else provision.unique_name(game.default_name({}))
             types.append({"kind": game.kind, "label": game.label, "custom": False,
+                          "default_name": name, "named_after": game.named_after,
+                          "default_key": provision.unique_key(name, game.kind) if name else "",
                           "installed": installs.is_installed(game) if game.install_marker else True,
                           "extra_fields": list(game.extra_fields) + game.port_fields(),
                           "needs_clone": game.needs_install_clone,

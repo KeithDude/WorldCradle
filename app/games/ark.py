@@ -174,9 +174,14 @@ class ArkGame(SimpleGame):
     def proc_pattern(self, spec, ports, server_dir):
         return f"AltSaveDirectoryName={self._save(spec)}?"
 
+    named_after = "the map"
+
+    def default_name(self, spec: dict) -> str:
+        return self._map(spec)                          # a map is named after itself by default
+
     def provision(self, spec: dict, ports: dict) -> dict:
         if not spec.get("name"):
-            spec = {**spec, "name": self._map(spec)}    # a map is named after itself by default
+            spec = {**spec, "name": self.default_name(spec)}
         out = super().provision(spec, ports)
         out.update(server_name=self.session_name(spec, out["server_name"]),
                    join_port=ports.get("query", ports["game"]),   # players add it in Steam by its query port

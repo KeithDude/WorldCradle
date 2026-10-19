@@ -78,6 +78,9 @@ footer of the dashboard when signed in.
 ### Good to know
 - Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.
 - Licensed under PolyForm Noncommercial 1.0.0 — free for noncommercial use.
+- **Add a server without typing anything:** each game comes with a name (*Valheim Server*, then
+  *Valheim Server 2*…), its default options and automatic ports already filled in. ARK servers are
+  named after their map.
 - Games install in `~/worldcradle-games`, each in a folder named after the game (for example
   `~/worldcradle-games/Valheim`). Games installed by 0.1.0 in `~/<game>server` stay where they are.
 

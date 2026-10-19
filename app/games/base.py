@@ -134,6 +134,12 @@ class GameType:
     # or logs left in the base install by an earlier run).
     clone_clear_dirs: tuple[str, ...] = ()
     provision_note: str = ""        # caveat shown in the Add form for this game
+    # The Add form's name when the person leaves it as it is. Games named after one of their
+    # options (ARK: the map) say so instead, and name a server in default_name().
+    named_after: str = ""
+
+    def default_name(self, spec: dict) -> str:
+        return f"{self.label} Server"
     # False for servers that crash when a client connects and hangs up straight away (Terraria):
     # WorldCradle then never tests them by connecting.
     survives_connect_test: bool = True

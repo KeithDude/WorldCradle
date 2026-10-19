@@ -30,6 +30,11 @@ The list of games and their test status is kept separately in
   (`ARK-Survival-Evolved`, `Garrys-Mod`, `7-Days-to-Die`). A game installed by an earlier version in
   `~/<game>server` keeps its folder (it's recorded as that game's own when the dashboard starts), so
   nothing moves. Settings → General lists only the installed games and their folders.
+- **Default server names:** the Add form opens with a name and short ID filled in for the chosen
+  game (*Valheim Server*, then *Valheim Server 2*…; ARK is named after its map), and the server fills
+  them in too if they're left empty. A new test sets up every game with nothing typed and every option
+  at its default: all pass except Don't Starve Together and Dragonwilds, which need a value from the
+  owner's game account. Checked in a browser on a throwaway dashboard.
 
 ## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
 
