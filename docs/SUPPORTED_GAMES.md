@@ -23,7 +23,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | Conan Exiles | Not Tested | Windows server via Wine | Steam app 443030 | Joining |
 | Core Keeper | Not Tested | Linux native | Steam app 1963720 | Joining with the Game ID; Player list |
 | Counter-Strike 2 | Not Tested | Linux native | Steam app 730 | Joining; Every mode with every map |
-| Don't Starve Together | Not Tested | Linux native | Steam app 343050 · EULA tick required | Joining; Caves saving on stop; Home-network-only mode |
+| Don't Starve Together | Not Tested | Linux native | Steam app 343050 · EULA tick required | Joining; Caves saving on stop; Home-network-only mode; not in the 2026-10-18 test round (needs a Klei server token) |
 | Eco | Not Tested | Linux native | Steam app 739590 | Joining |
 | Enshrouded | Not Tested | Windows server via Wine | Steam app 2278520 | Joining |
 | Factorio | Not Tested | Linux native | factorio.com | Joining; In-game admins |
@@ -38,7 +38,7 @@ This list is maintained by hand. When a game is confirmed, update its row here a
 | Necesse | Not Tested | Linux native | Steam app 1169370 | Joining; Player list |
 | Palworld | **Tested** | Linux native | Steam app 2394010 | New servers' save-and-shutdown on stop; PvP (all three settings) |
 | Project Zomboid | Not Tested | Linux native | Steam app 380870 | Joining |
-| RuneScape: Dragonwilds | Not Tested | Linux native | Steam app 4019830 | Joining; Admin password (the setting's real name is unknown) |
+| RuneScape: Dragonwilds | Not Tested | Linux native | Steam app 4019830 | Joining; Admin password (the setting's real name is unknown); not in the 2026-10-18 test round (needs an owner's Player ID) |
 | Rust | Not Tested | Linux native | Steam app 258550 | Joining |
 | Satisfactory | **Tested** | Linux native | Steam app 1690800 | — |
 | SCP: Secret Laboratory | Not Tested | Linux native | Steam app 996560 · EULA tick required | Joining; Player names |
@@ -75,4 +75,4 @@ This list is maintained by hand. When a game is confirmed, update its row here a
    something failed. **Never include passwords.**
 
 Never forward a server's admin console (RCON) or other control port, even for a test — see
-[SETUP.md, section 6](../deploy/SETUP.md).
+[SETUP.md, *Letting friends in*](../deploy/SETUP.md#letting-friends-in-router-port-forwarding).

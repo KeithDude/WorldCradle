@@ -3,7 +3,8 @@
 From a fresh computer to friends playing on your server. No technical knowledge needed — you'll type
 a few lines into a terminal once, and do everything else in a web browser.
 
-**You need:** a computer running Ubuntu 22.04 or newer (24.04 or 26.04 recommended) that stays on,
+**You need:** a computer running Ubuntu 22.04 or newer (24.04 or 26.04 recommended; Debian 12+
+should work too but hasn't been tested yet) that stays on,
 connected to your home internet. Game servers want memory: 8 GB is enough to start, 16 GB or more
 for bigger games.
 
@@ -109,7 +110,7 @@ computer you play on to that hotspot (not to your home Wi-Fi), and join the game
 shown next to *Friends connect to*. If that works, it works for your friends too.
 
 Give your friends the address and the **join password** (type `worldcradle passwords` in a terminal to
-see it again, or change it in **Settings → Game passwords**).
+see it again, or change it in **Settings → Game-server passwords**).
 
 ## 7. Get told when something goes wrong
 

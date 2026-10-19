@@ -36,7 +36,8 @@ fi
 lib="$root/usr/lib/$NAME"; doc="$root/usr/share/doc/$NAME"
 mkdir -p "$lib/deploy" "$root/usr/bin" "$doc"
 cp -r "$src/app" "$src/bin" "$lib/"
-cp -r "$src/deploy/systemd" "$src/deploy/fail2ban" "$src/deploy/examples" "$src/deploy/packages.conf" "$lib/deploy/"
+cp -r "$src/deploy/systemd" "$src/deploy/fail2ban" "$src/deploy/examples" "$src/deploy/maintenance" \
+      "$src/deploy/packages.conf" "$lib/deploy/"
 cp "$src/setup.sh" "$src/VERSION" "$src/requirements.txt" "$src/requirements.lock" "$lib/"
 find "$lib" -name __pycache__ -type d -prune -exec rm -rf {} +
 ln -s "../lib/$NAME/bin/worldcradle" "$root/usr/bin/worldcradle"

@@ -11,7 +11,8 @@ marked *Not Tested* until someone confirms that players can actually join and pl
    and what happened.
 
 **Never paste passwords** — the dashboard password, the join password or the admin password — into
-an issue, a log or a screenshot. Logs from the dashboard hide them, but check before posting.
+an issue, a log or a screenshot. The server logs shown in the dashboard hide them; anything else
+(including `worldcradle logs`) may not, so check before posting.
 
 ## Reporting a bug
 
@@ -35,9 +36,12 @@ lot, and so does being able to test it.
 - It's expected to be reachable from the internet: never forward or expose an admin console (RCON)
   or other control port, validate everything that comes from the browser, and keep secrets out of
   logs.
-- Before sending a change, install the test tools once (`venv/bin/pip install -r requirements-dev.txt`),
-  run `tools/prepush-check.sh` (the same checks the maintainer runs before every push — it includes
-  the automated tests in `tests/`), and say what you tested — on a real server if the change touches
+- Work from a source checkout set up with `sudo bash install.sh` (that creates `venv/`). Before
+  sending a change, install the test tools once (`venv/bin/pip install -r requirements-dev.txt`),
+  commit your work and run `tools/prepush-check.sh` — the same checks the maintainer runs before
+  every push, including the automated tests in `tests/`. It needs `node` or `gjs` (to check the
+  page code) and `dpkg-deb` (to build the package); `tools/install-hooks.sh` makes git run it before
+  every push. Say what you tested — on a real server if the change touches
   one. A bug fix should come with a test that fails without the fix.
 - Don't add dependencies with a GPL or AGPL licence (they can't be combined with WorldCradle's licence).
   After changing `requirements.txt`, regenerate the pinned list with `tools/lock-requirements.sh`

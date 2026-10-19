@@ -1,12 +1,12 @@
 # Installing WorldCradle — the details
 
-Most people only need the one line in [docs/GETTING_STARTED.md](../docs/GETTING_STARTED.md). This
+Most people only need the four lines in [docs/GETTING_STARTED.md](../docs/GETTING_STARTED.md). This
 page explains what installing does, the other ways to install, updating, removing, and the
 manual route for systems the installer doesn't cover.
 
 ## Ways to install
 
-**1. The package** (Ubuntu 22.04+ / Debian 12+):
+**1. The package** (Ubuntu 22.04+ / Debian 12+; Debian not yet tested):
 ```
 wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
 sudo apt update
@@ -73,6 +73,7 @@ servers keep running throughout.
 **Or by hand**, the same way as the first install — no automatic check or roll-back:
 ```
 wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+sudo apt update
 sudo apt install /tmp/worldcradle.deb
 ```
 
@@ -114,7 +115,7 @@ Which games have been tried with real players: [docs/SUPPORTED_GAMES.md](../docs
 
 - **Dashboard password** — chosen in the browser on first visit; forgot it? `worldcradle reset-password`.
 - **Game passwords** — one that friends type to join, one private admin password. Random ones are
-  picked at setup; see them with `worldcradle passwords`, change them in **Settings → Game passwords**
+  picked at setup; see them with `worldcradle passwords`, change them in **Settings → Game-server passwords**
   (restart the servers afterwards).
 
 ## Certificate

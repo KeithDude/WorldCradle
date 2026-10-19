@@ -11,9 +11,9 @@ ABSOLUTE logs dir of the user running WorldCradle (fail2ban runs as root, so `~`
 won't expand), e.g. `/home/youruser/.config/worldcradle/logs`:
 ```
 LOGS="$HOME/.config/worldcradle/logs"      # adjust if you set $WORLDCRADLE_HOME
+sudo apt install -y fail2ban          # first: it creates /etc/fail2ban
 sed "s#__WORLDCRADLE_LOGS__#$LOGS#" deploy/fail2ban/worldcradle-jail.conf | sudo tee /etc/fail2ban/jail.d/worldcradle.conf
 sudo cp deploy/fail2ban/worldcradle-filter.conf /etc/fail2ban/filter.d/worldcradle.conf
-sudo apt install -y fail2ban
 sudo systemctl enable --now fail2ban
 sudo systemctl restart fail2ban
 ```

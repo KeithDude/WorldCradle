@@ -13,31 +13,43 @@ footer of the dashboard when signed in.
 - **45 games** you can install and run from the dashboard (Windows-only servers run through Wine),
   plus any other server as a custom service. Which ones have been tried with real players:
   [docs/SUPPORTED_GAMES.md](docs/SUPPORTED_GAMES.md).
-- **Simple install:** download the package, install it with `sudo apt`, then run `worldcradle setup`,
-  which asks no questions, checks first that the computer can run WorldCradle, and shows a QR code to
-  open the dashboard on a phone and the password your friends need to join.
-- **A WorldCradle package** (`.deb`) for Ubuntu and Debian: download it, `sudo apt install` it, then
-  `worldcradle setup` — the only `sudo` is the one you type; setup itself never asks for a password.
-  `sudo worldcradle update` installs new versions of it (and puts the old one back if the new one
-  doesn't start).
+- **Simple install, the Linux way:** download the package, `sudo apt update`, `sudo apt install` it,
+  then `worldcradle setup` — the only `sudo` is the one you type; setup asks no questions and never
+  asks for a password. It checks first that the computer can run WorldCradle, and ends with the
+  address, a QR code to open it on a phone, a one-time setup code and the password your friends need
+  to join.
+- **Safe updates:** `sudo worldcradle update` shows what's new, checks the download, installs it and
+  puts the previous version back by itself if the new one doesn't start. Game servers keep running.
 - WorldCradle's Python libraries are **exact, checksum-verified versions**, so every install gets
   exactly what was tested.
-- **The `worldcradle` command** for everyday jobs: `status`, `passwords`, `reset-password`, `restart`,
-  `logs`, `servers`, `server start|stop|restart <server>`, `backup`, `backup list|restore`, `unban`,
-  `update`, `uninstall`, `check`, `qr`. Type `worldcradle help` for the list.
-- **Safe updates:** `sudo worldcradle update` installs the new version and puts the old one back by itself if
-  the new one doesn't start.
+- **The `worldcradle` command** for everyday jobs: `setup`, `status`, `passwords`, `reset-password`,
+  `restart`, `logs`, `servers`, `server start|stop|restart <server>`, `backup`,
+  `backup list|restore`, `unban`, `test-alert`, `update`, `uninstall`, `check`, `qr`, `version`.
+  Type `worldcradle help` for the list.
+- **First visit and Getting started:** choose your dashboard password with the setup code, then a
+  checklist on the dashboard (and a step-by-step guide with pictures,
+  [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)) walks you through the first steps.
+- **Install games from the dashboard** (Games), with each one's size and progress, and uninstall them
+  again.
+- **Add a server** with each game's real options, its own port boxes (empty = picked for you), and
+  everything already filled in.
+- **Can friends connect?** on each card: exactly which router ports to forward (and which never to),
+  step-by-step router instructions, and a check that it worked.
+- **A Settings page** for everything system-wide, including changing the two game passwords.
+- **A free trusted certificate** (Let's Encrypt) from **Settings → Trusted certificate**, renewed by
+  itself, so browsers stop warning.
 - **Repairs itself after an Ubuntu upgrade** that changes the Python version.
 - **Licence terms:** where a game's publisher requires it, you accept its EULA when adding a server.
 - **Total CPU usage, RAM and storage** at the top; each server's own share of the computer on its
   card.
-
 - **Alerts to the services you use:** Discord, Telegram, email, Slack, Microsoft Teams, Pushover,
   ntfy, Gotify, Matrix or a webhook — several at once, each with a Test button that tells you whether
   it worked and, if not, why. Also `worldcradle test-alert`.
 
 ### Safer
 - New installs pick **random game passwords** instead of well-known placeholders.
+- **Built to face the internet:** a strict content-security policy, a CSRF check on every change,
+  per-address limits on password guessing and fail2ban set up by the package.
 - **Admin consoles are never forwarded**: they're marked "keep closed" everywhere, and *Can friends
   connect?* lists them under "Never forward these".
 - The dashboard can no longer be **locked up by connections that never finish**.
@@ -76,7 +88,8 @@ footer of the dashboard when signed in.
 - Each server's card shows only what its game can actually report.
 
 ### Good to know
-- Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+.
+- Requires Ubuntu 22.04 or newer (24.04+ recommended for Windows-only game servers), or Debian 12+
+  (Debian not yet tested).
 - Licensed under PolyForm Noncommercial 1.0.0 — free for noncommercial use.
 - **Add a server without typing anything:** each game comes with a name (*Valheim Server*, then
   *Valheim Server 2*…), its default options and automatic ports already filled in. ARK servers are

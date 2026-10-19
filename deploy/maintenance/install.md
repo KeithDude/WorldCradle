@@ -6,7 +6,7 @@ applies updates, and reboots only when the kernel/libs actually require it.
 ## Why a root systemd timer and not a sudoers rule
 
 The obvious approach — a `NOPASSWD` sudoers entry so a user timer can call
-`sudo apt upgrade` — would be a **root escalation on this box**. The rule has to
+`sudo apt upgrade` — would be a **root escalation on this computer**. The rule has to
 name a script, and any script the game user can write is a script the game user
 (or anything running as them, including the internet-facing dashboard's launch-script
 editor) can turn into `chmod +s /bin/sh`.
@@ -15,7 +15,8 @@ A root-owned system timer gets the same unattended result with no standing
 `NOPASSWD` grant. That is why the script installs to `/usr/local/sbin`
 (root-owned, not writable by the game user) rather than running from `~/worldcradle`.
 
-**The files in this directory are a staging copy and ARE user-writable.** They are
+**The files in this directory are only a staging copy** (in a source install they are
+user-writable; the package's copy in `/usr/lib/worldcradle` is root-owned). They are
 not what runs. Only the installed copy at `/usr/local/sbin/worldcradle-os-maintenance.sh`
 executes, and re-installing from here is a privileged action — re-read the script
 before you do it.
@@ -23,8 +24,9 @@ before you do it.
 ## Install (one time, as root)
 
 ```bash
-# run as the account that runs WorldCradle (not root), from the WorldCradle folder
-cd ~/worldcradle/deploy/maintenance
+# run as the account that runs WorldCradle (not root), from this folder:
+cd /usr/lib/worldcradle/deploy/maintenance     # package install
+# cd ~/worldcradle/deploy/maintenance          # source install: wherever you put WorldCradle
 
 # 1. the script — filled in with your account, root-owned, not writable by the game user
 sed -e "s/__GAME_USER__/$(id -un)/" -e "s/__GAME_UID__/$(id -u)/" worldcradle-os-maintenance.sh \
@@ -63,9 +65,10 @@ journalctl -u worldcradle-os-maintenance.service -f
 
 ## Schedule
 
-`Wed *-*-* 10:00:00` local, plus up to 15 min jitter. Mid-morning is deliberate:
-observed play on this box is late-night (~01:00–04:00), so this sits as far from
-it as a daytime slot gets.
+`Wed *-*-* 10:00:00` local, plus up to 15 min jitter. Pick a time your players
+usually aren't on (mid-morning suits groups that play in the evening); to change it,
+edit `OnCalendar=` in the timer before installing it. The script won't patch while
+anyone is playing anyway — it just waits for next week.
 
 Not `Persistent=true` — if the box is off at 10:00 we do **not** want the fleet
 stopped and rebooted at whatever random time it next boots. A missed week just

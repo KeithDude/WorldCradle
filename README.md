@@ -15,6 +15,8 @@ full list and which games have been tested with real players.
 
 > **Status:** early. Most games are *Not Tested* with players yet — help is welcome.
 
+![The dashboard](docs/images/02-dashboard.png)
+
 ## Features
 - **Live dashboard** — per-server online/offline, player counts + names, CPU/RAM,
   reachability, ports; host load. Public page shows only status + counts.
@@ -32,13 +34,20 @@ full list and which games have been tested with real players.
   timer. ARK backups include the shared cluster (toggle on restore).
 - **Settings page** — all system-wide settings in one place, including changing
   the two game-server passwords.
-- **Alerts** — Discord / ntfy / webhook on down / recovered / unreachable.
+- **Alerts** — Discord, Telegram, email, Slack, Microsoft Teams, Pushover, ntfy, Gotify, Matrix or a
+  webhook (several at once, each with a Test button): a server down, back up, unreachable or
+  crashing over and over, or a backup that failed.
 - **Update checks** — installed vs latest Steam build, with one-click apply.
-- **Security** — bcrypt login, per-IP rate-limit, CSRF, hardened headers, optional
-  fail2ban; the launch-script editor is content-validated.
+- **Security** — built to face the internet: bcrypt login, per-IP rate-limit, CSRF on every
+  change, a strict content-security policy, hardened headers and cookies, fail2ban set up by the
+  package; the launch-script editor is content-validated.
+- **Command line** — `worldcradle status`, `backup`, `passwords`, `reset-password` and more, for
+  when the browser isn't handy.
+- **Safe updates** — `sudo worldcradle update` checks the download, installs it and puts the
+  previous version back by itself if the new one doesn't start. Game servers keep running.
 
 ## Quick start
-In a terminal (Ubuntu 22.04+ / Debian 12+):
+In a terminal (Ubuntu 22.04+ / Debian 12+ — Debian not yet tested):
 ```
 wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
 sudo apt update
@@ -58,12 +67,15 @@ prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
 ```
 worldcradle/
 ├── app/          all application code (Flask app, games/, templates/, static/ — the page code is static/js/)
-├── deploy/       systemd unit templates, fail2ban, OS maintenance, examples, SETUP.md
+├── deploy/       systemd unit templates, the package's scripts (debian/), fail2ban, OS maintenance,
+│                 the system package list (packages.conf), examples, SETUP.md
 ├── docs/         GETTING_STARTED.md, SUPPORTED_GAMES.md, ROADMAP.md, DEVELOPMENT_LOG.md
 ├── install.sh    install from the source: system packages, then setup.sh
 ├── setup.sh      setup for your account (`worldcradle setup`)
 ├── bin/          the `worldcradle` command, its self-repairing Python environment, the computer checks
-├── tools/        pre-push checks, package builder, lock-file generator
+├── tests/        automated tests (pytest), including recordings of what every game's setup writes
+├── tools/        pre-push checks, package builder, lock-file generator, per-game end-to-end test
+├── .github/      issue forms, the test and release workflows
 └── requirements.txt / requirements.lock   Python libraries (the lock pins them with checksums)
 ```
 Runtime data lives **outside the code** in the data root (so updating the code
@@ -72,6 +84,8 @@ never touches your data); [deploy/SETUP.md](deploy/SETUP.md) says where everythi
 $WORLDCRADLE_HOME            (default ~/.config/worldcradle)
 ├── config.json  servers.json  secrets.conf  certs/  logs/
 ~/.local/share/worldcradle/backups/     (override with $WORLDCRADLE_BACKUPS)
+~/worldcradle-games/<Game-Name>/         each game's server files (a game installed by 0.1.0 in
+                                         ~/<game>server stays there)
 ```
 
 ## Running it
@@ -90,6 +104,7 @@ worldcradle uninstall          remove WorldCradle (asks first; never deletes gam
 worldcradle qr                 a QR code to open the dashboard on a phone
 worldcradle test-alert         send a test alert to every place alerts are set up to go
 worldcradle check              quick health check
+worldcradle version            the version you have (include it in bug reports)
 ```
 - Logs also live in `logs/` in the data root: `access.log`, `audit.log`, `worldcradle.log`.
 - Daily backups: `worldcradle-backup.timer` (05:00). Run on demand from
@@ -107,14 +122,19 @@ the dashboard then shows the server as running without a player count.
 
 ## Notes
 - HTTPS is terminated directly by gunicorn with a self-signed cert; browsers warn
-  once. Swap in a CA-issued cert in `<data root>/certs/` anytime.
+  once. For a certificate browsers trust, use **Settings → Trusted certificate** (free, from
+  Let's Encrypt), or put your own in `<data root>/certs/`.
 - Game-server passwords are stored only in the secrets file (0600), never in the
   code. The dashboard login password is a bcrypt hash in `config.json`.
 - **Never forward an admin console (RCON) or other control port** on your router —
-  see [deploy/SETUP.md](deploy/SETUP.md), section 6.
+  see *[Letting friends in](deploy/SETUP.md#letting-friends-in-router-port-forwarding)*.
 - What changed in each version: **[CHANGELOG.md](CHANGELOG.md)**. Where it's heading: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Development history: **[docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md)**.
 
 ## About
+
+WorldCradle was born out of Keith's drive to host private game servers for his friends and
+himself: it started as a few hand-written scripts on one home server and grew into a dashboard
+anyone can install. The story so far is in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md).
 
 WorldCradle is designed, developed and maintained by Keith, with the help of an AI assistant
 (Claude). Every change goes through automated tests, and the servers are run for real before

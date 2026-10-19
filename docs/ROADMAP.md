@@ -5,7 +5,7 @@ something is finished (tick it, move it to **Done** with the date, and record th
 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md)), or a new idea comes up. Game-by-game test status is
 tracked in [SUPPORTED_GAMES.md](SUPPORTED_GAMES.md).
 
-Last updated: 2026-10-15
+Last updated: 2026-10-18
 
 ---
 
@@ -25,8 +25,8 @@ Last updated: 2026-10-15
 | Milestone | Goal | State |
 |---|---|---|
 | **0.1 — Private alpha** | Works on the maintainer's own machine with real players on a few games | ✅ reached |
-| **0.2 — Public preview** | The repository is public; anyone can install it with one command; testers can report results | in progress |
-| **0.3 — Community-tested** | Most popular games confirmed *Tested* by players; automated tests; easy updates | planned |
+| **0.2 — Public preview** | The repository is public; anyone can install it in four plain steps; testers can report results | in progress |
+| **0.3 — Community-tested** | Most popular games confirmed *Tested* by players; broad player testing | planned |
 | **1.0 — Stable** | Clean installs on supported Linux versions, no known data-loss issues, documented upgrade path | planned |
 
 ---
@@ -38,9 +38,9 @@ Last updated: 2026-10-15
       to choose extras, `--minimal` to skip them. *(2026-10-15)*
 - [x] ~~One-line "get and install" (`get.sh | bash`)~~ — **retired 2026-10-18** (Keith): a script from
       the internet asking for your password looks suspicious and isn't what Linux users expect.
-      Installing is now three plain steps where the only `sudo` is one you type: download
-      `worldcradle.deb` (the release also publishes it under that fixed name), `sudo apt install` it,
-      `worldcradle setup`.
+      Installing is now four plain steps where the only `sudo` is one you type: download
+      `worldcradle.deb` (the release also publishes it under that fixed name), `sudo apt update`,
+      `sudo apt install` it, `worldcradle setup`.
 - [x] **Fresh-machine test, Ubuntu 22.04 desktop** — full install in 1 min 45 s, first-visit setup,
       sign-in, installing / running / removing a Linux game (Terraria) and a Windows-only one
       (V Rising, under 22.04's Wine 6.0) all worked. Seven problems found and fixed (see the
@@ -52,7 +52,7 @@ Last updated: 2026-10-15
       the first boot with no help; V Rising (Wine 10) and Terraria ran; clean install passed.
       *(2026-10-16)*
 - [ ] A Debian 12 / 13 run.
-- [ ] Repeat the fresh-machine test with the one-line installer once the repository is public.
+- [ ] Repeat the fresh-machine test with the release `.deb` steps once the repository is public.
 - [x] Installer checks before it starts: operating system, 64-bit Intel/AMD processor (and AVX),
       memory, disk space, background services (systemd), the dashboard's port, internet — each
       explained in plain words; serious problems stop the install (`--force` to go ahead anyway).
@@ -68,7 +68,9 @@ Last updated: 2026-10-15
       `backup <server|all>`, `check`, `version`, `help`. *(2026-10-15)*
 - [x] `worldcradle update` — update WorldCradle itself safely: shows what's new, downloads it, installs
       libraries, checks the new version loads, restarts, and puts the old version back if anything
-      fails. *(2026-10-15)*
+      fails. *(2026-10-15)* For the package: `sudo worldcradle update` (downloads the release, checks
+      its checksum, installs it with apt, rolls back if the new version doesn't answer).
+      *(2026-10-18)*
 - [x] `worldcradle backup list|restore <server> <backup>` from the terminal. *(2026-10-16)*
 - [x] `worldcradle unban <address>` — lifts a fail2ban block (asks for the admin password) and the
       dashboard's own short lock-out. *(2026-10-16)*
@@ -86,7 +88,7 @@ Last updated: 2026-10-15
 - [x] GitHub's *private vulnerability reporting* turned on, so the link in SECURITY.md works.
       *(2026-10-16)*
 - [ ] **Community testing call** once the repository is public.
-- [ ] Screenshots in the README.
+- [x] Screenshots in the README (the dashboard) and the Getting started guide. *(2026-10-18)*
 - [x] **Support the developer (Patreon):** link in the dashboard footer, a "Support the project"
       section in the README, and a GitHub *Sponsor* button (`.github/FUNDING.yml`). *(2026-10-15)*
 - [x] Version number (`VERSION`, now 0.2.0-dev) shown by `worldcradle version` and in the dashboard
@@ -110,7 +112,7 @@ loading its save after a restart.
 ## Next — for 0.3
 
 ### Quality and testing
-- [x] **Automated tests** (`tests/`, 113 so far): port allocation, the RCON client against a fake
+- [x] **Automated tests** (`tests/`, 113 at first, 434 by 2026-10-18): port allocation, the RCON client against a fake
       server, the never-forward rule and form for every game, EULA enforcement, player-list parsers,
       the 7 Days to Die settings fix, Terraria's no-connect rule, command names. Run by the pre-push
       check. *(2026-10-16)*
@@ -139,9 +141,10 @@ nothing for any game; a step that changes them needs trying on real servers.
 - [ ] Smaller shared helpers still to do: player lists, "send an admin command or say why not",
       downloads (Terraria, Factorio, Bedrock, Minecraft each have their own); Palworld's two
       settings rewriters become one.
-- [ ] Move the older game types onto the shared `SimpleGame` / `WineGame` bases where they fit.
-      This **changes their launch scripts** (stop timing, folders), so each one needs a real
-      create-start-join-stop test — do it game by game, alongside testing those games.
+- [x] Move the older game types onto the shared `SimpleGame` / `WineGame` bases where they fit —
+      every game but 7 Days to Die, each tested on a real server, and the owner's live servers
+      moved over. *(2026-10-18)*
+  - [ ] 7 Days to Die (`SdtdGame`) is still on its own.
 - [x] One `systemd` module (`run`, `check`, `is_active`, `is_enabled`, `show`) instead of six
       ways of calling `systemctl`, each with its own timeouts and error handling. *(2026-10-17)*
 - [x] One background-job helper (`jobs.Job`) instead of four copies (game installs, copying an install
@@ -297,7 +300,6 @@ servers in containers add networking and storage steps that work against the "ea
 - [ ] Euro Truck Simulator 2 / American Truck Simulator: an upload step for the files the game client
       exports.
 - [ ] ARK automatic mod downloads done the documented way (Game.ini `[ModInstaller]`).
-- [ ] **A real package** — see *Packaging* below.
 - [ ] Several machines in one dashboard (one WorldCradle, servers on more than one computer).
 - [ ] Translations of the dashboard.
 
@@ -319,8 +321,18 @@ servers in containers add networking and storage steps that work against the "ea
 
 ## Done
 
+- 2026-10-18 — Renamed WorldCradle; every game on the shared bases (but 7 Days to Die) and tested
+  on a real server; the owner's servers moved over; installing is four steps with `sudo` only where
+  you type it (`get.sh` retired); `sudo worldcradle update` with a 30-second roll-back; games install
+  in `~/worldcradle-games`; servers can be added without typing anything; fresh-install test on
+  Ubuntu 24.04 passed, including the owner's own.
+- 2026-10-17 — Code clean-up, part 2 (one way to sync passwords, form limits written once, page code
+  in modules, no inline styles); recordings of what every game writes.
+- 2026-10-16 — The `.deb` package and pinned libraries; alerts to ten services with an honest Test
+  button; automated tests; "keeps crashing" warning; Getting started guide; uninstall, backups and
+  unban from the terminal; Ubuntu 26.04; servers simply start and stop.
 - 2026-10-15 — `worldcradle` command line; installer with no questions by default and a one-line
-  get-and-install script; per-server CPU/RAM measured for all of a server's processes; licensed
+  get-and-install script (retired 2026-10-18); per-server CPU/RAM measured for all of a server's processes; licensed
   under PolyForm Noncommercial 1.0.0 (GPL dependency replaced by WorldCradle's own RCON client);
   pre-push checks; this roadmap.
 - 2026-10-14 — Supported-games list and development log; never-forward rule for control ports in the

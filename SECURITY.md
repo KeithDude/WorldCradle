@@ -34,5 +34,6 @@ Fixes go into the latest version. Update with `sudo worldcradle update`.
 - Choose a strong dashboard password (`worldcradle reset-password`).
 - Forward only the ports listed under *Can friends connect?* — **never** an admin console (RCON) or
   other control port.
-- Install fail2ban when the installer offers it (it does by default) to block password guessing.
+- Keep fail2ban: the package installs and sets it up by default to block password guessing (don't
+  remove it, and don't install with `--no-install-recommends` unless you set it up yourself).
 - Keep WorldCradle and the computer updated.

@@ -7,6 +7,12 @@ bug found and fixed, or a decision and the reason for it.
 The list of games and their test status is kept separately in
 [SUPPORTED_GAMES.md](SUPPORTED_GAMES.md).
 
+**How it started.** WorldCradle was born out of Keith's drive to host private game servers for his
+friends and himself. It began as a handful of hand-written scripts on one home server and
+grew, step by step, into a dashboard anyone can install. The entries below the October ones tell
+that part of the story; dates before 2026-09-29 come from the project's notes rather than a full
+record, so some are approximate.
+
 ---
 
 ## 2026-10-18 — Fresh-install test on Ubuntu 24.04, and sudo only where you type it
@@ -38,12 +44,13 @@ The list of games and their test status is kept separately in
 
 ## 2026-10-18 — One standard for every game, a new name, and every game tested on the server side
 
-- **Every game on the shared bases.** All game types now build on `SimpleGame` / `WineGame`, keeping
+- **Every game on the shared bases.** All game types but 7 Days to Die now build on `SimpleGame` /
+  `WineGame`, keeping
   only what each game really needs. Keith's own servers (ARK ×4, Palworld, Valheim, Satisfactory,
   Abiotic Factor) were moved onto the standard launch with `provision.adopt()`: same worlds and
   settings, a player check and 1-minute warning before each stop, saves confirmed after each.
-- **Renamed to WorldCradle** — "A Cradle for your Worlds" (after GameDash, WorldSeed and
-  RealmCradle: the first two were taken). Everything was renamed, including service and folder names;
+- **Renamed to WorldCradle** — "A Cradle for your Worlds" (after the original working name,
+  WorldSeed and RealmCradle: the first two were taken). Everything was renamed, including service and folder names;
   Keith's box and the test VM were moved over.
 - **Server-side tests of every game** with `tools/test-game.py` on the test VM: install, add, run,
   answer, players, Save/Message buttons, clean stop, remove, uninstall. 41 of 43 pass everything.
@@ -61,8 +68,9 @@ The list of games and their test status is kept separately in
   back (now in 30 s instead of 10 minutes), uninstall and reinstall keeping the settings.
 - **GitHub Actions** failed only because the setup tests depended on the machine's umask; fixed, and
   the pre-push check now uses GitHub's.
-- **Decided:** install stays the one-line `get.sh` (or the `.deb`) for the first release; our own apt
-  repository is wanted for a later update (see ROADMAP).
+- **Decided:** our own apt repository is wanted for a later update (see ROADMAP). (The same entry
+  first said install would stay the one-line `get.sh`; that was reversed later the same day — see
+  the entry above.)
 
 ## 2026-10-17 — Code clean-up, part 2
 
@@ -126,7 +134,8 @@ The owner made the package and the install/update process the priority before go
     direct ones) and that the lock matches `requirements.txt`.
 - **One setup:** `setup.sh` now does everything account-level, including the computer checks (now
   `bin/worldcradle-preflight`, shared with `install.sh`), linger, the firewall, fail2ban and the
-  final screen (now `worldcradle welcome`).
+  final screen (now `worldcradle welcome`). (Linger, the firewall and fail2ban moved to the package
+  install on 2026-10-18, so setup never needs a password.)
   - `install.sh` is just: checks, system packages, setup.
   - `worldcradle setup` runs the same setup after installing the package.
   - The dashboard's port is set in one place for the scripts (`bin/worldcradle-env.sh`).
@@ -149,8 +158,8 @@ The owner made the package and the install/update process the priority before go
   - a reinstall that picked up the same settings and servers.
   
   All steps passed.
-- Found on the way: another product called "WorldCradle" exists — a commercial game-server control
-  panel. The owner was told before going public.
+- Found on the way: a commercial game-server panel already uses the project's original working name.
+  The owner was told before going public; the project was renamed on 2026-10-18.
 
 ## 2026-10-16 — Alerts checked against each service's documentation; code clean-up
 
@@ -199,6 +208,14 @@ reviewed for dead code, duplication and comments that no longer matched the code
   accounts.**
 - **Still to do (roadmap, *Code clean-up, part 2*):** the larger restructuring the review proposed.
   It touches how servers are launched, so each step needs testing on real servers.
+
+## 2026-10-16 — Servers simply start and stop
+
+- **Shared ports, simpler:** any ports can be typed when adding a server, even ones another server
+  uses. Start checks the ports first and, if they're taken, says which server (or other program) has
+  them. The "parked" state, its card warning and the extra questions were removed.
+- **Stop means stopped:** Start and Stop now also decide whether a server comes back when the computer
+  restarts. Before, a stopped server started again after a reboot.
 
 ## 2026-10-16 — Alerts: ten services, several destinations, an honest Test button
 
@@ -502,7 +519,7 @@ Astroneer may need Wine 10.6+ for players to join; s&box cannot start its Steam 
 - **Add-a-server form matches each game's real options** (typed fields: checkboxes, lists, number
   ranges), and every game has its own port boxes (blank = automatic).
 - **Shared ports with a clear warning:** a server may reuse another's ports on purpose (only one can run
-  at a time); the form explains this before allowing it.
+  at a time); the form explains this before allowing it. (Simplified on 2026-10-16: see that day.)
 - **Security review** for an internet-facing dashboard: content-security policy with per-response
   nonces, secure cookies, CSRF on every change, sessions tied to the password, atomic config writes,
   safe backup restore, fail2ban support.
@@ -521,10 +538,133 @@ Astroneer may need Wine 10.6+ for players to join; s&box cannot start its Steam 
   second paid licence).
 - **Abiotic Factor** added (Windows server under Wine) including a player list read from its log.
 
-## Earlier (2026-06 to 2026-09)
+## 2026-10-10 — Abiotic Factor's players, and the port boxes back
 
-- First versions: monitoring and control of ARK, Palworld, Valheim and Satisfactory servers — status,
-  players, start/stop/restart, backups and restore with automatic pre-restore snapshots, daily backups,
-  alerts (Discord / ntfy / webhook), Steam update checks, launch-script editor, port pool.
-- Weekly, player-aware OS maintenance via a root systemd timer (no sudoers rule), see
-  `deploy/maintenance/install.md`.
+- **Bug reported by Keith: Abiotic Factor's card never showed anyone online.** The game doesn't report
+  its players to Steam's server query (the count stays 0), so the player list is now read from the
+  server's own log (who joined, who left). Checked by replaying a real three-player session. This
+  also made the "players online?" question before a stop work for this game.
+- **Regression reported by Keith:** the rebuilt Add form had lost the port boxes ("Each game should
+  have a spot for the ports that the game supports"). Every game got its own port boxes back;
+  blank = automatic.
+- Wine questions answered: no need to switch to Proton; the newer Wine "ntsync" speed-up needs Wine
+  10.16 or newer.
+
+## 2026-10-08 — Abiotic Factor joined; a security review; open to the internet by design
+
+- **Keith joined the Abiotic Factor server** (in-game server search and direct connect) — its first
+  real-player test. It then became a proper game type: update button, player names, its own "How to
+  join" text and log in the log viewer, and the in-game admin switched on.
+- **Wine put a console window on the desktop:** the server's background service inherited the desktop
+  session. Removing the display setting wasn't enough (Wine fell back to Wayland); the launch now
+  points Wine at no display at all. Keith confirmed the window was gone.
+- **The Add form rebuilt** to match each game's real options (lists, tick boxes, numbers with
+  limits). Throwaway servers were started for Valheim, Satisfactory and Abiotic Factor.
+- **Bug found by that testing: Valheim backups had failed silently since 2026-09-29.** A game update
+  changed Valheim worlds from two files into a folder, and the backup still looked for the files.
+- **Security review** at Keith's request. Seven findings, all fixed: a restore could overwrite a world
+  with no safety copy (now an automatic pre-restore snapshot); a damaged settings file was silently
+  replaced with defaults and saves had no lock; backup failures were silent (now an alert and a
+  "backup is old" warning); backup download/delete accepted `../` in a name; there was no
+  content-security policy (now strict, with per-page nonces); the log viewer showed game passwords;
+  changing the dashboard password didn't sign other sessions out. Cookies were hardened and settings
+  validated at the same time.
+- **Decided by Keith:** the dashboard is never to be restricted to the home network or a VPN — "if i
+  wanted that i just wont open the port to the outside. but we should always expect the user to open
+  this to the outside and we should make sure that security is tight." Every later change is judged
+  as internet-facing.
+
+## 2026-10-06 — Abiotic Factor, under Wine
+
+- Keith asked whether the Abiotic Factor dedicated server runs on Linux. It doesn't (Windows only).
+  Keith offered to install Docker for it; it runs under the computer's own Wine instead, because the
+  community Docker image was an unmaintained wrapper around an older Wine, Docker's ports bypass the
+  firewall, and it would have been a second way of managing servers next to systemd.
+- At Keith's request it reuses the ports of an ARK map that was parked (stopped on purpose), which
+  were already forwarded on the router; the dashboard refuses to start one while the other runs.
+- **A join problem that wasn't the server:** Keith's game client sent a password remembered from
+  another server. Typing the password in the in-game prompt fixed it.
+
+## 2026-09-29 — An Ubuntu upgrade, and weekly patching switched on
+
+- **The upgrade to Ubuntu 26.04 broke the dashboard:** Python went from 3.13 to 3.14 and the
+  dashboard's Python environment was tied to the old one, so the service crash-looped for about 20
+  minutes; the ARK stop helper and the nightly backup, which use the same environment, were broken
+  too. The environment was rebuilt. (This is what later became the automatic self-repair, 2026-10-15.)
+- **Found on the way:** `requirements.txt` was missing `python-a2s`, which the dashboard imports — a
+  fresh install would have failed. Added. The security settings were re-checked on the live dashboard.
+- **Weekly OS patching installed:** Keith typed the root steps from `deploy/maintenance/install.md`
+  himself; a dry run found 0 players and nothing to install, and the timer was switched on (first
+  run Wednesday 2026-09-30, mid-morning).
+- The old hand-made service files, kept switched off since June in case of a roll-back, were deleted.
+
+## 2026-07-20 — Operating-system updates on the dashboard
+
+- An **OS updates** tile: how many updates are waiting, how many are security fixes, and whether a
+  restart is needed; the dashboard's "Check for updates" button now checks the games and the OS.
+- **Weekly, player-aware OS patching** prepared (`deploy/maintenance/`): it backs up every save, only
+  runs when no one is playing (and gives up if it can't tell), and restarts only if needed. Keith
+  first asked for a passwordless `sudo` rule; it runs from a root systemd timer instead, because any
+  script the game account can edit — including through the dashboard's launch-script editor — must
+  never be runnable as root.
+
+## 2026-06-25 to 06-27 — Made installable by others
+
+- The code moved into `app/`, and everything that belongs to one computer (settings, server list,
+  certificate, logs, backups) moved out of the code into a data folder (`~/.config/worldcradle`), so
+  an update can never touch it. Personal details were taken out of the code and became settings.
+- First `setup.sh`, `requirements.txt`, example files, systemd templates, `deploy/SETUP.md` and a
+  general README.
+- **Change the game passwords from the dashboard** (Settings), never written to the logs.
+- A full security re-check after the move passed (every admin page needs signing in, every change
+  needs the CSRF token, hardened headers and cookies, private file permissions).
+
+## 2026-06-19 — The whole fleet run by the dashboard
+
+- Every one of Keith's servers (four ARK maps, Palworld, Valheim, Satisfactory) became a
+  dashboard-managed service with a generated launch, keeping its world, ports and the ARK cluster. The
+  old hand-made services were kept switched off for a roll-back.
+- Settings that were specific to Keith's computer (public address, cluster name, folders) became
+  dashboard settings, so it could be handed to someone else.
+
+## 2026-06-18 — From a status page to a control panel
+
+- **One file for the game passwords** — one join password friends share, one private admin password —
+  instead of a copy in every server's settings.
+- **One module per game** (`games/`), each knowing how to check, start, stop and talk to its server;
+  the server list moved into one file; the first **Add a server** (a Valheim world could be created
+  from the dashboard).
+- **Update checks** (installed build against Steam's latest), **logs** (access, audit, app) and
+  **fail2ban** blocking addresses that keep getting the password wrong.
+- **Fixed a Palworld server nobody could join:** it crashed on every join because the world, converted
+  from an early single-player save, was damaged. A fresh world fixed it.
+
+## 2026-06-17 — The first dashboard
+
+- A web dashboard (Python and Flask over HTTPS) for Keith's ARK, Palworld, Valheim and Satisfactory
+  servers, replacing a plain-text status page: which servers are up, who is playing, and controls.
+  Two levels from the start, as Keith designed them: a public page (online/offline, player counts, how
+  to join) and a signed-in admin page with everything else.
+- Over the following weeks (exact dates not recorded): backups and restore, daily automatic backups,
+  alerts (Discord / ntfy / webhook), the launch-script editor and the port pool.
+
+## 2026-06-14 to 06-16 — The ARK cluster, and lessons that became rules
+
+- Several ARK maps set up as one cluster, so characters and dinos travel between them.
+- **Players stranded:** an attempt to pause empty ARK servers (`SetGlobalPause`) froze the server's
+  admin console too, while Keith and a friend were playing; only a restart (losing a few minutes of
+  play) got them back. Two rules came from it, both later built into WorldCradle: **always check for
+  players before stopping, restarting or pausing a server**, and pausing ARK is a dead end.
+- **Friends couldn't join ARK** ("failed to query server for invite"): the update script had its
+  steamcmd options in the wrong order, so the server hadn't updated for over a year and the game
+  refused it. Fixed, along with a steamcmd state that blocked the update.
+- Stopping empty servers and waking them on demand was looked at and **declined by Keith**: there was
+  no shortage of memory, and ARK's 4–5-minute start made waking on demand clumsy.
+- Windows-only servers (ARK: Survival Ascended, Sons of the Forest) were removed for now: they needed
+  Proton, which Keith didn't want then. (Wine support came later, in October.)
+
+## Before 2026 — Hand-written scripts
+
+- Keith ran the servers with scripts written by hand: backing up ARK, updating Palworld, ARK: Survival
+  Ascended and Satisfactory with steamcmd, and talking to ARK through its admin console. They are where
+  the dashboard's first commands came from.
