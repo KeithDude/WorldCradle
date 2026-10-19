@@ -160,6 +160,8 @@ WorldCradle is free for noncommercial use. If it's useful to you, you can suppor
 **[Patreon](https://www.patreon.com/KeithDude)**. The dashboard shows the same link at the bottom of
 each page; it only opens the Patreon page and nothing in WorldCradle depends on it.
 
+Supporters who'd like to be listed go on the **[high-score board](SUPPORTERS.md)**.
+
 ## Trademark
 
 WorldCradle™ is a trademark of KeithDude.
