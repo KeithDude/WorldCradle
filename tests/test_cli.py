@@ -76,3 +76,25 @@ def test_a_git_copy_is_never_updated_as_root(monkeypatch, capsys):
     assert cli.cmd_update([]) != 0
     out = capsys.readouterr()
     assert "without sudo" in out.err + out.out
+
+
+def test_the_welcome_link_and_qr_open_the_setup_page_until_a_password_exists(monkeypatch, capsys):
+    import config
+    import registry
+    import segno
+    made = []
+    monkeypatch.setattr(segno, "make", lambda url, **kw: made.append(url) or type("Q", (), {"terminal": lambda *a, **k: None})())
+    monkeypatch.setattr(cli, "_lan_ip", lambda: "192.168.1.50")
+    monkeypatch.setattr(cli, "_port", lambda: 8443)
+    monkeypatch.setattr(registry, "load_secrets", lambda: {})
+    monkeypatch.setattr(config, "new_setup_code", lambda: "ABCD-1234")
+    monkeypatch.setattr(config, "needs_setup", lambda: True)
+    cli.cmd_welcome([])
+    cli.cmd_qr([])
+    assert "https://192.168.1.50:8443/setup" in capsys.readouterr().out
+    assert made == ["https://192.168.1.50:8443/setup"] * 2
+    made.clear()
+    monkeypatch.setattr(config, "needs_setup", lambda: False)        # set up: the plain address again
+    cli.cmd_welcome([])
+    assert "https://192.168.1.50:8443/\n" in capsys.readouterr().out
+    assert made == ["https://192.168.1.50:8443/"]

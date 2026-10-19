@@ -116,12 +116,18 @@ def cmd_passwords(args) -> int:
     return 0
 
 
+def _first_page() -> str:
+    """Where a visit should start: the setup page until a dashboard password has been chosen."""
+    import config
+    return "setup" if config.needs_setup() else ""
+
+
 def cmd_qr(_args) -> int:
     """A QR code of the home-network address, to open the dashboard on a phone."""
     ip = _lan_ip()
     if not ip:
         return _err("couldn't find this computer's home-network address")
-    url = f"https://{ip}:{_port()}/"
+    url = f"https://{ip}:{_port()}/{_first_page()}"
     try:
         import segno
     except ImportError:
@@ -182,12 +188,13 @@ def cmd_welcome(args) -> int:
     import config
     port = _port()
     ip = _lan_ip()
+    page = _first_page()
     _say()
     _say("  WorldCradle is running.")
     _say()
     _say("  1. On any computer or phone on your home network, open a web browser and go to:")
     _say()
-    _say(f"         https://{ip or 'this-computer'}:{port}/")
+    _say(f"         https://{ip or 'this-computer'}:{port}/{page}")
     _say()
     _say('     The browser will warn that the connection is "not private". That is expected')
     _say('     the first time: choose "Advanced", then "Proceed" / "Accept the risk".')
@@ -198,7 +205,7 @@ def cmd_welcome(args) -> int:
             import io
             import segno
             out = io.StringIO()
-            segno.make(f"https://{ip}:{port}/", error="m").terminal(out=out, compact=True)
+            segno.make(f"https://{ip}:{port}/{page}", error="m").terminal(out=out, compact=True)
             _say("\n".join("     " + line for line in out.getvalue().splitlines()))
         except Exception:
             pass

@@ -47,8 +47,11 @@ Leave that window open for the next step.
 
 ## 2. Open the dashboard and choose your password
 
-On any computer or phone at home, open the address it showed, for example
-`https://192.168.1.50:8443/`.
+On any computer or phone at home, open the address it showed (or scan its QR code), for example
+`https://192.168.1.50:8443/setup`.
+
+> **Note:** clicking **Admin login** at the top of the main page (`https://192.168.1.50:8443/`)
+> also gets you there.
 
 Your browser will warn that the connection is "not private". That's expected the first time — the
 connection *is* encrypted, the browser just doesn't recognise who made its certificate. Choose
