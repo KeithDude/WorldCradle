@@ -75,7 +75,7 @@ open(dst, "w", encoding="utf-8").write(t)
 PW
     umask 022
     chmod 600 "$SECRETS"
-    note "Picked random game passwords — see or change them in the dashboard (Settings → Game passwords)."
+    note "Picked random game passwords — see or change them in the dashboard (Settings → Game-server passwords)."
 fi
 
 # --- 3. The dashboard's certificate (self-signed; a trusted one can be added in Settings) ---

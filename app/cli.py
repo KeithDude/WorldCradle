@@ -112,7 +112,7 @@ def cmd_passwords(args) -> int:
         return 0 if join else 1
     _say(f"Join password (give this to friends):   {join or '(not set)'}")
     _say(f"Admin password (keep this to yourself):  {admin or '(not set)'}")
-    _say("Change them in the dashboard: Settings → Game passwords (then restart the servers).")
+    _say("Change them in the dashboard: Settings → Game-server passwords (then restart the servers).")
     return 0
 
 
@@ -222,7 +222,7 @@ def cmd_welcome(args) -> int:
         _say()
         _say(f"         {join}")
         _say()
-        _say("     (Change it any time in the dashboard: Settings → Game passwords.")
+        _say("     (Change it any time in the dashboard: Settings → Game-server passwords.")
         _say("      To see it again later, type:  worldcradle passwords)")
     if "--firewall" in args:
         _say()
