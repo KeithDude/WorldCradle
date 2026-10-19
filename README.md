@@ -150,8 +150,9 @@ himself: it started as a few hand-written scripts on one home server and grew in
 anyone can install. The story so far is in [docs/DEVELOPMENT_LOG.md](docs/DEVELOPMENT_LOG.md).
 
 WorldCradle is designed, developed and maintained by Keith, with the help of an AI assistant
-(Claude). Every change goes through automated tests, and the servers are run for real before
-anything is released.
+(Claude). Keith has been a programmer for more than 15 years and a hardcore gamer for more than 30.
+Everything goes through meticulous testing, and WorldCradle is used personally by Keith and his
+friends.
 
 ## Support the project
 
