@@ -99,8 +99,9 @@ Last updated: 2026-10-18
       published. The release workflow refuses to build while it's still there. *(removed 2026-10-18)*
 - [x] **0.2.0 released** (2026-10-19): `VERSION` 0.2.0, CHANGELOG dated, tagged `v0.2.0` — the
       release workflow builds and publishes the package.
-- [ ] Check the install steps and `sudo worldcradle update` against the real release (once the
-      repository is public).
+- [x] Checked against the real release once the repository was public: the install link downloads
+      0.2.0 and its checksum matches; `sudo worldcradle update` took the test VM and the
+      maintainer's own server to 0.2.0, dashboard and servers running. *(2026-10-19)*
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44

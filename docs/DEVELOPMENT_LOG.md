@@ -25,7 +25,10 @@ record, so some are approximate.
   moved into `~/worldcradle-games`, the passwords file into `~/.config/worldcradle`, the old
   hand-made scripts retired; every server's launch remade, all six regular servers back up. New
   versions are tried on the test VM first.
-- **Released 0.2.0** (tag `v0.2.0`).
+- **Released 0.2.0** (tag `v0.2.0`); the repository went public. The release workflow's first run
+  published the package; the install link and its checksum checked out from outside, and
+  `sudo worldcradle update` took the test VM, then Keith's own server, to 0.2.0 with every server
+  still running. Next version: 0.2.1-dev.
 
 ## 2026-10-18 — Fresh-install test on Ubuntu 24.04, and sudo only where you type it
 
