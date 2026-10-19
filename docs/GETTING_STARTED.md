@@ -69,7 +69,8 @@ It works on a phone too:
 
 Open **Games** and press **Install** next to the game you want. The download can take from a few
 seconds to half an hour depending on the game (each one shows its size); you can leave the page while
-it runs.
+it runs. Each game goes into its own folder in `worldcradle-games` in your home folder (for example
+`worldcradle-games/Valheim`) — you don't need to touch it.
 
 ![The Games list](images/03-games.png)
 

@@ -33,10 +33,22 @@ setup code for choosing your password in the browser, and the password friends n
 |---|---|---|
 | The program | `/usr/lib/worldcradle` (the `worldcradle` command in `/usr/bin`) | the folder you put it in |
 | Its Python libraries | `~/.local/share/worldcradle/venv` | `venv/` in that folder |
-| Settings, passwords, server list, certificate, logs | `~/.config/worldcradle` | same |
+| Settings, server list, certificate, logs | `~/.config/worldcradle` | same |
+| The two game passwords | `~/.config/worldcradle/secrets.conf` (private to your account) | same |
 | Save backups | `~/.local/share/worldcradle/backups` | same |
-| Game servers | `~/worldcradle-games`, one folder per game named after it (e.g. `~/worldcradle-games/Valheim`, `~/worldcradle-games/Garrys-Mod`) | same |
-| Background services | `worldcradle.service`, `worldcradle-backup.timer` (your account's systemd) | same |
+| Games | `~/worldcradle-games`, one folder per game named after it, e.g. `~/worldcradle-games/Valheim`, `~/worldcradle-games/ARK-Survival-Evolved`, `~/worldcradle-games/Garrys-Mod` | same |
+| Extra copies for games that need one per server (Palworld, Eco, Squad and a few others) | next to the game's folder, named after the server: `~/worldcradle-games/Palworld-<server>` | same |
+| Wine environments (Windows-only servers) | `~/.wine-wc-<game>-<server>`, one per server | same |
+| Background services | `worldcradle.service`, `worldcradle-backup.timer`, and one `worldcradle-<server>.service` per game server (your account's systemd, `~/.config/systemd/user`) | same |
+
+Each server's world is kept where its game normally keeps it — usually inside the game's folder,
+for a few games in your home folder (Valheim: `~/.config/unity3d/IronGate/Valheim`). Backups know
+where each one is; **Backups** in the dashboard lists them by server.
+
+**Updating from 0.1.0:** games installed by 0.1.0 live in `~/<game>server` (for example
+`~/valheimserver`). They stay there and keep working: WorldCradle records each one's folder the
+first time the new version starts, and **Settings → General** shows it. Nothing is moved for you.
+Games you install from now on go into `~/worldcradle-games`.
 
 The Python libraries are exact versions with checksums (`requirements.lock`); pip refuses
 anything that doesn't match. If an operating-system upgrade changes the Python version, WorldCradle
@@ -85,7 +97,8 @@ Your settings, servers and saves are never touched by an update.
 
 `worldcradle uninstall` stops and removes your game servers' background services (asking first if
 players are online), the dashboard, and the daily backup, and asks before deleting settings or
-backups. Game installs and their saves are never deleted. For a package install, finish with
+backups. Game installs and their saves are never deleted (`~/worldcradle-games` and the worlds stay
+where they are). For a package install, finish with
 `sudo apt remove worldcradle`.
 
 Removing the package alone stops the dashboard but leaves your settings and your game servers
