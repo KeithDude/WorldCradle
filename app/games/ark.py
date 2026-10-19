@@ -177,7 +177,12 @@ class ArkGame(SimpleGame):
     named_after = "the map"
 
     def default_name(self, spec: dict) -> str:
-        return self._map(spec)                          # a map is named after itself by default
+        """A map is named after itself by default — its proper name ("Scorched Earth"), not its code."""
+        code = self._map(spec)
+        for f in self.extra_fields:
+            if f["name"] == "map":
+                return dict((c, label) for c, label in f["options"]).get(code, code)
+        return code
 
     def provision(self, spec: dict, ports: dict) -> dict:
         if not spec.get("name"):

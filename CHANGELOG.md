@@ -9,6 +9,10 @@ footer of the dashboard when signed in.
 
 ## 0.2.1 — (not released yet)
 
+### Better
+- An ARK server you don't name is named after its map's proper name (*Scorched Earth*), not its code
+  (*ScorchedEarth_P*).
+
 ## 0.2.0 — Public preview (2026-10-19)
 
 ### New

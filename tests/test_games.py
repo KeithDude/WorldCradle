@@ -160,6 +160,9 @@ def test_a_server_can_be_added_without_typing_a_name(monkeypatch):
     assert provision.unique_key("!!", "terraria") == "terraria"              # nothing usable in the name
     assert provision.KEY_RE.match(provision.unique_key("x" * 60, "x"))      # long names still fit
     assert games.get("ark").named_after == "the map"                        # ARK: named after its map
+    assert games.get("ark").default_name({"map": "ScorchedEarth_P"}) == "Scorched Earth"   # its proper name
+    assert games.get("asa").default_name({"map": "Aberration_WP"}) == "Aberration"
+    assert games.get("ark").default_name({"map_custom": "MyModMap"}) == "MyModMap"     # mod maps: the code
 
 
 def test_every_game_sets_up_with_the_form_as_it_opens(monkeypatch, tmp_path):
