@@ -63,14 +63,14 @@ and type these one at a time:
    ```
    sudo apt install /tmp/worldcradle.deb
    ```
-4. Set WorldCradle up for your account and start it (no `sudo`, no password).
+4. Set WorldCradle up for your account and start it (no `sudo`).
    ```
    worldcradle setup
    ```
 
-Steps 2 and 3 ask for your login password. Setup ends by showing the address to open in your
-browser, a one-time setup code to choose your dashboard password, and the password your friends need
-to join. Then follow the *Getting started* checklist on the dashboard.
+Setup ends by showing the address to open in your browser, a one-time setup code to choose your
+dashboard password, and the password your friends need to join. Then follow the *Getting started*
+checklist on the dashboard.
 
 More: the step-by-step guide with screenshots, **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**;
 installing from the source (`sudo bash install.sh`), updating and removing,

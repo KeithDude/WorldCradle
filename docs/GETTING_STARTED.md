@@ -27,13 +27,12 @@ lines, one at a time, pressing `Enter` after each:
    ```
    sudo apt install /tmp/worldcradle.deb
    ```
-4. Set WorldCradle up for your account and start it (no `sudo`, no password).
+4. Set WorldCradle up for your account and start it (no `sudo`).
    ```
    worldcradle setup
    ```
 
-Steps 2 and 3 ask for the password you log in to this computer with — nothing appears as you type
-it, that's normal. Step 4 checks the computer is suitable before it changes anything.
+Step 4 checks the computer is suitable before it changes anything.
 
 (Tip: it's a good idea to bring the computer up to date first, with `sudo apt update` and then
 `sudo apt upgrade`. Not required.)
