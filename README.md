@@ -47,21 +47,34 @@ full list and which games have been tested with real players.
   previous version back by itself if the new one doesn't start. Game servers keep running.
 
 ## Quick start
-In a terminal (Ubuntu 22.04+ / Debian 12+ — Debian not yet tested):
-```
-wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
-sudo apt update
-sudo apt install /tmp/worldcradle.deb
-worldcradle setup
-```
-`sudo apt` installs WorldCradle and the system packages the games need (that's the only step that
-needs administrator rights); `worldcradle setup` then sets it up for your account, as you — not with
-sudo. It prints the address to open and a one-time setup code. (From a downloaded copy of the source
-instead: `sudo bash install.sh` in its folder.) A step-by-step walk-through with
-screenshots: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**. Open
-**https://<host>:8443/**, accept the self-signed certificate, enter the code and choose
-your password, then follow the *Getting started* checklist. Details and
-prerequisites: **[deploy/SETUP.md](deploy/SETUP.md)**.
+
+On Ubuntu 22.04 or newer (Debian 12+ should work too but hasn't been tested yet), open a terminal
+and type these one at a time:
+
+1. Download WorldCradle.
+   ```
+   wget -O /tmp/worldcradle.deb https://github.com/KeithDude/WorldCradle/releases/latest/download/worldcradle.deb
+   ```
+2. Refresh the computer's list of available software.
+   ```
+   sudo apt update
+   ```
+3. Install WorldCradle and the system software the games need.
+   ```
+   sudo apt install /tmp/worldcradle.deb
+   ```
+4. Set WorldCradle up for your account and start it (no `sudo`, no password).
+   ```
+   worldcradle setup
+   ```
+
+Steps 2 and 3 ask for your login password. Setup ends by showing the address to open in your
+browser, a one-time setup code to choose your dashboard password, and the password your friends need
+to join. Then follow the *Getting started* checklist on the dashboard.
+
+More: the step-by-step guide with screenshots, **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**;
+installing from the source (`sudo bash install.sh`), updating and removing,
+**[deploy/SETUP.md](deploy/SETUP.md)**.
 
 ## Layout
 ```
