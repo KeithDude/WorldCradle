@@ -97,9 +97,10 @@ Last updated: 2026-10-18
 - [x] **Before the public release: remove the update test switch** (`WORLDCRADLE_RELEASES_URL` in
       `app/release.py` and `tools/test-releases.py`), used only to test updates before anything is
       published. The release workflow refuses to build while it's still there. *(removed 2026-10-18)*
-- [ ] When 0.2.0 is released: set `VERSION` to 0.2.0, date the CHANGELOG entry, commit, then
-      `git tag v0.2.0 && git push origin v0.2.0` — the release workflow builds and publishes the
-      package. Then check the install steps and `sudo worldcradle update` against the real release.
+- [x] **0.2.0 released** (2026-10-19): `VERSION` 0.2.0, CHANGELOG dated, tagged `v0.2.0` — the
+      release workflow builds and publishes the package.
+- [ ] Check the install steps and `sudo worldcradle update` against the real release (once the
+      repository is public).
 
 ### Confirm the fixes that need a player
 Changes from the documentation audit that could not be checked without joining a game: Squad 44

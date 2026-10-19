@@ -15,6 +15,18 @@ record, so some are approximate.
 
 ---
 
+## 2026-10-19 — 0.2.0, the first release
+
+- Quick start and Getting started: one command per step, each with a one-sentence description.
+- The welcome screen's address and QR code open the setup page (`/setup`) until a dashboard password
+  exists, instead of the public status page; tested on the test VM with a fresh data folder.
+- The README's About section gained Keith's background.
+- **Keith's own server now matches the releases:** WorldCradle runs from the package, the games
+  moved into `~/worldcradle-games`, the passwords file into `~/.config/worldcradle`, the old
+  hand-made scripts retired; every server's launch remade, all six regular servers back up. New
+  versions are tried on the test VM first.
+- **Released 0.2.0** (tag `v0.2.0`).
+
 ## 2026-10-18 — Fresh-install test on Ubuntu 24.04, and sudo only where you type it
 
 - **Installing no longer asks for a password behind your back.** `get.sh` is retired; installing is

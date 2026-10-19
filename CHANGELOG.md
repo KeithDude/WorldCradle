@@ -7,7 +7,7 @@ Version numbers: `MAJOR.MINOR.PATCH`. Until 1.0, a new MINOR version can change 
 these notes say what you need to do when it does. The version you have: `worldcradle version`, or the
 footer of the dashboard when signed in.
 
-## 0.2.0 — Public preview (not released yet)
+## 0.2.0 — Public preview (2026-10-19)
 
 ### New
 - **45 games** you can install and run from the dashboard (Windows-only servers run through Wine),
